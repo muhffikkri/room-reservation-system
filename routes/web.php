@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Admin\AccountVerificationController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\DashboardController;
@@ -19,6 +20,15 @@ Route::middleware('guest')->group(function (): void {
 
 Route::middleware(['auth', 'active'])->group(function (): void {
     Route::get('/dashboard', DashboardController::class)->name('dashboard');
+});
+
+Route::middleware(['auth', 'active', 'role:admin'])->prefix('admin')->group(function (): void {
+    Route::get('/pengguna/verifikasi', [AccountVerificationController::class, 'index'])
+        ->name('admin.pengguna.verifikasi');
+    Route::patch('/pengguna/{user}/verifikasi', [AccountVerificationController::class, 'verify'])
+        ->name('admin.pengguna.verify');
+    Route::patch('/pengguna/{user}/tolak', [AccountVerificationController::class, 'reject'])
+        ->name('admin.pengguna.reject');
 });
 
 Route::middleware('auth')->group(function (): void {
