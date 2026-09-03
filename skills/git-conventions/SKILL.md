@@ -20,6 +20,11 @@ description: Konvensi git proyek sistem-reservasi — nama branch konvensional B
 
 Format: `<type>: <imperative summary>`
 
+Mulai PR berikutnya, tambahkan scope: `<type>(<scope>): <summary>`.
+Scope = area yang diubah, bukan topik yang dibahas.
+Contoh benar: `docs(skills)`, `feat(reservation)`, `refactor(auth)`.
+Contoh salah: `feat(reservation)` untuk perubahan dokumen, `docs(reservation)` untuk perubahan kode.
+
 - `feat:` fitur baru — `feat: add role and account status to users table`
 - `fix:` perbaikan bug — `fix: prevent duplicate approval on overlapping slots`
 - `docs:` dokumentasi — `docs: add technical specification for the reservation system (Laravel 13 + MySQL)`
