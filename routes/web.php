@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Admin\AccountVerificationController;
 use App\Http\Controllers\Admin\OfficerAccountController;
+use App\Http\Controllers\Admin\UserAccountController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\DashboardController;
@@ -30,6 +31,12 @@ Route::middleware(['auth', 'active', 'role:admin'])->prefix('admin')->group(func
         ->name('admin.pengguna.verify');
     Route::patch('/pengguna/{user}/tolak', [AccountVerificationController::class, 'reject'])
         ->name('admin.pengguna.reject');
+    Route::get('/pengguna', [UserAccountController::class, 'index'])
+        ->name('admin.pengguna.index');
+    Route::get('/pengguna/create', [UserAccountController::class, 'create'])
+        ->name('admin.pengguna.create');
+    Route::post('/pengguna', [UserAccountController::class, 'store'])
+        ->name('admin.pengguna.store');
     Route::get('/petugas', [OfficerAccountController::class, 'index'])
         ->name('admin.petugas.index');
     Route::get('/petugas/create', [OfficerAccountController::class, 'create'])
