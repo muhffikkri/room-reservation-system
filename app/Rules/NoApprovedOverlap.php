@@ -13,8 +13,8 @@ use Illuminate\Translation\PotentiallyTranslatedString;
  * ada reservasi approved pada fasilitas sama dengan
  * start_time < end_baru AND end_time > start_baru.
  *
- * Dipakai saat pengajuan (via SlotAvailable) dan dicek ulang saat
- * approve di dalam transaksi (BR-7). Overlap dengan pending lain
+ * Dipakai saat pengajuan (bersama Rules slot lain di ReservationService)
+ * dan dicek ulang saat approve di dalam transaksi (BR-7). Overlap dengan pending lain
  * diperbolehkan masuk antrian.
  */
 class NoApprovedOverlap implements ValidationRule

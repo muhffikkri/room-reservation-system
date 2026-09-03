@@ -2,11 +2,8 @@
 
 namespace App\Http\Requests;
 
-use App\Rules\SlotAvailable;
-use App\Rules\SlotTimeValid;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Validation\Validator;
 
 class StoreReservationRequest extends FormRequest
 {
@@ -19,7 +16,10 @@ class StoreReservationRequest extends FormRequest
     }
 
     /**
-     * Get the validation rules that apply to the request.
+     * Adapter tipis: hanya cek bentuk dasar.
+     *
+     * Kebenaran Slot (BR-1..BR-6) milik ReservationService; request ini
+     * tidak menduplikasinya agar tidak basi sebelah.
      *
      * @return array<string, ValidationRule|array<mixed>|string>
      */
@@ -28,28 +28,9 @@ class StoreReservationRequest extends FormRequest
         return [
             'facility_id' => ['required', 'exists:facilities,id'],
             'date' => ['required', 'date', 'after_or_equal:today'],
-            'start_time' => ['required', 'date_format:H:i', new SlotTimeValid],
+            'start_time' => ['required', 'date_format:H:i'],
             'end_time' => ['required', 'date_format:H:i', 'after:start_time'],
             'purpose' => ['required', 'string', 'min:10', 'max:255'],
         ];
-    }
-
-    protected function withValidator(Validator $validator): void
-    {
-        $validator->after(function (Validator $validator): void {
-            if ($validator->errors()->isNotEmpty()) {
-                return;
-            }
-
-            // SlotAvailable butuh user yang login dan seluruh isi form,
-            // sehingga sistem menjalankannya di sini, bukan di rules().
-            // Sistem melewatinya jika validasi dasar sudah gagal agar
-            // pesan error tidak bertumpuk.
-            $rule = new SlotAvailable($this->user()->id);
-            $rule->setData($this->all());
-            $rule->validate('facility_id', $this->input('facility_id'), function (string $message) use ($validator): void {
-                $validator->errors()->add('facility_id', $message);
-            });
-        });
     }
 }
