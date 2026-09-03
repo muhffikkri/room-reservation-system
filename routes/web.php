@@ -1,7 +1,10 @@
 <?php
 
 use App\Http\Controllers\Admin\AccountVerificationController;
+use App\Http\Controllers\Admin\OfficerAccountController;
+use App\Http\Controllers\Admin\UserAccountController;
 use App\Http\Controllers\Auth\LoginController;
+use App\Http\Controllers\Auth\LogoutController;
 use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\DashboardController;
 use Illuminate\Support\Facades\Route;
@@ -29,9 +32,20 @@ Route::middleware(['auth', 'active', 'role:admin'])->prefix('admin')->group(func
         ->name('admin.pengguna.verify');
     Route::patch('/pengguna/{user}/tolak', [AccountVerificationController::class, 'reject'])
         ->name('admin.pengguna.reject');
+    Route::get('/pengguna', [UserAccountController::class, 'index'])
+        ->name('admin.pengguna.index');
+    Route::get('/pengguna/create', [UserAccountController::class, 'create'])
+        ->name('admin.pengguna.create');
+    Route::post('/pengguna', [UserAccountController::class, 'store'])
+        ->name('admin.pengguna.store');
+    Route::get('/petugas', [OfficerAccountController::class, 'index'])
+        ->name('admin.petugas.index');
+    Route::get('/petugas/create', [OfficerAccountController::class, 'create'])
+        ->name('admin.petugas.create');
+    Route::post('/petugas', [OfficerAccountController::class, 'store'])
+        ->name('admin.petugas.store');
 });
 
 Route::middleware('auth')->group(function (): void {
-    Route::post('/logout', [LoginController::class, 'destroy'])->name('logout');
+    Route::post('/logout', LogoutController::class)->name('logout');
 });
-

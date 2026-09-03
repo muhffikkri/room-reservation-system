@@ -334,7 +334,7 @@ Ditambah custom Rule objects (logika di `App\Rules`, dipanggil via `withValidato
 ```
 
 **Form admin/petugas lainnya:**
-- `CreateOfficerRequest` / `CreateUserByAdminRequest`: `name` wajib, `email` wajib+unique, `password` wajib `min:8 confirmed`, `identity` nullable, langsung set `role` & `account_status = 'aktif'`.
+- `CreateOfficerRequest` / `CreateUserByAdminRequest`: `name` wajib, `email` wajib+unique, `password` wajib `min:8 confirmed`, `identity` nullable, langsung set `role` & `account_status = 'aktif'`. Kedua request berbagi base `AdminAccountRequest` (isi aturan hidup di satu tempat, nama keduanya dipertahankan).
 - `FacilityRequest`: `name`, `type` in enum, `location`, `capacity` integer min 1, `description` nullable, `photo` nullable image.
 - `RejectReservationRequest` / `CancelReservationOfficerRequest`: `reason`/`cancel_reason` wajib `min:10`.
 - `UpdateReportStatusRequest`: `status` in enum; `resolution_note` `required_if:status,selesai,ditolak` `min:10`.
@@ -367,6 +367,8 @@ Ditambah custom Rule objects (logika di `App\Rules`, dipanggil via `withValidato
 | `Admin\FacilityController` | resource (tanpa destroy fisik) | nonaktifkan/aktifkan |
 | `Admin\RecapController` | index, export | agregasi via `RecapService`; export csv/pdf |
 | `Admin\DashboardController` | index | kartu ringkasan + grafik sederhana (opsional) |
+
+Catatan implementasi: `Admin\OfficerAccountController` dan `Admin\UserAccountController` berbagi base `BaseAccountController` (alur daftar-formulir-simpan + penguncian `role`/`aktif` hidup di satu tempat, nama keduanya dipertahankan). Keputusan `pending`/`ditolak` vs `aktif` (BR-14) dimiliki satu modul `AccountStatusGate`; middleware `active` dan login hanya menjadi adapter.
 
 ### 7.4 Policy
 
