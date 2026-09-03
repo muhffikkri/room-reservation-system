@@ -38,6 +38,10 @@ class ReservationService
         ])->validate();
 
         return DB::transaction(function () use ($user, $facility, $start, $end, $purpose): Reservation {
+            // Sistem memeriksa ulang bentrok di dalam transaksi karena
+            // reservasi lain dapat lolos validasi di atas lebih dulu.
+            // Bentrok di titik ini berarti kondisi balapan, sehingga
+            // sistem menjawab 409, bukan error validasi (BR-7).
             $conflict = Reservation::approved()
                 ->overlap($facility->id, $start, $end)
                 ->lockForUpdate()
@@ -67,6 +71,8 @@ class ReservationService
     public function approve(Reservation $reservation, User $officer): Reservation
     {
         return DB::transaction(function () use ($reservation, $officer): Reservation {
+            // Sistem mengunci baris ini agar dua petugas yang menekan
+            // approve bersamaan tidak meloloskan dua pemenang (BR-7).
             $locked = Reservation::whereKey($reservation->id)->lockForUpdate()->firstOrFail();
 
             if ($locked->status !== 'pending') {

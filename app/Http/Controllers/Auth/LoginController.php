@@ -8,14 +8,25 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Validation\ValidationException;
+use Illuminate\View\View;
 
 class LoginController extends Controller
 {
-    public function showLoginForm(): \Illuminate\View\View
+    public function showLoginForm(): View
     {
         return view('auth.login');
     }
 
+    /**
+     * Memproses login dan memeriksa status akun (BR-14).
+     *
+     * Sistem memeriksa status akun SETELAH kredensial cocok. Middleware
+     * hanya aktif saat user membuka halaman, jadi tanpa pemeriksaan ini
+     * akun pending sempat memegang sesi yang valid selama satu request.
+     * Akun pending menerima pesan verifikasi dan akun yang admin tolak
+     * menerima pesan penolakan. Login juga dibatasi 5 percobaan per
+     * menit untuk tiap kombinasi email dan IP.
+     */
     public function store(Request $request): RedirectResponse
     {
         $credentials = $request->validate([

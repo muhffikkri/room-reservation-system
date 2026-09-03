@@ -41,6 +41,10 @@ class StoreReservationRequest extends FormRequest
                 return;
             }
 
+            // SlotAvailable butuh user yang login dan seluruh isi form,
+            // sehingga sistem menjalankannya di sini, bukan di rules().
+            // Sistem melewatinya jika validasi dasar sudah gagal agar
+            // pesan error tidak bertumpuk.
             $rule = new SlotAvailable($this->user()->id);
             $rule->setData($this->all());
             $rule->validate('facility_id', $this->input('facility_id'), function (string $message) use ($validator): void {
