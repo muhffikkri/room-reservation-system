@@ -59,6 +59,14 @@ class User extends Authenticatable
         return $query->where('role', $role);
     }
 
+    /**
+     * Menyaring akun yang menunggu verifikasi admin (BR-14).
+     */
+    public function scopePendingAccount(Builder $query): Builder
+    {
+        return $query->where('account_status', 'pending');
+    }
+
     public function isAdmin(): bool
     {
         return $this->role === 'admin';
