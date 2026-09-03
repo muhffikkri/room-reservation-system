@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Admin\AccountVerificationController;
+use App\Http\Controllers\Admin\OfficerAccountController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\DashboardController;
@@ -29,9 +30,14 @@ Route::middleware(['auth', 'active', 'role:admin'])->prefix('admin')->group(func
         ->name('admin.pengguna.verify');
     Route::patch('/pengguna/{user}/tolak', [AccountVerificationController::class, 'reject'])
         ->name('admin.pengguna.reject');
+    Route::get('/petugas', [OfficerAccountController::class, 'index'])
+        ->name('admin.petugas.index');
+    Route::get('/petugas/create', [OfficerAccountController::class, 'create'])
+        ->name('admin.petugas.create');
+    Route::post('/petugas', [OfficerAccountController::class, 'store'])
+        ->name('admin.petugas.store');
 });
 
 Route::middleware('auth')->group(function (): void {
     Route::post('/logout', [LoginController::class, 'destroy'])->name('logout');
 });
-
