@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
+use App\Services\AccountStatusGate;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -54,17 +55,16 @@ class LoginController extends Controller
 
         $user = Auth::user();
 
-        if ($user->account_status !== 'aktif') {
-            Auth::guard('web')->logout();
-            $request->session()->invalidate();
-            $request->session()->regenerateToken();
+        // Sistem bertanya ke satu pemilik aturan (BR-14); pesannya sama
+        // dengan yang dipakai middleware agar user tidak menerima dua
+        // versi cerita dari dua pintu berbeda.
+        $denial = AccountStatusGate::denialMessage($user);
+
+        if ($denial !== null) {
+            AccountStatusGate::logout($request);
             RateLimiter::clear($throttleKey);
 
-            $message = $user->account_status === 'pending'
-                ? 'Akun Anda menunggu verifikasi admin.'
-                : 'Akun Anda ditolak admin dan tidak dapat digunakan.';
-
-            return back()->with('error', $message);
+            return back()->with('error', $denial);
         }
 
         RateLimiter::clear($throttleKey);

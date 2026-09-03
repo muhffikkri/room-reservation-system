@@ -18,8 +18,7 @@ class AccountVerificationController extends Controller
 {
     public function index(): View
     {
-        $pendingUsers = User::query()
-            ->where('account_status', 'pending')
+        $pendingUsers = User::pendingAccount()
             ->orderBy('created_at')
             ->get();
 
