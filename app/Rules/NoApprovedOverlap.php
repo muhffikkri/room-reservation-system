@@ -31,9 +31,9 @@ class NoApprovedOverlap implements ValidationRule
      */
     public function validate(string $attribute, mixed $value, Closure $fail): void
     {
-        $conflict = Reservation::approved()
-            ->overlap($this->facilityId, $this->start, $this->end)
-            ->when($this->ignoreId !== null, fn ($query) => $query->where('id', '!=', $this->ignoreId))
+        // Definisi penghalang hidup di model (satu pemilik, BR-6);
+        // Rules ini hanya meneruskannya ke validator.
+        $conflict = Reservation::blockingOverlap($this->facilityId, $this->start, $this->end, $this->ignoreId)
             ->exists();
 
         if ($conflict) {

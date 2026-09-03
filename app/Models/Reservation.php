@@ -70,4 +70,16 @@ class Reservation extends Model
             ->where('start_time', '<', $end)
             ->where('end_time', '>', $start);
     }
+
+    /**
+     * Satu-satunya pemilik cek penghalang Slot (BR-6): hanya reservasi
+     * approved yang menghalangi; antrean pending tidak ikut dihitung.
+     * $ignoreId mengecualikan reservasi yang sedang diputuskan (BR-7).
+     */
+    public function scopeBlockingOverlap(Builder $query, int $facilityId, mixed $start, mixed $end, ?int $ignoreId = null): Builder
+    {
+        return $query->approved()
+            ->overlap($facilityId, $start, $end)
+            ->when($ignoreId !== null, fn (Builder $inner) => $inner->where('id', '!=', $ignoreId));
+    }
 }
