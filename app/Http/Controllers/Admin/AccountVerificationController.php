@@ -7,6 +7,13 @@ use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\View\View;
 
+/**
+ * Verifikasi akun registrasi mandiri oleh admin (BR-14).
+ *
+ * Hanya akun pending yang tampil di daftar dan dapat berubah status.
+ * Sistem mengembalikan 404 untuk akun aktif atau yang admin tolak agar
+ * URL verifikasi tidak dapat dipakai ulang.
+ */
 class AccountVerificationController extends Controller
 {
     public function index(): View

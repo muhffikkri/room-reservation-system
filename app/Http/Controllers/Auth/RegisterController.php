@@ -8,18 +8,25 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rules\Password;
+use Illuminate\View\View;
 
 class RegisterController extends Controller
 {
-    public function show(): \Illuminate\View\View
+    public function show(): View
     {
         return view('auth.register');
     }
 
+    /**
+     * Mendaftarkan akun baru sebagai pengguna pending (BR-14, BR-15).
+     *
+     * Registrasi mandiri mengabaikan field role dan account_status dari
+     * input, walau penyerang mengirimnya manual. Sistem selalu menulis
+     * role pengguna dan status pending. Hanya admin yang dapat membuat
+     * akun petugas atau mengaktifkan akun (§5.3).
+     */
     public function store(Request $request): RedirectResponse
     {
-        // Sengaja TIDAK menerima 'role' dan 'account_status' dari input (BR-14, BR-15):
-        // registrasi mandiri hanya menghasilkan akun pengguna berstatus pending.
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:100'],
             'email' => ['required', 'string', 'email', 'max:150', 'unique:users,email'],

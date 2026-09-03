@@ -7,6 +7,13 @@ use App\Models\Report;
 use App\Models\User;
 use Illuminate\Database\Seeder;
 
+/**
+ * Dua laporan contoh untuk demo antrean laporan (§15).
+ *
+ * Budi melaporkan PC Lab yang rusak (status baru) dan lampu Ruang Kelas
+ * B-201 yang mati (status diproses oleh petugas). Contoh ini mengisi
+ * dashboard antrean petugas tanpa data buatan yang berlebihan.
+ */
 class ReportSeeder extends Seeder
 {
     public function run(): void

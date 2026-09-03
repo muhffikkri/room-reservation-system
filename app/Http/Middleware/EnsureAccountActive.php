@@ -7,6 +7,14 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Symfony\Component\HttpFoundation\Response;
 
+/**
+ * Menolak user yang status akunnya pending atau admin tolak (BR-14).
+ *
+ * Middleware ini berjalan pada setiap request terotentikasi, sehingga
+ * akun yang admin tolak di tengah sesi langsung kehilangan akses pada
+ * request berikutnya. Sistem mengeluarkan user lalu mengarahkannya ke
+ * halaman login dengan pesan yang sesuai statusnya.
+ */
 class EnsureAccountActive
 {
     public function handle(Request $request, Closure $next): Response
