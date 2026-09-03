@@ -10,6 +10,15 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 #[Fillable(['user_id', 'facility_id', 'purpose', 'start_time', 'end_time', 'status', 'reject_reason', 'cancel_reason', 'decided_by', 'decided_at'])]
+/**
+ * Reservasi fasilitas oleh pengguna (§4.3, alur §9.1).
+ *
+ * Status approved memblokir slot (BR-6). Scope overlap TIDAK memfilter
+ * status dengan sengaja dan pemanggil yang menentukan, karena reservasi
+ * pending boleh masuk antrean dan hanya approved yang memblokir.
+ * Contoh antrean: dua pending 08.00-09.00 boleh berdampingan, lalu
+ * petugas menyetujui satu dan sistem menolak yang lain dengan 409.
+ */
 class Reservation extends Model
 {
     /** @use HasFactory<ReservationFactory> */

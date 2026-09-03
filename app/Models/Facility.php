@@ -25,11 +25,19 @@ class Facility extends Model
         return $this->hasMany(Report::class);
     }
 
+    /**
+     * Menyaring fasilitas aktif. Hanya fasilitas aktif yang dapat user
+     * reservasi (BR-5, BR-12).
+     */
     public function scopeAktif(Builder $query): Builder
     {
         return $query->where('status', 'aktif');
     }
 
+    /**
+     * Filter halaman daftar fasilitas: keyword nama, tipe, lokasi, dan
+     * kapasitas minimum (§6 fasilitas.index).
+     */
     public function scopeSearch(Builder $query, ?string $keyword, ?string $type, ?string $location, ?int $minCapacity): Builder
     {
         return $query

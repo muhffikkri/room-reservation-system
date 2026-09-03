@@ -5,6 +5,12 @@ namespace Database\Seeders;
 use App\Models\Facility;
 use Illuminate\Database\Seeder;
 
+/**
+ * Lima fasilitas contoh untuk demo (§15).
+ *
+ * Empat berstatus aktif dan satu (Proyektor P-01) berstatus perbaikan
+ * sebagai contoh fasilitas yang tidak dapat user pesan (BR-12).
+ */
 class FacilitySeeder extends Seeder
 {
     public function run(): void
