@@ -39,12 +39,7 @@ it('generates factory data that always passes slot validation', function () {
 
     foreach ($reservations as $reservation) {
         $failures = [];
-        $rule = new SlotTimeValid;
-        $rule->setData([
-            'date' => $reservation->start_time->toDateString(),
-            'start_time' => $reservation->start_time->format('H:i'),
-            'end_time' => $reservation->end_time->format('H:i'),
-        ]);
+        $rule = new SlotTimeValid($reservation->start_time, $reservation->end_time);
         $rule->validate('start_time', null, function (string $message) use (&$failures): void {
             $failures[] = $message;
         });

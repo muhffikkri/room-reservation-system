@@ -88,7 +88,7 @@ sistem-reservasi/
 │   │   └── Requests/            # Form Request (validasi server)
 │   ├── Models/                  # User, Facility, Reservation, Report, ReportUpdate
 │   ├── Policies/                # ReservationPolicy, ReportPolicy
-│   ├── Rules/                   # SlotTimeValid, NoApprovedOverlap, SlotAvailable
+│   ├── Rules/                   # SlotTimeValid, NoApprovedOverlap, FacilityBookable, BookingLeadTime, PendingQuota
 │   └── Services/
 │       ├── ReservationService.php   # logika slot, bentrok, approve (transaksi)
 │       ├── ReportService.php        # transisi status laporan + audit
@@ -320,9 +320,12 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->group(/* master data
 'purpose'     => ['required', 'string', 'min:10', 'max:255'],
 ```
 
-Ditambah custom Rule objects (logika di `App\Rules`, dipanggil via `withValidator` atau `after()`):
+Ditambah custom Rule objects (logika di `App\Rules`, menerima Carbon langsung dari Service — tanpa parse ulang string):
 - `SlotTimeValid`: menit harus `00`/`30` (kelipatan slot 30 menit); rentang `07:00–20:00`; `end > start`; durasi maksimal 8 slot (4 jam) — BR-1, BR-2.
-- `SlotAvailable`: fasilitas berstatus `aktif`; `start_time >= now + 30 menit`; tanpa overlap dengan reservasi `approved` pada fasilitas sama (BR-4, BR-5, BR-6).
+- `FacilityBookable`: fasilitas harus ada dan berstatus `aktif` (BR-3).
+- `BookingLeadTime`: `start >= now + 30 menit` (BR-5).
+- `PendingQuota`: maksimal 2 reservasi `pending` per hari untuk satu pengguna (BR-4).
+- `NoApprovedOverlap`: tanpa overlap dengan reservasi `approved` pada fasilitas sama (BR-6).
 
 **`StoreReportRequest`** (laporan kerusakan):
 

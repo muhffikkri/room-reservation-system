@@ -5,8 +5,10 @@ namespace App\Services;
 use App\Models\Facility;
 use App\Models\Reservation;
 use App\Models\User;
+use App\Rules\BookingLeadTime;
+use App\Rules\FacilityBookable;
 use App\Rules\NoApprovedOverlap;
-use App\Rules\SlotAvailable;
+use App\Rules\PendingQuota;
 use App\Rules\SlotTimeValid;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -27,14 +29,19 @@ class ReservationService
      */
     public function create(User $user, Facility $facility, Carbon $start, Carbon $end, string $purpose): Reservation
     {
+        // Aturan menerima Carbon langsung: tidak ada bongkar-pasang string,
+        // tidak ada parse ulang, tidak ada lolos diam-diam.
         Validator::make([
+            'slot' => true,
             'facility_id' => $facility->id,
-            'date' => $start->toDateString(),
-            'start_time' => $start->format('H:i'),
-            'end_time' => $end->format('H:i'),
         ], [
-            'start_time' => [new SlotTimeValid],
-            'facility_id' => [new SlotAvailable($user->id)],
+            'slot' => [new SlotTimeValid($start, $end)],
+            'facility_id' => [
+                new FacilityBookable($facility->id),
+                new BookingLeadTime($start),
+                new PendingQuota($user->id, $start),
+                new NoApprovedOverlap($facility->id, $start, $end),
+            ],
         ])->validate();
 
         return DB::transaction(function () use ($user, $facility, $start, $end, $purpose): Reservation {
