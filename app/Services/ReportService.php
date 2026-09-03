@@ -51,21 +51,25 @@ class ReportService
     public function transition(Report $report, User $officer, string $newStatus, ?string $note = null): Report
     {
         return DB::transaction(function () use ($report, $officer, $newStatus, $note): Report {
+            // Kunci baris laporan agar dua petugas tidak memproses laporan yang sama bersamaan.
             $locked = Report::whereKey($report->id)->lockForUpdate()->firstOrFail();
             $from = $locked->status;
 
+            // Tolak lompatan status yang tidak ada di peta §9.2 (misal baru langsung ke selesai).
             if (! in_array($newStatus, self::allowedTransitions($from), true)) {
                 throw ValidationException::withMessages([
                     'status' => "Transisi status {$from} ke {$newStatus} tidak diperbolehkan.",
                 ]);
             }
 
+            // Menutup laporan wajib membawa catatan resolusi minimal 10 karakter (BR-10).
             if (in_array($newStatus, self::CLOSING_STATUSES, true) && ($note === null || mb_strlen(trim($note)) < 10)) {
                 throw ValidationException::withMessages([
                     'resolution_note' => 'Catatan resolusi wajib diisi (minimal 10 karakter) saat menutup laporan.',
                 ]);
             }
 
+            // Ubah status dan catat penangan dalam transaksi yang sama agar tidak berbohong satu sama lain.
             $locked->update([
                 'status' => $newStatus,
                 'resolution_note' => in_array($newStatus, self::CLOSING_STATUSES, true) ? $note : $locked->resolution_note,
@@ -73,6 +77,7 @@ class ReportService
                 'handled_at' => now(),
             ]);
 
+            // Tulis tepat satu baris jejak audit untuk transisi ini; riwayat hanya boleh bertambah.
             ReportUpdate::create([
                 'report_id' => $locked->id,
                 'user_id' => $officer->id,
@@ -90,8 +95,10 @@ class ReportService
      */
     public function markFacilityForRepair(Report $report, User $officer): Facility
     {
+        // Ambil data terbaru agar pengecekan status tidak memakai data basi.
         $report = $report->fresh() ?? $report;
 
+        // Fasilitas hanya boleh ditandai perbaikan saat laporan sedang ditangani (diproses, BR-11).
         if ($report->status !== 'diproses') {
             throw ValidationException::withMessages([
                 'status' => 'Fasilitas hanya dapat ditandai perbaikan saat laporan sedang diproses.',
@@ -109,8 +116,10 @@ class ReportService
      */
     public function restoreFacilityToActive(Report $report, User $officer): Facility
     {
+        // Ambil data terbaru agar pengecekan status tidak memakai data basi.
         $report = $report->fresh() ?? $report;
 
+        // Fasilitas hanya boleh dikembalikan aktif setelah laporannya selesai (BR-11).
         if ($report->status !== 'selesai') {
             throw ValidationException::withMessages([
                 'status' => 'Fasilitas hanya dapat dikembalikan aktif setelah laporannya selesai.',
@@ -119,6 +128,7 @@ class ReportService
 
         $facility = $report->facility;
 
+        // Jangan ubah apa pun jika fasilitas tidak sedang dalam perbaikan.
         if ($facility->status !== 'perbaikan') {
             throw ValidationException::withMessages([
                 'status' => 'Fasilitas tidak sedang dalam perbaikan.',
