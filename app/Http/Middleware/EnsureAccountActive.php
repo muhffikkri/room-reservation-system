@@ -2,9 +2,9 @@
 
 namespace App\Http\Middleware;
 
+use App\Services\AccountStatusGate;
 use Closure;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
@@ -25,29 +25,18 @@ class EnsureAccountActive
             return redirect()->route('login');
         }
 
-        if ($user->account_status === 'pending') {
-            $this->logout($request);
+        // Sistem bertanya ke satu pemilik aturan (BR-14); middleware hanya
+        // membangun response, bukan memutuskan siapa yang boleh lewat.
+        $denial = AccountStatusGate::denialMessage($user);
+
+        if ($denial !== null) {
+            AccountStatusGate::logout($request);
 
             return redirect()
                 ->route('login')
-                ->with('error', 'Akun Anda menunggu verifikasi admin.');
-        }
-
-        if ($user->account_status === 'ditolak') {
-            $this->logout($request);
-
-            return redirect()
-                ->route('login')
-                ->with('error', 'Akun Anda ditolak admin dan tidak dapat digunakan.');
+                ->with('error', $denial);
         }
 
         return $next($request);
-    }
-
-    private function logout(Request $request): void
-    {
-        Auth::guard('web')->logout();
-        $request->session()->invalidate();
-        $request->session()->regenerateToken();
     }
 }
