@@ -5,6 +5,7 @@ namespace Database\Seeders;
 use App\Models\Facility;
 use App\Models\Report;
 use App\Models\User;
+use App\Services\ReportService;
 use Illuminate\Database\Seeder;
 
 /**
@@ -29,9 +30,19 @@ class ReportSeeder extends Seeder
             ['description' => 'Tiga unit PC di deret kedua tidak bisa menyala, kemungkinan PSU rusak.', 'status' => 'baru'],
         );
 
-        Report::firstOrCreate(
+        $kelasReport = Report::firstOrCreate(
             ['user_id' => $budi->id, 'facility_id' => $kelas->id, 'category' => 'listrik'],
-            ['description' => 'Lampu ruangan mati separuh dan stopkontak depan tidak bertegangan.', 'status' => 'diproses', 'handled_by' => $petugas->id, 'handled_at' => now()],
+            ['description' => 'Lampu ruangan mati separuh dan stopkontak depan tidak bertegangan.', 'status' => 'baru'],
         );
+
+        // Status diproses ditulis lewat service agar baris audit ikut tercatat (§9.2).
+        if ($kelasReport->status === 'baru') {
+            app(ReportService::class)->transition(
+                $kelasReport,
+                $petugas,
+                'diproses',
+                'Petugas mulai menangani lampu dan stopkontak ruangan.',
+            );
+        }
     }
 }
