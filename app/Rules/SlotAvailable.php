@@ -59,8 +59,9 @@ class SlotAvailable implements DataAwareRule, ValidationRule
             return;
         }
 
+        $timezone = config('app.timezone');
+
         try {
-            $timezone = config('app.timezone');
             $start = Carbon::parse("{$date} {$startTime}", $timezone);
             $end = Carbon::parse("{$date} {$endTime}", $timezone);
         } catch (\Exception) {
