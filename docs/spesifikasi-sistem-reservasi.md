@@ -410,7 +410,7 @@ Definisi slot: slot `[h, h+30m)` dianggap **terisi** bila ada reservasi `approve
 ```mermaid
 stateDiagram-v2
     [*] --> pending: pengguna mengajukan
-    pending --> approved: petugas setujui (cek bentrok BR-7)
+    pending --> approved: petugas setujui (cek bentrok BR-7 + fasilitas aktif BR-12, dalam satu transaksi)
     pending --> rejected: petugas tolak (alasan wajib)
     pending --> cancelled_by_user: batal sendiri (BR-8)
     approved --> cancelled_by_user: batal sendiri (BR-8)

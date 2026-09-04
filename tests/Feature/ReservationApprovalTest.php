@@ -137,6 +137,30 @@ it('rejects reservations on a non-aktif facility (BR-5)', function () {
     ))->toThrow(ValidationException::class);
 });
 
+it('rejects approval when the facility is no longer aktif (BR-12)', function () {
+    [$facility, $user, $officer] = makeActors();
+    $service = app(ReservationService::class);
+
+    $reservation = $service->create(
+        $user,
+        $facility,
+        slotCarbon('2030-01-12', '08:00'),
+        slotCarbon('2030-01-12', '09:00'),
+        'Pengajuan saat fasilitas masih aktif dan layak pakai',
+    );
+
+    $facility->update(['status' => 'perbaikan']);
+
+    try {
+        $service->approve($reservation, $officer);
+        $this->fail('Approve di fasilitas perbaikan seharusnya mengembalikan 409.');
+    } catch (ConflictHttpException $exception) {
+        expect($exception->getStatusCode())->toBe(409);
+    }
+
+    expect($reservation->fresh()->status)->toBe('pending');
+});
+
 it('rejects a start less than 30 minutes from now (BR-3)', function () {
     [$facility, $user] = makeActors();
     $service = app(ReservationService::class);
