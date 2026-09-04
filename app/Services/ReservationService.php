@@ -70,10 +70,12 @@ class ReservationService
     }
 
     /**
-     * Setujui reservasi pending dalam transaksi + lock (BR-7).
+     * Setujui reservasi pending dalam transaksi + lock (BR-7, BR-12).
      *
      * Overlap dicek ulang terhadap approved pada fasilitas sama; bila
-     * bentrok (kondisi balapan), kembalikan HTTP 409.
+     * bentrok (kondisi balapan), kembalikan HTTP 409. Fasilitas juga
+     * dikunci dan harus berstatus aktif: persetujuan yang diberikan
+     * setelah fasilitas rusak melanggar BR-12.
      */
     public function approve(Reservation $reservation, User $officer): Reservation
     {
@@ -84,6 +86,14 @@ class ReservationService
 
             if ($locked->status !== 'pending') {
                 throw new ConflictHttpException('Hanya reservasi pending yang dapat disetujui.');
+            }
+
+            // Sistem mengunci fasilitas agar perubahan status (misal ke
+            // perbaikan, BR-11) tidak menyelinap di tengah persetujuan.
+            $facility = Facility::whereKey($locked->facility_id)->lockForUpdate()->firstOrFail();
+
+            if ($facility->status !== 'aktif') {
+                throw new ConflictHttpException('Fasilitas sedang berstatus '.$facility->status.' sehingga reservasi tidak dapat disetujui.');
             }
 
             try {
