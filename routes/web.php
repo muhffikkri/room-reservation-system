@@ -7,6 +7,8 @@ use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\LogoutController;
 use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\Officer\DashboardController as OfficerDashboardController;
+use App\Http\Controllers\Officer\ReservationController as OfficerReservationController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -44,6 +46,18 @@ Route::middleware(['auth', 'active', 'role:admin'])->prefix('admin')->group(func
         ->name('admin.petugas.create');
     Route::post('/petugas', [OfficerAccountController::class, 'store'])
         ->name('admin.petugas.store');
+});
+
+Route::middleware(['auth', 'active', 'role:petugas,admin'])->prefix('petugas')->group(function (): void {
+    Route::get('/', OfficerDashboardController::class)->name('petugas.dashboard');
+    Route::get('/reservasi', [OfficerReservationController::class, 'index'])->name('petugas.reservasi.index');
+    Route::get('/reservasi/{reservation}', [OfficerReservationController::class, 'show'])->name('petugas.reservasi.show');
+    Route::post('/reservasi/{reservation}/approve', [OfficerReservationController::class, 'approve'])
+        ->name('petugas.reservasi.approve');
+    Route::post('/reservasi/{reservation}/reject', [OfficerReservationController::class, 'reject'])
+        ->name('petugas.reservasi.reject');
+    Route::post('/reservasi/{reservation}/cancel', [OfficerReservationController::class, 'cancel'])
+        ->name('petugas.reservasi.cancel');
 });
 
 Route::middleware('auth')->group(function (): void {
