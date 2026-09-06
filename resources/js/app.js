@@ -24,6 +24,19 @@ document.addEventListener('click', (event) => {
     }
 });
 
+document.querySelectorAll('[data-image-preview]').forEach((input) => {
+    const preview = document.getElementById(input.dataset.imagePreview);
+
+    input.addEventListener('change', () => {
+        const file = input.files[0];
+
+        if (preview instanceof HTMLImageElement && file !== undefined) {
+            preview.src = URL.createObjectURL(file);
+            preview.classList.remove('hidden');
+        }
+    });
+});
+
 document.querySelectorAll('dialog').forEach((dialog) => {
     dialog.addEventListener('click', (event) => {
         if (event.target === dialog) {

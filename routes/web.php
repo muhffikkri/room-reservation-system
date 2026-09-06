@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Admin\AccountVerificationController;
+use App\Http\Controllers\Admin\FacilityController as AdminFacilityController;
 use App\Http\Controllers\Admin\OfficerAccountController;
 use App\Http\Controllers\Admin\UserAccountController;
 use App\Http\Controllers\Auth\LoginController;
@@ -46,6 +47,20 @@ Route::middleware(['auth', 'active', 'role:admin'])->prefix('admin')->group(func
         ->name('admin.petugas.create');
     Route::post('/petugas', [OfficerAccountController::class, 'store'])
         ->name('admin.petugas.store');
+    Route::get('/fasilitas', [AdminFacilityController::class, 'index'])
+        ->name('admin.fasilitas.index');
+    Route::get('/fasilitas/create', [AdminFacilityController::class, 'create'])
+        ->name('admin.fasilitas.create');
+    Route::post('/fasilitas', [AdminFacilityController::class, 'store'])
+        ->name('admin.fasilitas.store');
+    Route::get('/fasilitas/{facility}/edit', [AdminFacilityController::class, 'edit'])
+        ->name('admin.fasilitas.edit');
+    Route::put('/fasilitas/{facility}', [AdminFacilityController::class, 'update'])
+        ->name('admin.fasilitas.update');
+    Route::patch('/fasilitas/{facility}/nonaktifkan', [AdminFacilityController::class, 'deactivate'])
+        ->name('admin.fasilitas.deactivate');
+    Route::patch('/fasilitas/{facility}/aktifkan', [AdminFacilityController::class, 'activate'])
+        ->name('admin.fasilitas.activate');
 });
 
 Route::middleware(['auth', 'active', 'role:petugas,admin'])->prefix('petugas')->group(function (): void {
