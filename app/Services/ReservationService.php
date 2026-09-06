@@ -101,4 +101,57 @@ class ReservationService
             return $locked->refresh();
         });
     }
+
+    /**
+     * Tolak reservasi pending dengan alasan wajib (BR-9).
+     *
+     * Hanya reservasi pending yang dapat ditolak. Alasan wajib diisi
+     * minimal 10 karakter dan tersimpan agar tampil di detail.
+     */
+    public function reject(Reservation $reservation, User $officer, string $reason): Reservation
+    {
+        return DB::transaction(function () use ($reservation, $officer, $reason): Reservation {
+            $locked = Reservation::whereKey($reservation->id)->lockForUpdate()->firstOrFail();
+
+            if ($locked->status !== 'pending') {
+                throw new ConflictHttpException('Hanya reservasi pending yang dapat ditolak.');
+            }
+
+            $locked->update([
+                'status' => 'rejected',
+                'reject_reason' => $reason,
+                'decided_by' => $officer->id,
+                'decided_at' => now(),
+            ]);
+
+            return $locked->refresh();
+        });
+    }
+
+    /**
+     * Batalkan reservasi oleh petugas dengan alasan wajib (BR-9, BR-16).
+     *
+     * Petugas dapat membatalkan reservasi approved (mis. fasilitas masuk
+     * perbaikan) maupun pending. Alasan wajib diisi minimal 10 karakter
+     * dan tampil di detail reservasi.
+     */
+    public function cancel(Reservation $reservation, User $officer, string $reason): Reservation
+    {
+        return DB::transaction(function () use ($reservation, $officer, $reason): Reservation {
+            $locked = Reservation::whereKey($reservation->id)->lockForUpdate()->firstOrFail();
+
+            if (! in_array($locked->status, ['pending', 'approved'], true)) {
+                throw new ConflictHttpException('Hanya reservasi pending atau approved yang dapat dibatalkan petugas.');
+            }
+
+            $locked->update([
+                'status' => 'cancelled_by_officer',
+                'cancel_reason' => $reason,
+                'decided_by' => $officer->id,
+                'decided_at' => now(),
+            ]);
+
+            return $locked->refresh();
+        });
+    }
 }
