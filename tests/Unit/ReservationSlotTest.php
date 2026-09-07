@@ -1,15 +1,20 @@
 <?php
 
 use App\Rules\SlotTimeValid;
+use Illuminate\Support\Carbon;
+use Tests\TestCase;
 
-uses(Tests\TestCase::class);
+uses(TestCase::class);
 
 function slotPasses(string $date, string $start, string $end): bool
 {
     $failures = [];
 
-    $rule = new SlotTimeValid;
-    $rule->setData(['date' => $date, 'start_time' => $start, 'end_time' => $end]);
+    $timezone = config('app.timezone');
+    $rule = new SlotTimeValid(
+        Carbon::parse("{$date} {$start}", $timezone),
+        Carbon::parse("{$date} {$end}", $timezone),
+    );
     $rule->validate('start_time', $start, function (string $message) use (&$failures): void {
         $failures[] = $message;
     });
