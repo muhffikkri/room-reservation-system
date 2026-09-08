@@ -3,7 +3,7 @@ name: Deploy Simfasilitas
 on:
   push:
     branches:
-      - feat/cicd
+      - dev
 
   workflow_dispatch:
 
