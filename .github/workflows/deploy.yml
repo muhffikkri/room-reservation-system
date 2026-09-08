@@ -1,0 +1,72 @@
+name: Deploy Simfasilitas
+
+on:
+  push:
+    branches:
+      - dev
+
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Connect to Tailscale
+        uses: tailscale/github-action@v4
+        with:
+          oauth-client-id: ${{ secrets.TS_OAUTH_CLIENT_ID }}
+          oauth-secret: ${{ secrets.TS_OAUTH_SECRET }}
+          tags: tag:ci
+          ping: ${{ vars.SERVER_HOST }}
+
+      - name: Check Tailscale connectivity
+        shell: bash
+        run: |
+          tailscale status
+          tailscale ping ${{ vars.SERVER_HOST }}
+
+      - name: Setup SSH
+        shell: bash
+        run: |
+          mkdir -p ~/.ssh
+          printf '%s\n' '${{ secrets.SERVER_SSH_KEY }}' > ~/.ssh/simfasilitas
+          chmod 600 ~/.ssh/simfasilitas
+          ssh-keyscan -H "${{ vars.SERVER_HOST }}" >> ~/.ssh/known_hosts
+
+      - name: Test SSH
+        shell: bash
+        run: |
+          ssh \
+            -i ~/.ssh/simfasilitas \
+            -o StrictHostKeyChecking=yes \
+            -o ConnectTimeout=15 \
+            "${{ vars.SERVER_USER }}@${{ vars.SERVER_HOST }}" \
+            "whoami"
+
+      - name: Check server environment
+        shell: bash
+        run: |
+          ssh \
+            -i ~/.ssh/simfasilitas \
+            "${{ vars.SERVER_USER }}@${{ vars.SERVER_HOST }}" \
+            "cd ${{ vars.DEPLOY_PATH }} && git --version && docker --version && docker compose version"
+
+      - name: Deploy
+        shell: bash
+        run: |
+          ssh \
+            -i ~/.ssh/simfasilitas \
+            "${{ vars.SERVER_USER }}@${{ vars.SERVER_HOST }}" \
+            "cd ${{ vars.DEPLOY_PATH }} && git pull origin main && docker compose up -d --build && docker compose exec -T app php artisan migrate --force && docker compose exec -T app php artisan optimize"
+
+      - name: Verify application
+        shell: bash
+        run: |
+          ssh \
+            -i ~/.ssh/simfasilitas \
+            "${{ vars.SERVER_USER }}@${{ vars.SERVER_HOST }}" \
+            "cd ${{ vars.DEPLOY_PATH }} && docker compose ps"
