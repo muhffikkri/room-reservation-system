@@ -1,58 +1,160 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# Sistem Reservasi & Pelaporan Fasilitas Kampus
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+Aplikasi web berbasis **Laravel 13** untuk mengelola penggunaan fasilitas kampus (ruang kelas, aula, laboratorium, alat, lapangan) dalam satu platform:
 
-## About Laravel
+- **Alur Reservasi** — pengguna mengecek ketersediaan slot waktu, mengajukan reservasi dengan tujuan penggunaan; petugas menyetujui/menolak/membatalkan.
+- **Alur Pelaporan** — pengguna melaporkan kerusakan fasilitas (kategori, deskripsi, foto); petugas memproses hingga selesai dan memperbarui status ketersediaan fasilitas.
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+Dokumen acuan:
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+- Spesifikasi teknis: [docs/spesifikasi-sistem-reservasi.md](docs/spesifikasi-sistem-reservasi.md)
+- Checklist fitur vs spesifikasi: [docs/feature-checklist.md](docs/feature-checklist.md)
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+---
 
-## Learning Laravel
+## Fitur
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+### Sudah tersedia
+- Autentikasi custom (session-based): registrasi mandiri role `pengguna`, login dengan throttle, logout, dashboard role-aware
+- Siklus akun: registrasi berstatus `pending`, admin memverifikasi/menolak; akun yang dibuat admin langsung `aktif`
+- Kelola akun admin: buat akun petugas dan pengguna
+- CRUD fasilitas admin: tambah/edit/nonaktifkan/aktifkan, dengan upload foto
+- Admin dashboard: ringkasan antrian reservasi, laporan, fasilitas perbaikan, dan akun menunggu verifikasi
+- Antrian reservasi petugas: daftar + filter status/tanggal, detail, setujui/tolak/batalkan dengan alasan (konfirmasi via dialog)
+- Mesin aturan reservasi: slot 30 menit (07.00–20.00), kuota pending, lead time, anti-bentrok approved, approve dengan kunci transaksi
+- Seeder akun demo + fasilitas + data uji
+- 90 tes Pest hijau
 
-In addition, [Laracasts](https://laracasts.com) contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+### Sebagian / sedang dikerjakan
+- Laporan kerusakan: state machine + audit riwayat (`ReportService`) sudah jadi, namun halaman pengguna & antrian petugas belum dipasang
+- Validasi sisi client untuk beberapa form masih menyusul
+- Halaman publik fasilitas + grid jadwal (menunggu milestone anggota tim)
 
-You can also watch bite-sized lessons with real-world projects on [Laravel Learn](https://laravel.com/learn), where you will be guided through building a Laravel application from scratch while learning PHP fundamentals.
+### Belum (roadmap)
+- Halaman publik `/fasilitas` + jadwal slot (BR-13)
+- Alur reservasi pengguna: form + slot picker, riwayat, pembatalan (BR-8)
+- Alur laporan pengguna: form kategori/deskripsi/foto
+- Alur laporan petugas: transisi status + catatan resolusi + fasilitas `perbaikan` ↔ `aktif`
+- Rekap okupansi & frekuensi kerusakan + ekspor CSV/PDF (ditunda v1)
 
-## Agentic Development
+Detail status per fitur: lihat [docs/feature-checklist.md](docs/feature-checklist.md).
 
-Laravel's predictable structure and conventions make it ideal for AI coding agents like Claude Code, Cursor, and GitHub Copilot. Install [Laravel Boost](https://laravel.com/docs/ai) to supercharge your AI workflow:
+---
 
-```bash
-composer require laravel/boost --dev
+## Arsitektur
 
-php artisan boost:install
+- **MVC murni (Laravel 13)** — Model (Eloquent), View (Blade + Tailwind CSS via Vite), Controller tipis.
+- **Autentikasi custom** tanpa Breeze: `Auth\*Controller` + `RateLimiter`; gate akun `AccountStatusGate` + middleware `active`.
+- **Otorisasi role**: middleware `EnsureRole` (`role:admin`, `role:petugas,admin`); verifikasi akun hanya admin.
+- **Service layer**: `ReservationService` (slot, bentrok, approve transaksi + `lockForUpdate`), `ReportService` (transisi status + audit), `AccountStatusGate`.
+- **Validasi server** via FormRequest + custom Rule objects (`SlotTimeValid`, `NoApprovedOverlap`, `BookingLeadTime`, `PendingQuota`, `FacilityBookable`).
+- **Keamanan**: password bcrypt, CSRF di semua form, Eloquent binding bebas SQLi, output ter-escape (XSS), upload foto diverifikasi mimes+size.
+- **Testing**: Pest (feature + unit), termasuk unit test aturan slot/overlap.
+- **Deploy**: GitHub Actions (`.github/workflows/deploy.yml`) mendorong ke VPS saat push ke `dev`; aplikasi dikontainerkan (`Dockerfile`, `docker-compose.yml`).
+
+## Stack
+
+| Komponen | Versi |
+|---|---|
+| PHP | >= 8.3 (pdo_mysql, mbstring, fileinfo, gd, zip) |
+| Composer | >= 2 |
+| MySQL | 8.x (utf8mb4_unicode_ci) |
+| Node.js + npm | >= 20 |
+| Laravel | 13.x |
+| Frontend | Blade + Tailwind CSS (Vite) |
+
+---
+
+## Struktur Folder
+
+```text
+room-reservation-system/
+├── app/
+│   ├── Http/
+│   │   ├── Controllers/
+│   │   │   ├── Auth/            # login, register, logout (custom session-based)
+│   │   │   ├── Officer/         # dashboard + antrian reservasi petugas
+│   │   │   └── Admin/           # dashboard, akun, verifikasi, CRUD fasilitas
+│   │   ├── Middleware/          # EnsureRole, EnsureAccountActive
+│   │   └── Requests/            # Form Request (validasi server)
+│   ├── Models/                  # User, Facility, Reservation, Report, ReportUpdate
+│   ├── Rules/                   # SlotTimeValid, NoApprovedOverlap, dll.
+│   └── Services/                # ReservationService, ReportService, AccountStatusGate
+├── bootstrap/                   # konfigurasi app, alias middleware
+├── config/                      # database.php, app.php (timezone Asia/Jakarta)
+├── database/
+│   ├── migrations/
+│   └── seeders/                 # akun demo + fasilitas + data uji
+├── docs/
+│   ├── spesifikasi-sistem-reservasi.md
+│   └── feature-checklist.md
+├── resources/
+│   ├── views/                   # Blade: auth, dashboard, petugas, admin, components/ui
+│   └── js/                      # app.js (dialog, preview gambar)
+├── routes/web.php
+├── snapshots/                   # snapshot mingguan (lihat akhir README)
+├── tests/                       # Feature + Unit (Pest)
+├── Dockerfile
+├── docker-compose.yml
+└── .github/workflows/deploy.yml
 ```
 
-Boost provides your agent 15+ tools and skills that help agents build Laravel applications while following best practices.
+---
 
-## Contributing
+## Cara Menjalankan
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+### Prasyarat
+- PHP >= 8.3 dengan ekstensi `pdo_mysql`, `mbstring`, `fileinfo`, `gd`, `zip`
+- Composer >= 2
+- MySQL 8 (XAMPP/Laragon) — buat DB `reservasi_kampus`
+- Node.js >= 20 + npm
 
-## Code of Conduct
+### Langkah
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+```bash
+composer install
+npm install && npm run build      # atau npm run dev saat development
 
-## Security Vulnerabilities
+cp .env.example .env              # sesuaikan kredensial DB
+php artisan key:generate
+php artisan migrate --seed
+php artisan storage:link          # agar foto fasilitas/laporan tampil
+php artisan serve                 # http://localhost:8000
+```
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+### Dengan Docker
 
-## License
+```bash
+docker compose up -d --build
+```
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+### Menjalankan Tes
+
+```bash
+vendor/bin/pest                   # atau: php artisan test --compact
+```
+
+Konfigurasi tes memakai DB `reservasi_kampus_testing` (MySQL). Untuk run cepat tanpa MySQL, gunakan sqlite:
+
+```bash
+$env:DB_CONNECTION="sqlite"; $env:DB_DATABASE=":memory:"
+vendor/bin/pest --compact
+```
+
+### Akun Demo
+
+Disediakan oleh seeder (`php artisan db:seed`):
+
+| Role | Email | Password | Status |
+|---|---|---|---|
+| Admin | admin@kampus.test | admin123 | aktif |
+| Petugas | petugas@kampus.test | petugas123 | aktif |
+| Pengguna | budi@student.kampus.test | user123 | aktif |
+| Pengguna | sari@dosen.kampus.test | user123 | aktif |
+| Pengguna | pending@kampus.test | user123 | pending (demo verifikasi admin) |
+
+---
+
+## Snapshots
+
+- [Snapshot 2026-09-09](snapshots/snapshot-2026-09-09.md)
