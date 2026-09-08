@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Admin\AccountVerificationController;
+use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
 use App\Http\Controllers\Admin\FacilityController as AdminFacilityController;
 use App\Http\Controllers\Admin\OfficerAccountController;
 use App\Http\Controllers\Admin\UserAccountController;
@@ -29,6 +30,8 @@ Route::middleware(['auth', 'active'])->group(function (): void {
 });
 
 Route::middleware(['auth', 'active', 'role:admin'])->prefix('admin')->group(function (): void {
+    Route::get('/', AdminDashboardController::class)
+        ->name('admin.dashboard');
     Route::get('/pengguna/verifikasi', [AccountVerificationController::class, 'index'])
         ->name('admin.pengguna.verifikasi');
     Route::patch('/pengguna/{user}/verifikasi', [AccountVerificationController::class, 'verify'])
