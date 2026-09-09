@@ -4,11 +4,16 @@ use App\Http\Controllers\Admin\AccountVerificationController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\FacilityController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
     return view('welcome');
 });
+
+Route::get('/fasilitas', [FacilityController::class, 'index'])->name('fasilitas.index');
+Route::get('/fasilitas/{facility}', [FacilityController::class, 'show'])->name('fasilitas.show');
+Route::get('/fasilitas/{facility}/jadwal', [FacilityController::class, 'jadwal'])->name('fasilitas.jadwal');
 
 Route::middleware('guest')->group(function (): void {
     Route::get('/login', [LoginController::class, 'showLoginForm'])->name('login');
@@ -34,4 +39,3 @@ Route::middleware(['auth', 'active', 'role:admin'])->prefix('admin')->group(func
 Route::middleware('auth')->group(function (): void {
     Route::post('/logout', [LoginController::class, 'destroy'])->name('logout');
 });
-
