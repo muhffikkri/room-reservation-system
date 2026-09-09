@@ -12,7 +12,9 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\FacilityController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\Officer\DashboardController as OfficerDashboardController;
+use App\Http\Controllers\Officer\ReportController as OfficerReportController;
 use App\Http\Controllers\Officer\ReservationController as OfficerReservationController;
+use App\Http\Controllers\ReportController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', HomeController::class)->name('home');
@@ -31,6 +33,27 @@ Route::middleware('guest')->group(function (): void {
 
 Route::middleware(['auth', 'active'])->group(function (): void {
     Route::get('/dashboard', DashboardController::class)->name('dashboard');
+
+    Route::get('/laporan', [ReportController::class, 'index'])->name('laporan.index');
+    Route::get('/laporan/baru', [ReportController::class, 'create'])->name('laporan.create');
+    Route::post('/laporan', [ReportController::class, 'store'])->name('laporan.store');
+    Route::get('/laporan/{report}', [ReportController::class, 'show'])->name('laporan.show');
+});
+
+Route::middleware(['auth', 'active', 'role:petugas,admin'])->prefix('petugas')->group(function (): void {
+    Route::get('/', OfficerDashboardController::class)->name('petugas.dashboard');
+    Route::get('/laporan', [OfficerReportController::class, 'index'])->name('petugas.laporan.index');
+    Route::get('/laporan/{report}', [OfficerReportController::class, 'show'])->name('petugas.laporan.show');
+    Route::patch('/laporan/{report}/status', [OfficerReportController::class, 'updateStatus'])->name('petugas.laporan.status');
+    Route::patch('/laporan/{report}/fasilitas-status', [OfficerReportController::class, 'toggleFacilityStatus'])->name('petugas.laporan.fasilitas-status');
+    Route::get('/reservasi', [OfficerReservationController::class, 'index'])->name('petugas.reservasi.index');
+    Route::get('/reservasi/{reservation}', [OfficerReservationController::class, 'show'])->name('petugas.reservasi.show');
+    Route::post('/reservasi/{reservation}/approve', [OfficerReservationController::class, 'approve'])
+        ->name('petugas.reservasi.approve');
+    Route::post('/reservasi/{reservation}/reject', [OfficerReservationController::class, 'reject'])
+        ->name('petugas.reservasi.reject');
+    Route::post('/reservasi/{reservation}/cancel', [OfficerReservationController::class, 'cancel'])
+        ->name('petugas.reservasi.cancel');
 });
 
 Route::middleware(['auth', 'active', 'role:admin'])->prefix('admin')->group(function (): void {
@@ -68,18 +91,6 @@ Route::middleware(['auth', 'active', 'role:admin'])->prefix('admin')->group(func
         ->name('admin.fasilitas.deactivate');
     Route::patch('/fasilitas/{facility}/aktifkan', [AdminFacilityController::class, 'activate'])
         ->name('admin.fasilitas.activate');
-});
-
-Route::middleware(['auth', 'active', 'role:petugas,admin'])->prefix('petugas')->group(function (): void {
-    Route::get('/', OfficerDashboardController::class)->name('petugas.dashboard');
-    Route::get('/reservasi', [OfficerReservationController::class, 'index'])->name('petugas.reservasi.index');
-    Route::get('/reservasi/{reservation}', [OfficerReservationController::class, 'show'])->name('petugas.reservasi.show');
-    Route::post('/reservasi/{reservation}/approve', [OfficerReservationController::class, 'approve'])
-        ->name('petugas.reservasi.approve');
-    Route::post('/reservasi/{reservation}/reject', [OfficerReservationController::class, 'reject'])
-        ->name('petugas.reservasi.reject');
-    Route::post('/reservasi/{reservation}/cancel', [OfficerReservationController::class, 'cancel'])
-        ->name('petugas.reservasi.cancel');
 });
 
 Route::middleware('auth')->group(function (): void {
