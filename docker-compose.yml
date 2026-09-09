@@ -1,4 +1,13 @@
 services:
+    frontend:
+        image: node:22
+        container_name: simfasilitas-frontend
+        working_dir: /var/www
+        volumes:
+            - ./:/var/www
+            - frontend_modules:/var/www/node_modules
+        command: sh -c "npm ci && npm run build"
+
     app:
         build:
             context: .
@@ -63,3 +72,4 @@ services:
 volumes:
     mysql_data:
     vendor:
+    frontend_modules:
