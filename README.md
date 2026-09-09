@@ -25,19 +25,7 @@ Dokumen acuan:
 - Seeder akun demo + fasilitas + data uji
 - 90 tes Pest hijau
 
-### Sebagian / sedang dikerjakan
-- Laporan kerusakan: state machine + audit riwayat (`ReportService`) sudah jadi, namun halaman pengguna & antrian petugas belum dipasang
-- Validasi sisi client untuk beberapa form masih menyusul
-- Halaman publik fasilitas + grid jadwal (menunggu milestone anggota tim)
-
-### Belum (roadmap)
-- Halaman publik `/fasilitas` + jadwal slot (BR-13)
-- Alur reservasi pengguna: form + slot picker, riwayat, pembatalan (BR-8)
-- Alur laporan pengguna: form kategori/deskripsi/foto
-- Alur laporan petugas: transisi status + catatan resolusi + fasilitas `perbaikan` ↔ `aktif`
-- Rekap okupansi & frekuensi kerusakan + ekspor CSV/PDF (ditunda v1)
-
-Detail status per fitur: lihat [docs/feature-checklist.md](docs/feature-checklist.md).
+Detail status per fitur (termasuk yang belum dikerjakan): lihat [docs/feature-checklist.md](docs/feature-checklist.md).
 
 ---
 
