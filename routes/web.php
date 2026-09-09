@@ -7,6 +7,9 @@ use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\LogoutController;
 use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\Officer\DashboardController as OfficerDashboardController;
+use App\Http\Controllers\Officer\ReportController as OfficerReportController;
+use App\Http\Controllers\ReportController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -23,6 +26,19 @@ Route::middleware('guest')->group(function (): void {
 
 Route::middleware(['auth', 'active'])->group(function (): void {
     Route::get('/dashboard', DashboardController::class)->name('dashboard');
+
+    Route::get('/laporan', [ReportController::class, 'index'])->name('laporan.index');
+    Route::get('/laporan/baru', [ReportController::class, 'create'])->name('laporan.create');
+    Route::post('/laporan', [ReportController::class, 'store'])->name('laporan.store');
+    Route::get('/laporan/{report}', [ReportController::class, 'show'])->name('laporan.show');
+});
+
+Route::middleware(['auth', 'active', 'role:petugas,admin'])->prefix('petugas')->group(function (): void {
+    Route::get('/', OfficerDashboardController::class)->name('petugas.dashboard');
+    Route::get('/laporan', [OfficerReportController::class, 'index'])->name('petugas.laporan.index');
+    Route::get('/laporan/{report}', [OfficerReportController::class, 'show'])->name('petugas.laporan.show');
+    Route::patch('/laporan/{report}/status', [OfficerReportController::class, 'updateStatus'])->name('petugas.laporan.status');
+    Route::patch('/laporan/{report}/fasilitas-status', [OfficerReportController::class, 'toggleFacilityStatus'])->name('petugas.laporan.fasilitas-status');
 });
 
 Route::middleware(['auth', 'active', 'role:admin'])->prefix('admin')->group(function (): void {
