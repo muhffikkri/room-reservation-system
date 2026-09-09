@@ -15,6 +15,7 @@ Dokumen acuan:
 ## Fitur
 
 ### Sudah tersedia
+- Landing page publik (`/`): katalog fasilitas + filter (kata kunci, jenis, lokasi, kapasitas) + grid ketersediaan 26 slot (BR-1, BR-13)
 - Autentikasi custom (session-based): registrasi mandiri role `pengguna`, login dengan throttle, logout, dashboard role-aware
 - Siklus akun: registrasi berstatus `pending`, admin memverifikasi/menolak; akun yang dibuat admin langsung `aktif`
 - Kelola akun admin: buat akun petugas dan pengguna
@@ -23,7 +24,7 @@ Dokumen acuan:
 - Antrian reservasi petugas: daftar + filter status/tanggal, detail, setujui/tolak/batalkan dengan alasan (konfirmasi via dialog)
 - Mesin aturan reservasi: slot 30 menit (07.00–20.00), kuota pending, lead time, anti-bentrok approved, approve dengan kunci transaksi
 - Seeder akun demo + fasilitas + data uji
-- 90 tes Pest hijau
+- 93 tes Pest hijau
 
 Detail status per fitur (termasuk yang belum dikerjakan): lihat [docs/feature-checklist.md](docs/feature-checklist.md).
 
@@ -77,10 +78,10 @@ room-reservation-system/
 │   ├── spesifikasi-sistem-reservasi.md
 │   └── feature-checklist.md
 ├── resources/
-│   ├── views/                   # Blade: auth, dashboard, petugas, admin, components/ui
-│   └── js/                      # app.js (dialog, preview gambar)
+│   ├── views/                   # Blade: landing, auth, dashboard, petugas, admin, components/ui
+│   └── js/                      # app.js (dialog, preview gambar, tab jadwal)
 ├── routes/web.php
-├── snapshots/                   # snapshot mingguan (lihat akhir README)
+├── snapshots/                   # snapshot mingguan (lihat bagian Snapshots)
 ├── tests/                       # Feature + Unit (Pest)
 ├── Dockerfile
 ├── docker-compose.yml
@@ -143,6 +144,18 @@ Disediakan oleh seeder (`php artisan db:seed`):
 
 ---
 
+## Release
+
+- [v1.0.0 — Stable 2026-09-09](releases/v1.0.0.md)
+
+> Catatan versi (release notes) dirinci di `releases/`. Setiap versi menandai titik rilis stabil dengan referensi commit dan status fitur.
+
+---
+
 ## Snapshots
 
 - [Snapshot 2026-09-09](snapshots/snapshot-2026-09-09.md)
+- [Snapshot 2026-09-06](snapshots/snapshot-2026-09-06.md)
+- [Snapshot 2026-09-03](snapshots/snapshot-2026-09-03.md)
+
+> Snapshot adalah file mingguan yang merinci perubahan, catatan deployment, dan referensi commit pada tiap titik waktu. Lihat folder `snapshots/`.
