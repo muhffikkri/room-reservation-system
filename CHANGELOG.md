@@ -2,30 +2,15 @@
 
 Format mengikuti riwayat commit tim. Tanggal terbaru di atas. Status merge: **Dev** = sudah masuk `dev`; **Branch** = masih di branch kerja anggota tim (belum di-merge ke `dev`).
 
-> Patokan status terakhir: `origin/dev` = `db2abd7` (2026-09-09, PR #29 feat/cicd).
+> Patokan status terakhir: `dev` = `14541ff` (2026-09-10, merge `test/officer-report` — modul laporan).
 
 ---
 
 ## [Unreleased] — Sedang dikerjakan di branch anggota tim
 
-### `feat/facility-system` — Katalog fasilitas publik (Branch, author unknown)
-Struktur route publik yang belum masuk `dev`:
-- `GET /fasilitas` → `FacilityController@index` (`fasilitas.index`) — katalog publik
-- `GET /fasilitas/{facility}` → `FacilityController@show` (`fasilitas.show`) — detail fasilitas
-- `GET /fasilitas/{facility}/jadwal` → `FacilityController@jadwal` (`fasilitas.jadwal`) — jadwal/ketersediaan slot
-- View: `resources/views/fasilitas/{index,jadwal,show}.blade.php`; tes: `PublicFacilityIndexTest`, `PublicFacilityJadwalTest`, `PublicFacilityShowTest`.
-- Commit: `47e3185`, `3668275`, `f494c46` (2026-09-09).
+_Bagian ini kosong; semua pekerjaan tim terkini sudah masuk `dev`._
 
-> Catatan: konten ini adalah rework dari PR #20 (`1121df0`, 2026-09-07) yang menggabungkan `101ba6d` (core blade components + slot picker). Versi final berada di `f494c46`.
-
-### `feature/officer-report` — Modul laporan kerusakan pengguna & petugas (Branch, Opank)
-Modul lengkap alur laporan, belum masuk `dev`:
-- **Pengguna**: `GET /laporan` (`laporan.index`), `GET /laporan/baru` (`laporan.create`), `POST /laporan` (`laporan.store`), `GET /laporan/{report}` (`laporan.show`) — `ReportController` + `StoreReportRequest`
-- **Petugas**: `GET /petugas/laporan` (`petugas.laporan.index`), `GET /petugas/laporan/{report}` (`petugas.laporan.show`), `PATCH .../status` (`petugas.laporan.status`), `PATCH .../fasilitas-status` (`petugas.laporan.fasilitas-status`) — `Officer\ReportController`
-- Perluasan `Officer\DashboardController` (ringkasan laporan) + `ReportService`
-- View: `resources/views/laporan/{create,index,show}.blade.php` & `resources/views/petugas/laporan/{index,show}.blade.php`
-- Tes: `UserReportTest`, `OfficerReportTest`, `OfficerDashboardTest`
-- Commit: `8cdfea4` (2026-09-09).
+> Alur reservasi pengguna (form/slot picker/riwayat/batal-BR-8) & rekap/ekspor CSV-PDF masih menunggu milestone anggota tim.
 
 ---
 
@@ -35,6 +20,8 @@ Rilis stabil pertama. Detail lengkap: [releases/v1.0.0.md](releases/v1.0.0.md).
 
 ### Dev — dikerjakan muhffikkri (Fikri) & kontributor
 - **Landing page** (`060685f`, `d6fe94e`): katalog fasilitas publik + filter (kata kunci/jenis/lokasi/kapasitas) + grid 26 slot 07.00–20.00 tanpa data pemohon (BR-13)
+- **Halaman fasilitas publik** (merge `feat/facility-system` → `7b2a730`): `/fasilitas` (katalog + filter), `/fasilitas/{facility}` (detail tanpa data pemohon, BR-13), `/fasilitas/{facility}/jadwal` (26 slot via `scopeOverlap`, BR-1/BR-6/BR-12) — `FacilityController` + views `fasilitas/{index,show,jadwal}` + `PublicFacility{Index,Jadwal,Show}Test` (17 tes)
+- **Modul laporan kerusakan pengguna & petugas** (merge `test/officer-report` → `14541ff`): pengguna (`/laporan` index/create/store/show + foto, `ReportController` + `StoreReportRequest`) + petugas (`/petugas/laporan` index/show, update status BR-10, toggle status fasilitas BR-11, `Officer\ReportController`) — view `laporan/*`, `petugas/laporan/*`, `ReportService::createReport`, tes `UserReportTest`/`OfficerReportTest`/`OfficerDashboardTest` (10 tes, Opank)
 - **Admin dashboard** (`5061c7a`, `de2cbe5`): ringkasan antrian reservasi, laporan, fasilitas perbaikan, akun menunggu verifikasi
 - **Dokumentasi** (`32143e0`, `f4428e3`, `bea2344`, `72f63fd`): README, feature-checklist, snapshot, release notes, konvensi commit (COMMIT.md), panduan desain (DESIGN.md)
 - **Pull-only deploy + frontend container** (`cb5ecf5`): `git fetch`+`git reset --hard`, `docker compose run --rm frontend` (`npm ci && npm run build`)
@@ -75,6 +62,6 @@ Rilis stabil pertama. Detail lengkap: [releases/v1.0.0.md](releases/v1.0.0.md).
 
 ## Catatan Método
 
-- Rentang dok: `2026-08-30` → `2026-09-09`.
+- Rentang dok: `2026-08-30` → `2026-09-10`.
 - Commit tim di luar dev yang belum terdokumentasi di release: lihat bagian [Unreleased].
 - Snapshot detail per tanggal: `snapshots/`.

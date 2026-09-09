@@ -17,19 +17,18 @@ Dokumen acuan:
 
 ### Sudah tersedia
 - Landing page publik (`/`): katalog fasilitas + filter (kata kunci, jenis, lokasi, kapasitas) + grid ketersediaan 26 slot (BR-1, BR-13)
+- Halaman fasilitas publik (`/fasilitas`): katalog, detail, dan jadwal slot 26 slot tanpa data pemohon (BR-13)
 - Autentikasi custom (session-based): registrasi mandiri role `pengguna`, login dengan throttle, logout, dashboard role-aware
 - Siklus akun: registrasi berstatus `pending`, admin memverifikasi/menolak; akun yang dibuat admin langsung `aktif`
 - Kelola akun admin: buat akun petugas dan pengguna
 - CRUD fasilitas admin: tambah/edit/nonaktifkan/aktifkan, dengan upload foto
 - Admin dashboard: ringkasan antrian reservasi, laporan, fasilitas perbaikan, dan akun menunggu verifikasi
 - Antrian reservasi petugas: daftar + filter status/tanggal, detail, setujui/tolak/batalkan dengan alasan (konfirmasi via dialog)
+- Laporan kerusakan pengguna (`/laporan`): buat laporan (kategori, deskripsi, foto), daftar & detail laporan milik sendiri
+- Antrian laporan petugas (`/petugas/laporan`): filter status, transisi `baru → diproses → selesai/tolak` dengan catatan resolusi, tandai fasilitas `perbaikan` ↔ `aktif` (BR-10, BR-11)
 - Mesin aturan reservasi: slot 30 menit (07.00–20.00), kuota pending, lead time, anti-bentrok approved, approve dengan kunci transaksi
 - Seeder akun demo + fasilitas + data uji
-- 93 tes Pest hijau (dev)
-
-### Sedang dikerjakan di branch tim (belum masuk `dev`)
-- **Modul laporan pengguna & petugas** (`feature/officer-report`, Opank): `/laporan` (index/create/store/show + foto), `/petugas/laporan` (index/show, update status, toggle status fasilitas), dashboard petugas diperluas — commit `8cdfea4`
-- **Halaman publik fasilitas** (`feat/facility-system`): `/fasilitas` (katalog), `/fasilitas/{id}` (detail), `/fasilitas/{id}/jadwal` (slot) — commit `f494c46`
+- 120 tes Pest hijau (dev)
 
 Status per fitur & business rules lengkap: [docs/feature-checklist.md](docs/feature-checklist.md).
 
@@ -40,10 +39,10 @@ Status per fitur & business rules lengkap: [docs/feature-checklist.md](docs/feat
 - **MVC murni (Laravel 13)** — Model (Eloquent), View (Blade + Tailwind CSS via Vite), Controller tipis.
 - **Autentikasi custom** tanpa Breeze: `Auth\*Controller` + `RateLimiter`; gate akun `AccountStatusGate` + middleware `active`.
 - **Otorisasi role**: middleware `EnsureRole` (`role:admin`, `role:petugas,admin`); verifikasi akun hanya admin.
-- **Service layer**: `ReservationService` (slot, bentrok, approve transaksi + `lockForUpdate`), `ReportService` (transisi status + audit), `AccountStatusGate`.
+- **Service layer**: `ReservationService` (slot, bentrok, approve transaksi + `lockForUpdate`), `ReportService` (buat laporan + transisi status + audit + toggle status fasilitas), `AccountStatusGate`.
 - **Validasi server** via FormRequest + custom Rule objects (`SlotTimeValid`, `NoApprovedOverlap`, `BookingLeadTime`, `PendingQuota`, `FacilityBookable`).
 - **Keamanan**: password bcrypt, CSRF di semua form, Eloquent binding bebas SQLi, output ter-escape (XSS), upload foto diverifikasi mimes+size.
-- **Testing**: Pest (feature + unit), termasuk unit test aturan slot/overlap. Pasangan tes branch tim (laporan & fasilitas publik) menyusul setelah PR.
+- **Testing**: Pest (feature + unit) — 120 tes, termasuk unit test aturan slot/overlap dan fitur laporan & fasilitas publik.
 - **Deploy**: GitHub Actions (`.github/workflows/deploy.yml`) mendorong ke VPS saat push ke `dev`; aplikasi dikontainerkan (`Dockerfile`, `docker-compose.yml`).
 
 ## Stack
@@ -67,8 +66,10 @@ room-reservation-system/
 │   ├── Http/
 │   │   ├── Controllers/
 │   │   │   ├── Auth/            # login, register, logout (custom session-based)
-│   │   │   ├── Officer/         # dashboard + antrian reservasi petugas
-│   │   │   └── Admin/           # dashboard, akun, verifikasi, CRUD fasilitas
+│   │   │   ├── Officer/         # dashboard + antrian reservasi & laporan petugas
+│   │   │   ├── Admin/           # dashboard, akun, verifikasi, CRUD fasilitas
+│   │   │   ├── ReportController # laporan kerusakan pengguna (CRUD)
+│   │   │   └── FacilityController # halaman publik fasilitas (katalog/detail/jadwal)
 │   │   ├── Middleware/          # EnsureRole, EnsureAccountActive
 │   │   └── Requests/            # Form Request (validasi server)
 │   ├── Models/                  # User, Facility, Reservation, Report, ReportUpdate
@@ -83,7 +84,7 @@ room-reservation-system/
 │   ├── spesifikasi-sistem-reservasi.md
 │   └── feature-checklist.md
 ├── resources/
-│   ├── views/                   # Blade: landing, auth, dashboard, petugas, admin, components/ui
+│   ├── views/                   # Blade: landing, fasilitas publik, auth, dashboard, laporan, petugas, admin, components/ui
 │   └── js/                      # app.js (dialog, preview gambar, tab jadwal)
 ├── routes/web.php
 ├── snapshots/                   # snapshot mingguan (lihat bagian Snapshots)
