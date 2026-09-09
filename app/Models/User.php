@@ -51,9 +51,20 @@ class User extends Authenticatable
         return $this->hasMany(Reservation::class, 'decided_by');
     }
 
+    /**
+     * Menyaring user berdasarkan satu nilai role: pengguna, petugas, atau admin.
+     */
     public function scopeRole(Builder $query, string $role): Builder
     {
         return $query->where('role', $role);
+    }
+
+    /**
+     * Menyaring akun yang menunggu verifikasi admin (BR-14).
+     */
+    public function scopePendingAccount(Builder $query): Builder
+    {
+        return $query->where('account_status', 'pending');
     }
 
     public function isAdmin(): bool
@@ -71,6 +82,10 @@ class User extends Authenticatable
         return $this->role === 'pengguna';
     }
 
+    /**
+     * Menandai akun yang lolos gate login dan middleware active.
+     * Hanya status aktif yang lolos (BR-14).
+     */
     public function isActive(): bool
     {
         return $this->account_status === 'aktif';

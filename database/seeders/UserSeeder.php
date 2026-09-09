@@ -5,6 +5,14 @@ namespace Database\Seeders;
 use App\Models\User;
 use Illuminate\Database\Seeder;
 
+/**
+ * Akun demo untuk presentasi (§5.3).
+ *
+ * Lima akun ini mencakup semua peran: admin, petugas, Budi (mahasiswa),
+ * Sari (dosen), dan satu akun pending sebagai bahan demo verifikasi
+ * admin (§14.2 kasus 1). Password ter-hash otomatis oleh cast hashed
+ * di model User.
+ */
 class UserSeeder extends Seeder
 {
     public function run(): void

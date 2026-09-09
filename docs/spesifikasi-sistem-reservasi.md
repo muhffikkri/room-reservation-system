@@ -88,7 +88,7 @@ sistem-reservasi/
 │   │   └── Requests/            # Form Request (validasi server)
 │   ├── Models/                  # User, Facility, Reservation, Report, ReportUpdate
 │   ├── Policies/                # ReservationPolicy, ReportPolicy
-│   ├── Rules/                   # SlotTimeValid, NoApprovedOverlap, SlotAvailable
+│   ├── Rules/                   # SlotTimeValid, NoApprovedOverlap, FacilityBookable, BookingLeadTime, PendingQuota
 │   └── Services/
 │       ├── ReservationService.php   # logika slot, bentrok, approve (transaksi)
 │       ├── ReportService.php        # transisi status laporan + audit
@@ -320,9 +320,12 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->group(/* master data
 'purpose'     => ['required', 'string', 'min:10', 'max:255'],
 ```
 
-Ditambah custom Rule objects (logika di `App\Rules`, dipanggil via `withValidator` atau `after()`):
+Ditambah custom Rule objects (logika di `App\Rules`, menerima Carbon langsung dari Service — tanpa parse ulang string):
 - `SlotTimeValid`: menit harus `00`/`30` (kelipatan slot 30 menit); rentang `07:00–20:00`; `end > start`; durasi maksimal 8 slot (4 jam) — BR-1, BR-2.
-- `SlotAvailable`: fasilitas berstatus `aktif`; `start_time >= now + 30 menit`; tanpa overlap dengan reservasi `approved` pada fasilitas sama (BR-4, BR-5, BR-6).
+- `FacilityBookable`: fasilitas harus ada dan berstatus `aktif` (BR-3).
+- `BookingLeadTime`: `start >= now + 30 menit` (BR-5).
+- `PendingQuota`: maksimal 2 reservasi `pending` per hari untuk satu pengguna (BR-4).
+- `NoApprovedOverlap`: tanpa overlap dengan reservasi `approved` pada fasilitas sama (BR-6).
 
 **`StoreReportRequest`** (laporan kerusakan):
 
@@ -334,7 +337,7 @@ Ditambah custom Rule objects (logika di `App\Rules`, dipanggil via `withValidato
 ```
 
 **Form admin/petugas lainnya:**
-- `CreateOfficerRequest` / `CreateUserByAdminRequest`: `name` wajib, `email` wajib+unique, `password` wajib `min:8 confirmed`, `identity` nullable, langsung set `role` & `account_status = 'aktif'`.
+- `CreateOfficerRequest` / `CreateUserByAdminRequest`: `name` wajib, `email` wajib+unique, `password` wajib `min:8 confirmed`, `identity` nullable, langsung set `role` & `account_status = 'aktif'`. Kedua request berbagi base `AdminAccountRequest` (isi aturan hidup di satu tempat, nama keduanya dipertahankan).
 - `FacilityRequest`: `name`, `type` in enum, `location`, `capacity` integer min 1, `description` nullable, `photo` nullable image.
 - `RejectReservationRequest` / `CancelReservationOfficerRequest`: `reason`/`cancel_reason` wajib `min:10`.
 - `UpdateReportStatusRequest`: `status` in enum; `resolution_note` `required_if:status,selesai,ditolak` `min:10`.
@@ -367,6 +370,8 @@ Ditambah custom Rule objects (logika di `App\Rules`, dipanggil via `withValidato
 | `Admin\FacilityController` | resource (tanpa destroy fisik) | nonaktifkan/aktifkan |
 | `Admin\RecapController` | index, export | agregasi via `RecapService`; export csv/pdf |
 | `Admin\DashboardController` | index | kartu ringkasan + grafik sederhana (opsional) |
+
+Catatan implementasi: `Admin\OfficerAccountController` dan `Admin\UserAccountController` berbagi base `BaseAccountController` (alur daftar-formulir-simpan + penguncian `role`/`aktif` hidup di satu tempat, nama keduanya dipertahankan). Keputusan `pending`/`ditolak` vs `aktif` (BR-14) dimiliki satu modul `AccountStatusGate`; middleware `active` dan login hanya menjadi adapter.
 
 ### 7.4 Policy
 
@@ -405,7 +410,7 @@ Definisi slot: slot `[h, h+30m)` dianggap **terisi** bila ada reservasi `approve
 ```mermaid
 stateDiagram-v2
     [*] --> pending: pengguna mengajukan
-    pending --> approved: petugas setujui (cek bentrok BR-7)
+    pending --> approved: petugas setujui (cek bentrok BR-7 + fasilitas aktif BR-12, dalam satu transaksi)
     pending --> rejected: petugas tolak (alasan wajib)
     pending --> cancelled_by_user: batal sendiri (BR-8)
     approved --> cancelled_by_user: batal sendiri (BR-8)

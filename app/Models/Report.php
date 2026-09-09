@@ -11,6 +11,13 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 #[Fillable(['user_id', 'facility_id', 'category', 'description', 'photo', 'status', 'resolution_note', 'handled_by', 'handled_at'])]
+/**
+ * Laporan kerusakan fasilitas, yaitu status terkini (baru, diproses,
+ * selesai, ditolak). Riwayat setiap perpindahan status tinggal di model
+ * ReportUpdate sebagai audit yang hanya boleh bertambah (§9.2). Aturan
+ * tutup laporan (catatan resolusi wajib, BR-10) ditegakkan ReportService,
+ * bukan di sini. Model ini hanya menyimpan relasi.
+ */
 class Report extends Model
 {
     /** @use HasFactory<ReportFactory> */
