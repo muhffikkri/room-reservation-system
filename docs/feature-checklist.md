@@ -58,7 +58,7 @@
 - **31 route** (lihat `php artisan route:list`): home/landing publik, auth custom, admin (dashboard, akun, verifikasi, fasilitas CRUD), petugas (dashboard, antrian reservasi).
 - **93 tes Pest** lulus (321 assertions): auth, gate akun, verifikasi, akun admin/petugas, antrian reservasi petugas, CRUD fasilitas, dashboard admin, landing page, aturan slot/overlap (unit).
 - Validasi server semua form lewat FormRequest + Rule; flash `success`/`error` konsisten.
-- Deploy: `Dockerfile`, `docker-compose.yml`, `deploy.yml` (GitHub Actions → VPS saat push ke `dev`).
+- Deploy: `Dockerfile`, `docker-compose.yml` (frontend dibangun di container via `docker compose run --rm frontend` → `npm ci && npm run build`), `deploy.yml` (GitHub Actions → VPS saat push ke `dev`; server pull-only via `git fetch` + `git reset --hard origin/dev`, host tidak pernah menjalankan `npm install`/`npm run build`).
 
 ## 4. Roadmap — Yang Belum (menunggu milestone anggota tim)
 
