@@ -61,7 +61,7 @@ jobs:
           ssh \
             -i ~/.ssh/simfasilitas \
             "${{ vars.SERVER_USER }}@${{ vars.SERVER_HOST }}" \
-            "cd ${{ vars.DEPLOY_PATH }} && git pull origin dev && docker compose up -d --build && docker compose exec -T app php artisan migrate --force && docker compose exec -T app php artisan optimize"
+            "cd ${{ vars.DEPLOY_PATH }} && git fetch origin dev && git reset --hard origin/dev && docker compose run --rm frontend && docker compose up -d --build && docker compose exec -T app php artisan migrate --force && docker compose exec -T app php artisan optimize"
 
       - name: Verify application
         shell: bash
