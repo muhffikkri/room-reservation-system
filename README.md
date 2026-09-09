@@ -9,6 +9,7 @@ Dokumen acuan:
 
 - Spesifikasi teknis: [docs/spesifikasi-sistem-reservasi.md](docs/spesifikasi-sistem-reservasi.md)
 - Checklist fitur vs spesifikasi: [docs/feature-checklist.md](docs/feature-checklist.md)
+- Riwayat perubahan (changelog): [CHANGELOG.md](CHANGELOG.md)
 
 ---
 
