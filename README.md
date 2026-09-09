@@ -9,6 +9,7 @@ Dokumen acuan:
 
 - Spesifikasi teknis: [docs/spesifikasi-sistem-reservasi.md](docs/spesifikasi-sistem-reservasi.md)
 - Checklist fitur vs spesifikasi: [docs/feature-checklist.md](docs/feature-checklist.md)
+- Riwayat perubahan (changelog): [CHANGELOG.md](CHANGELOG.md)
 
 ---
 
@@ -24,9 +25,13 @@ Dokumen acuan:
 - Antrian reservasi petugas: daftar + filter status/tanggal, detail, setujui/tolak/batalkan dengan alasan (konfirmasi via dialog)
 - Mesin aturan reservasi: slot 30 menit (07.00–20.00), kuota pending, lead time, anti-bentrok approved, approve dengan kunci transaksi
 - Seeder akun demo + fasilitas + data uji
-- 93 tes Pest hijau
+- 93 tes Pest hijau (dev)
 
-Detail status per fitur (termasuk yang belum dikerjakan): lihat [docs/feature-checklist.md](docs/feature-checklist.md).
+### Sedang dikerjakan di branch tim (belum masuk `dev`)
+- **Modul laporan pengguna & petugas** (`feature/officer-report`, Opank): `/laporan` (index/create/store/show + foto), `/petugas/laporan` (index/show, update status, toggle status fasilitas), dashboard petugas diperluas — commit `8cdfea4`
+- **Halaman publik fasilitas** (`feat/facility-system`): `/fasilitas` (katalog), `/fasilitas/{id}` (detail), `/fasilitas/{id}/jadwal` (slot) — commit `f494c46`
+
+Status per fitur & business rules lengkap: [docs/feature-checklist.md](docs/feature-checklist.md).
 
 ---
 
@@ -38,7 +43,7 @@ Detail status per fitur (termasuk yang belum dikerjakan): lihat [docs/feature-ch
 - **Service layer**: `ReservationService` (slot, bentrok, approve transaksi + `lockForUpdate`), `ReportService` (transisi status + audit), `AccountStatusGate`.
 - **Validasi server** via FormRequest + custom Rule objects (`SlotTimeValid`, `NoApprovedOverlap`, `BookingLeadTime`, `PendingQuota`, `FacilityBookable`).
 - **Keamanan**: password bcrypt, CSRF di semua form, Eloquent binding bebas SQLi, output ter-escape (XSS), upload foto diverifikasi mimes+size.
-- **Testing**: Pest (feature + unit), termasuk unit test aturan slot/overlap.
+- **Testing**: Pest (feature + unit), termasuk unit test aturan slot/overlap. Pasangan tes branch tim (laporan & fasilitas publik) menyusul setelah PR.
 - **Deploy**: GitHub Actions (`.github/workflows/deploy.yml`) mendorong ke VPS saat push ke `dev`; aplikasi dikontainerkan (`Dockerfile`, `docker-compose.yml`).
 
 ## Stack
