@@ -44,3 +44,42 @@ document.querySelectorAll('dialog').forEach((dialog) => {
         }
     });
 });
+
+const landing = document.querySelector('[data-landing]');
+
+if (landing !== null) {
+    const tabs = landing.querySelectorAll('[data-landing-tab]');
+    const grids = landing.querySelectorAll('[data-facility-grid]');
+    const indicator = landing.querySelector('[data-facility-indicator]');
+    const schedule = document.getElementById('jadwal-preview');
+
+    const activateFacility = (facilityId) => {
+        tabs.forEach((tab) => {
+            const active = tab.dataset.landingTab === String(facilityId);
+
+            tab.className = active ? tab.dataset.tabActive : tab.dataset.tabInactive;
+        });
+
+        grids.forEach((grid) => {
+            grid.classList.toggle('hidden', grid.dataset.facilityGrid !== String(facilityId));
+
+            if (grid.dataset.facilityGrid === String(facilityId) && indicator !== null) {
+                indicator.textContent = `Fasilitas: ${grid.dataset.facilityName}`;
+            }
+        });
+    };
+
+    tabs.forEach((tab) => {
+        tab.addEventListener('click', () => activateFacility(tab.dataset.landingTab));
+    });
+
+    landing.querySelectorAll('[data-landing-go]').forEach((button) => {
+        button.addEventListener('click', () => {
+            activateFacility(button.dataset.landingGo);
+
+            if (schedule !== null) {
+                schedule.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+        });
+    });
+}
