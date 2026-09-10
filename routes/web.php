@@ -1,20 +1,27 @@
 <?php
 
 use App\Http\Controllers\Admin\AccountVerificationController;
+use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
+use App\Http\Controllers\Admin\FacilityController as AdminFacilityController;
 use App\Http\Controllers\Admin\OfficerAccountController;
 use App\Http\Controllers\Admin\UserAccountController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\LogoutController;
 use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\FacilityController;
+use App\Http\Controllers\HomeController;
 use App\Http\Controllers\Officer\DashboardController as OfficerDashboardController;
 use App\Http\Controllers\Officer\ReportController as OfficerReportController;
+use App\Http\Controllers\Officer\ReservationController as OfficerReservationController;
 use App\Http\Controllers\ReportController;
 use Illuminate\Support\Facades\Route;
 
-Route::get('/', function () {
-    return view('welcome');
-});
+Route::get('/', HomeController::class)->name('home');
+
+Route::get('/fasilitas', [FacilityController::class, 'index'])->name('fasilitas.index');
+Route::get('/fasilitas/{facility}', [FacilityController::class, 'show'])->name('fasilitas.show');
+Route::get('/fasilitas/{facility}/jadwal', [FacilityController::class, 'jadwal'])->name('fasilitas.jadwal');
 
 Route::middleware('guest')->group(function (): void {
     Route::get('/login', [LoginController::class, 'showLoginForm'])->name('login');
@@ -39,9 +46,20 @@ Route::middleware(['auth', 'active', 'role:petugas,admin'])->prefix('petugas')->
     Route::get('/laporan/{report}', [OfficerReportController::class, 'show'])->name('petugas.laporan.show');
     Route::patch('/laporan/{report}/status', [OfficerReportController::class, 'updateStatus'])->name('petugas.laporan.status');
     Route::patch('/laporan/{report}/fasilitas-status', [OfficerReportController::class, 'toggleFacilityStatus'])->name('petugas.laporan.fasilitas-status');
+
+    Route::get('/reservasi', [OfficerReservationController::class, 'index'])->name('petugas.reservasi.index');
+    Route::get('/reservasi/{reservation}', [OfficerReservationController::class, 'show'])->name('petugas.reservasi.show');
+    Route::post('/reservasi/{reservation}/approve', [OfficerReservationController::class, 'approve'])
+        ->name('petugas.reservasi.approve');
+    Route::post('/reservasi/{reservation}/reject', [OfficerReservationController::class, 'reject'])
+        ->name('petugas.reservasi.reject');
+    Route::post('/reservasi/{reservation}/cancel', [OfficerReservationController::class, 'cancel'])
+        ->name('petugas.reservasi.cancel');
 });
 
 Route::middleware(['auth', 'active', 'role:admin'])->prefix('admin')->group(function (): void {
+    Route::get('/', AdminDashboardController::class)
+        ->name('admin.dashboard');
     Route::get('/pengguna/verifikasi', [AccountVerificationController::class, 'index'])
         ->name('admin.pengguna.verifikasi');
     Route::patch('/pengguna/{user}/verifikasi', [AccountVerificationController::class, 'verify'])
@@ -60,6 +78,21 @@ Route::middleware(['auth', 'active', 'role:admin'])->prefix('admin')->group(func
         ->name('admin.petugas.create');
     Route::post('/petugas', [OfficerAccountController::class, 'store'])
         ->name('admin.petugas.store');
+
+    Route::get('/fasilitas', [AdminFacilityController::class, 'index'])
+        ->name('admin.fasilitas.index');
+    Route::get('/fasilitas/create', [AdminFacilityController::class, 'create'])
+        ->name('admin.fasilitas.create');
+    Route::post('/fasilitas', [AdminFacilityController::class, 'store'])
+        ->name('admin.fasilitas.store');
+    Route::get('/fasilitas/{facility}/edit', [AdminFacilityController::class, 'edit'])
+        ->name('admin.fasilitas.edit');
+    Route::put('/fasilitas/{facility}', [AdminFacilityController::class, 'update'])
+        ->name('admin.fasilitas.update');
+    Route::patch('/fasilitas/{facility}/nonaktifkan', [AdminFacilityController::class, 'deactivate'])
+        ->name('admin.fasilitas.deactivate');
+    Route::patch('/fasilitas/{facility}/aktifkan', [AdminFacilityController::class, 'activate'])
+        ->name('admin.fasilitas.activate');
 });
 
 Route::middleware('auth')->group(function (): void {

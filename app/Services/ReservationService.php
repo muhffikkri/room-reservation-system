@@ -5,8 +5,10 @@ namespace App\Services;
 use App\Models\Facility;
 use App\Models\Reservation;
 use App\Models\User;
+use App\Rules\BookingLeadTime;
+use App\Rules\FacilityBookable;
 use App\Rules\NoApprovedOverlap;
-use App\Rules\SlotAvailable;
+use App\Rules\PendingQuota;
 use App\Rules\SlotTimeValid;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -27,14 +29,19 @@ class ReservationService
      */
     public function create(User $user, Facility $facility, Carbon $start, Carbon $end, string $purpose): Reservation
     {
+        // Aturan menerima Carbon langsung: tidak ada bongkar-pasang string,
+        // tidak ada parse ulang, tidak ada lolos diam-diam.
         Validator::make([
+            'slot' => true,
             'facility_id' => $facility->id,
-            'date' => $start->toDateString(),
-            'start_time' => $start->format('H:i'),
-            'end_time' => $end->format('H:i'),
         ], [
-            'start_time' => [new SlotTimeValid],
-            'facility_id' => [new SlotAvailable($user->id)],
+            'slot' => [new SlotTimeValid($start, $end)],
+            'facility_id' => [
+                new FacilityBookable($facility->id),
+                new BookingLeadTime($start),
+                new PendingQuota($user->id, $start),
+                new NoApprovedOverlap($facility->id, $start, $end),
+            ],
         ])->validate();
 
         return DB::transaction(function () use ($user, $facility, $start, $end, $purpose): Reservation {
@@ -63,10 +70,12 @@ class ReservationService
     }
 
     /**
-     * Setujui reservasi pending dalam transaksi + lock (BR-7).
+     * Setujui reservasi pending dalam transaksi + lock (BR-7, BR-12).
      *
      * Overlap dicek ulang terhadap approved pada fasilitas sama; bila
-     * bentrok (kondisi balapan), kembalikan HTTP 409.
+     * bentrok (kondisi balapan), kembalikan HTTP 409. Fasilitas juga
+     * dikunci dan harus berstatus aktif: persetujuan yang diberikan
+     * setelah fasilitas rusak melanggar BR-12.
      */
     public function approve(Reservation $reservation, User $officer): Reservation
     {
@@ -77,6 +86,14 @@ class ReservationService
 
             if ($locked->status !== 'pending') {
                 throw new ConflictHttpException('Hanya reservasi pending yang dapat disetujui.');
+            }
+
+            // Sistem mengunci fasilitas agar perubahan status (misal ke
+            // perbaikan, BR-11) tidak menyelinap di tengah persetujuan.
+            $facility = Facility::whereKey($locked->facility_id)->lockForUpdate()->firstOrFail();
+
+            if ($facility->status !== 'aktif') {
+                throw new ConflictHttpException('Fasilitas sedang berstatus '.$facility->status.' sehingga reservasi tidak dapat disetujui.');
             }
 
             try {
