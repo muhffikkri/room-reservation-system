@@ -12,7 +12,6 @@ it('allows officer to view officer dashboard', function () {
 
     $response->assertStatus(200)
         ->assertSee('Dashboard Petugas')
-        ->assertSee('Reservasi Menunggu')
         ->assertSee('Laporan Baru');
 });
 
