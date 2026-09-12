@@ -101,7 +101,7 @@ room-reservation-system/
 ### Prasyarat
 - PHP >= 8.3 dengan ekstensi `pdo_mysql`, `mbstring`, `fileinfo`, `gd`, `zip`
 - Composer >= 2
-- MySQL 8 (XAMPP/Laragon) — buat DB `reservasi_kampus`
+- MySQL 8 (XAMPP/Laragon) — buat DB dan samakan namanya dengan `DB_DATABASE` di `.env` (nilai contoh yang dipakai: `reservasi-kampus`). Catatan: `.env.example` default-nya `sqlite`, jadi saat pakai MySQL pastikan `DB_CONNECTION=mysql` + `DB_*` diisi.
 - Node.js >= 20 + npm
 
 ### Langkah
@@ -116,6 +116,8 @@ php artisan migrate --seed
 php artisan storage:link          # agar foto fasilitas/laporan tampil
 php artisan serve                 # http://localhost:8000
 ```
+
+> **Akun demo tidak bisa login?** Pastikan langkah `php artisan migrate --seed` benar-benar dijalankan. Jika tabel `users` kosong (migrasi jalan tapi seed tidak), login ditolak meski kredensial sesuai — jalankan `php artisan db:seed` lalu coba lagi.
 
 ### Dengan Docker
 
@@ -161,6 +163,7 @@ Disediakan oleh seeder (`php artisan db:seed`):
 
 ## Snapshots
 
+- [Snapshot 2026-09-12](snapshots/snapshot-2026-09-12.md)
 - [Snapshot 2026-09-09](snapshots/snapshot-2026-09-09.md)
 - [Snapshot 2026-09-06](snapshots/snapshot-2026-09-06.md)
 - [Snapshot 2026-09-03](snapshots/snapshot-2026-09-03.md)
