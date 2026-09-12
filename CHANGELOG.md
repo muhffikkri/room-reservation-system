@@ -2,7 +2,7 @@
 
 Format mengikuti riwayat commit tim. Tanggal terbaru di atas. Status merge: **Dev** = sudah masuk `dev`; **Branch** = masih di branch kerja anggota tim (belum di-merge ke `dev`).
 
-> Patokan status terakhir: `dev` = `14541ff` (2026-09-10, merge `test/officer-report` — modul laporan).
+> Patokan status terakhir: `dev` = `9df2d0d` (2026-09-12, revert PR #35 — pulihkan fitur reservasi petugas).
 
 ---
 
@@ -14,18 +14,25 @@ _Bagian ini kosong; semua pekerjaan tim terkini sudah masuk `dev`._
 
 ---
 
-## v1.0.0 — 2026-09-09 (Stable, tag `v1.0.0` @ `060685f`)
+## v1.1.0 — 2026-09-12 (Minor, baseline `dev` saat ini)
 
-Rilis stabil pertama. Detail lengkap: [releases/v1.0.0.md](releases/v1.0.0.md).
+Rilis minor non-breaking dari `v1.0.0` (`060685f`): menambahkan modul laporan pengguna & petugas serta halaman publik fasilitas, lalu menjaga seluruh fitur reservasi yang sudah ada tetap utuh. Detail lengkap: [releases/v1.1.0.md](releases/v1.1.0.md).
 
-### Dev — dikerjakan muhffikkri (Fikri) & kontributor
-- **Landing page** (`060685f`, `d6fe94e`): katalog fasilitas publik + filter (kata kunci/jenis/lokasi/kapasitas) + grid 26 slot 07.00–20.00 tanpa data pemohon (BR-13)
+### Dev — penambahan fitur sejak v1.0.0
 - **Halaman fasilitas publik** (merge `feat/facility-system` → `7b2a730`): `/fasilitas` (katalog + filter), `/fasilitas/{facility}` (detail tanpa data pemohon, BR-13), `/fasilitas/{facility}/jadwal` (26 slot via `scopeOverlap`, BR-1/BR-6/BR-12) — `FacilityController` + views `fasilitas/{index,show,jadwal}` + `PublicFacility{Index,Jadwal,Show}Test` (17 tes)
 - **Modul laporan kerusakan pengguna & petugas** (merge `test/officer-report` → `14541ff`): pengguna (`/laporan` index/create/store/show + foto, `ReportController` + `StoreReportRequest`) + petugas (`/petugas/laporan` index/show, update status BR-10, toggle status fasilitas BR-11, `Officer\ReportController`) — view `laporan/*`, `petugas/laporan/*`, `ReportService::createReport`, tes `UserReportTest`/`OfficerReportTest`/`OfficerDashboardTest` (10 tes, Opank)
+- **Pulihkan fitur reservasi** (`9df2d0d`): PR #35 (`3cc9f51`, GitHub merge `feature/officer-report`) sempat membawa `Revert PR #15` yang menghapus antrian reservasi petugas → di-revert. Alur reservasi (`Officer\ReservationController`, views `petugas/reservasi/*`, request cancel/reject, `OfficerReservationTest`) kembali utuh di `dev`.
+
+### Dev — dikerjakan muhffikkri (Fikri) & kontributor (basis v1.0.0)
+- **Landing page** (`060685f`, `d6fe94e`): katalog fasilitas publik + filter (kata kunci/jenis/lokasi/kapasitas) + grid 26 slot 07.00–20.00 tanpa data pemohon (BR-13)
 - **Admin dashboard** (`5061c7a`, `de2cbe5`): ringkasan antrian reservasi, laporan, fasilitas perbaikan, akun menunggu verifikasi
 - **Dokumentasi** (`32143e0`, `f4428e3`, `bea2344`, `72f63fd`): README, feature-checklist, snapshot, release notes, konvensi commit (COMMIT.md), panduan desain (DESIGN.md)
 - **Pull-only deploy + frontend container** (`cb5ecf5`): `git fetch`+`git reset --hard`, `docker compose run --rm frontend` (`npm ci && npm run build`)
 - **Nginx config** (`ef22648`): `docker/nginx/default.conf`
+
+## v1.0.0 — 2026-09-09 (Stable, tag `v1.0.0` @ `060685f`)
+
+Rilis stabil pertama. Detail lengkap: [releases/v1.0.0.md](releases/v1.0.0.md).
 
 ### 2026-09-08 (Dev)
 - **Docker** (`b7d9042`): `Dockerfile`, `docker-compose.yml`
@@ -62,6 +69,6 @@ Rilis stabil pertama. Detail lengkap: [releases/v1.0.0.md](releases/v1.0.0.md).
 
 ## Catatan Método
 
-- Rentang dok: `2026-08-30` → `2026-09-10`.
+- Rentang dok: `2026-08-30` → `2026-09-12`.
 - Commit tim di luar dev yang belum terdokumentasi di release: lihat bagian [Unreleased].
 - Snapshot detail per tanggal: `snapshots/`.

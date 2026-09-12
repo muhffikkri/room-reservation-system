@@ -152,6 +152,7 @@ Disediakan oleh seeder (`php artisan db:seed`):
 
 ## Release
 
+- [v1.1.0 — Minor 2026-09-12](releases/v1.1.0.md)
 - [v1.0.0 — Stable 2026-09-09](releases/v1.0.0.md)
 
 > Catatan versi (release notes) dirinci di `releases/`. Setiap versi menandai titik rilis stabil dengan referensi commit dan status fitur.

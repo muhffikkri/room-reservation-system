@@ -2,13 +2,13 @@
 
 | Meta | Nilai |
 |---|---|
-| Tanggal pembaruan | 2026-09-10 |
-| Referensi commit | `14541ff` (2026-09-10, merge `test/officer-report` — modul laporan) |
+| Tanggal pembaruan | 2026-09-12 |
+| Referensi commit | `9df2d0d` (2026-09-12, revert PR #35 — pulihkan fitur reservasi) |
 | Dokumen sempai dasar | [spesifikasi-sistem-reservasi.md](spesifikasi-sistem-reservasi.md) |
 | Status publikasi | Checklist mengikuti **§16** dan **§8** dokumen spesifikasi |
 
 > Dokumen ini menandai fitur yang **sudah** dan **belum** tersedia sampai commit tercantum di atas.
-> Status merujuk **`dev`** (commit `14541ff`). Fitur yang selesai di **branch kerja tim** tetapi belum masuk `dev` ditandai **Di Branch** pada kolom Catatan.
+> Status merujuk **`dev`** (commit `9df2d0d`). Fitur yang selesai di **branch kerja tim** tetapi belum masuk `dev` ditandai **Di Branch** pada kolom Catatan.
 > Legenda: ✔ = Selesai · ◐ = Sebagian · ✗ = Belum.
 
 ---
@@ -54,7 +54,7 @@
 | BR-15 | Petugas tidak registrasi mandiri | ✔ | Registrasi dibatasi role `pengguna` |
 | BR-16 | Reservasi approved di fasilitas `perbaikan` dibatalkan petugas | ◐ | Aksi cancel petugas tersedia; otomasi/alur penandaan selesai via laporan perbaikan (petugas dapat toggle fasilitas & membatalkan reservasi) |
 
-## 3. Yang Sudah Ada (ringkasan artefak commit `14541ff`)
+## 3. Yang Sudah Ada (ringkasan artefak commit `9df2d0d`)
 
 - **41 route** (lihat `php artisan route:list`): home/landing publik, fasilitas publik (katalog/detail/jadwal), auth custom, laporan pengguna & petugas, admin (dashboard, akun, verifikasi, fasilitas CRUD), petugas (dashboard, antrian reservasi, laporan).
 - **120 tes Pest** lulus (439 assertions): auth, gate akun, verifikasi, akun admin/petugas, antrian reservasi petugas, CRUD fasilitas, dashboard admin & petugas, landing page, halaman fasilitas publik (katalog/detail/jadwal, BR-13), laporan pengguna & petugas (BR-10, BR-11), aturan slot/overlap (unit).
@@ -71,4 +71,4 @@
 
 ---
 
-*Terakhir diperbarui: 2026-09-10 · Komit referensi `14541ff` (dev) · Status branch: `feature/officer-report` & `feat/facility-system` sudah di-merge.*
+*Terakhir diperbarui: 2026-09-12 · Komit referensi `9df2d0d` (dev) · Status branch: `feature/officer-report` & `feat/facility-system` sudah di-merge.*
