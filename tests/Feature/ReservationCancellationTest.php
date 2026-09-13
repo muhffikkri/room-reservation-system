@@ -160,3 +160,52 @@ it('checks ReservationPolicy authorization rules correctly', function () {
         ->and($policy->cancel($owner, $urgentReservation))->toBeFalse()
         ->and($policy->cancel($otherUser, $validReservation))->toBeFalse();
 });
+
+it('stores the cancellation reason when cancelled by user', function () {
+    $user = User::factory()->create(['role' => 'pengguna', 'account_status' => 'aktif']);
+    $facility = Facility::factory()->create(['status' => 'aktif']);
+
+    $startTime = Carbon::now()->addHours(3);
+    $endTime = $startTime->copy()->addHour();
+
+    $reservation = Reservation::factory()->create([
+        'user_id' => $user->id,
+        'facility_id' => $facility->id,
+        'status' => 'pending',
+        'start_time' => $startTime,
+        'end_time' => $endTime,
+    ]);
+
+    $service = app(ReservationService::class);
+    $updated = $service->cancelByUser($reservation, $user, 'Dibatalkan karena bentrok dengan jadwal ujian');
+
+    expect($updated->status)->toBe('cancelled_by_user')
+        ->and($updated->cancel_reason)->toBe('Dibatalkan karena bentrok dengan jadwal ujian');
+});
+
+it('allows cancellation through HTTP delete endpoint with required reason', function () {
+    $user = User::factory()->create(['role' => 'pengguna', 'account_status' => 'aktif']);
+    $facility = Facility::factory()->create(['status' => 'aktif']);
+
+    $startTime = Carbon::now()->addHours(4);
+    $endTime = $startTime->copy()->addHour();
+
+    $reservation = Reservation::factory()->create([
+        'user_id' => $user->id,
+        'facility_id' => $facility->id,
+        'status' => 'pending',
+        'start_time' => $startTime,
+        'end_time' => $endTime,
+    ]);
+
+    $response = $this->actingAs($user)->delete(route('reservasi.destroy', $reservation), [
+        'cancel_reason' => 'Perubahan mendadak pada susunan panitia',
+    ]);
+
+    $response->assertRedirect(route('reservasi.show', $reservation));
+    $response->assertSessionHas('success');
+
+    $reservation->refresh();
+    expect($reservation->status)->toBe('cancelled_by_user')
+        ->and($reservation->cancel_reason)->toBe('Perubahan mendadak pada susunan panitia');
+});

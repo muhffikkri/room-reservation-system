@@ -179,9 +179,9 @@ class ReservationService
      * Hanya pemilik yang dapat membatalkan reservasi miliknya yang berstatus
      * pending atau approved, dan minimal 1 jam sebelum start_time.
      */
-    public function cancelByUser(Reservation $reservation, User $user): Reservation
+    public function cancelByUser(Reservation $reservation, User $user, ?string $reason = null): Reservation
     {
-        return DB::transaction(function () use ($reservation, $user): Reservation {
+        return DB::transaction(function () use ($reservation, $user, $reason): Reservation {
             $locked = Reservation::whereKey($reservation->id)->lockForUpdate()->firstOrFail();
 
             if ($locked->user_id !== $user->id) {
@@ -198,6 +198,7 @@ class ReservationService
 
             $locked->update([
                 'status' => 'cancelled_by_user',
+                'cancel_reason' => $reason,
             ]);
 
             return $locked->refresh();
