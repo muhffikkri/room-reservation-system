@@ -3,14 +3,14 @@
 @section('title', 'Detail Reservasi')
 
 @section('content')
-    <div class="max-w-3xl mx-auto space-y-6">
+    <div class="mx-auto max-w-3xl space-y-8">
         <div>
             <a href="{{ route('reservasi.index') }}"
-                class="inline-flex items-center text-sm font-medium text-slate-500 hover:text-slate-700">
+                class="inline-flex items-center text-sm font-medium text-slate-500 transition hover:text-[#00236f]">
                 &larr; Kembali ke riwayat reservasi
             </a>
             <div class="mt-2 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                <h1 class="text-2xl font-bold text-slate-800">Detail Reservasi #{{ $reservation->id }}</h1>
+                <h1 class="text-2xl font-semibold tracking-tight text-[#00236f]">Detail Reservasi #{{ $reservation->id }}</h1>
                 <div>
                     <x-ui.badge :status="$reservation->status">
                         {{ match ($reservation->status) {
@@ -26,40 +26,40 @@
             </div>
         </div>
 
-        <div class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm space-y-6">
+        <div class="space-y-6 rounded-2xl border border-[#E2E7FF] bg-white p-6 shadow-[0_14px_40px_rgba(15,23,42,0.06)] sm:p-8">
             {{-- Info Fasilitas --}}
             <div>
-                <h2 class="text-xs font-semibold uppercase tracking-wider text-slate-400">Informasi Fasilitas</h2>
+                <h2 class="text-xs font-semibold uppercase tracking-[0.16em] text-[#0051d5]">Informasi Fasilitas</h2>
                 <div class="mt-3 grid grid-cols-1 gap-4 sm:grid-cols-2">
-                    <div class="rounded-lg bg-slate-50 p-4">
+                    <div class="rounded-xl border border-[#EEF2FF] bg-[#F8FAFC] p-4">
                         <p class="text-xs text-slate-500">Nama Fasilitas</p>
-                        <p class="mt-1 text-base font-semibold text-slate-900">{{ $reservation->facility->name }}</p>
+                        <p class="mt-1 text-base font-semibold text-[#00236f]">{{ $reservation->facility->name }}</p>
                     </div>
-                    <div class="rounded-lg bg-slate-50 p-4">
+                    <div class="rounded-xl border border-[#EEF2FF] bg-[#F8FAFC] p-4">
                         <p class="text-xs text-slate-500">Lokasi / Gedung</p>
-                        <p class="mt-1 text-base font-semibold text-slate-900">{{ $reservation->facility->location }}</p>
+                        <p class="mt-1 text-base font-semibold text-[#00236f]">{{ $reservation->facility->location }}</p>
                     </div>
                 </div>
             </div>
 
             {{-- Waktu & Jadwal --}}
-            <div class="border-t border-slate-100 pt-5">
-                <h2 class="text-xs font-semibold uppercase tracking-wider text-slate-400">Jadwal Penggunaan</h2>
+            <div class="border-t border-[#EEF2FF] pt-5">
+                <h2 class="text-xs font-semibold uppercase tracking-[0.16em] text-[#0051d5]">Jadwal Penggunaan</h2>
                 <div class="mt-3 grid grid-cols-1 gap-4 sm:grid-cols-3">
-                    <div class="rounded-lg bg-slate-50 p-4">
+                    <div class="rounded-xl border border-[#EEF2FF] bg-[#F8FAFC] p-4">
                         <p class="text-xs text-slate-500">Tanggal</p>
-                        <p class="mt-1 text-sm font-medium text-slate-900">
+                        <p class="mt-1 text-sm font-medium text-[#00236f]">
                             {{ $reservation->start_time->translatedFormat('l, d F Y') }}</p>
                     </div>
-                    <div class="rounded-lg bg-slate-50 p-4">
+                    <div class="rounded-xl border border-[#EEF2FF] bg-[#F8FAFC] p-4">
                         <p class="text-xs text-slate-500">Waktu Mulai & Selesai</p>
-                        <p class="mt-1 text-sm font-medium text-slate-900">
+                        <p class="mt-1 text-sm font-medium text-[#00236f]">
                             {{ $reservation->start_time->format('H:i') }} - {{ $reservation->end_time->format('H:i') }} WIB
                         </p>
                     </div>
-                    <div class="rounded-lg bg-slate-50 p-4">
+                    <div class="rounded-xl border border-[#EEF2FF] bg-[#F8FAFC] p-4">
                         <p class="text-xs text-slate-500">Durasi</p>
-                        <p class="mt-1 text-sm font-medium text-slate-900">
+                        <p class="mt-1 text-sm font-medium text-[#00236f]">
                             {{ $reservation->start_time->diffInMinutes($reservation->end_time) / 60 }} Jam
                         </p>
                     </div>
@@ -67,9 +67,9 @@
             </div>
 
             {{-- Tujuan Peminjaman --}}
-            <div class="border-t border-slate-100 pt-5">
-                <h2 class="text-xs font-semibold uppercase tracking-wider text-slate-400">Tujuan Penggunaan</h2>
-                <div class="mt-2 rounded-lg bg-slate-50 p-4">
+            <div class="border-t border-[#EEF2FF] pt-5">
+                <h2 class="text-xs font-semibold uppercase tracking-[0.16em] text-[#0051d5]">Tujuan Penggunaan</h2>
+                <div class="mt-2 rounded-xl border border-[#EEF2FF] bg-[#F8FAFC] p-4">
                     <p class="text-sm text-slate-700 whitespace-pre-line">{{ $reservation->purpose }}</p>
                 </div>
             </div>
@@ -108,15 +108,15 @@
                     $reservation->user_id === auth()->id();
             @endphp
 
-            <div class="border-t border-slate-200 pt-5 flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div class="flex flex-col items-center justify-between gap-4 border-t border-[#EEF2FF] pt-5 sm:flex-row">
                 <a href="{{ route('reservasi.index') }}"
-                    class="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50">
+                    class="rounded-lg border border-[#D6DDF8] bg-white px-4 py-2 text-sm font-medium text-[#00236f] shadow-sm transition hover:bg-[#F2F3FF] focus:outline-none focus:ring-2 focus:ring-[#0051d5] focus:ring-offset-2">
                     &larr; Kembali
                 </a>
 
                 @if ($canCancel)
                     <button type="button" data-open-dialog="cancel-modal"
-                        class="rounded-lg bg-rose-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-rose-700 focus:outline-none focus:ring-2 focus:ring-rose-500 focus:ring-offset-2">
+                        class="rounded-lg bg-rose-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-rose-700 focus:outline-none focus:ring-2 focus:ring-rose-500 focus:ring-offset-2">
                         Batalkan Reservasi
                     </button>
                 @elseif ($isTooLate)
@@ -130,8 +130,8 @@
 
     {{-- Dialog Modal Pembatalan Reservasi --}}
     @if ($canCancel)
-        <dialog id="cancel-modal" class="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl backdrop:bg-slate-950/40">
-            <h3 class="text-lg font-semibold text-slate-900">Batalkan Reservasi?</h3>
+        <dialog id="cancel-modal" class="w-full max-w-md rounded-2xl border border-[#E2E7FF] bg-white p-6 shadow-xl backdrop:bg-slate-950/40">
+            <h3 class="text-lg font-semibold text-[#00236f]">Batalkan Reservasi?</h3>
             <p class="mt-1 text-sm text-slate-500">
                 {{ $reservation->facility->name }} &bull; {{ $reservation->start_time->translatedFormat('d M Y') }},
                 {{ $reservation->start_time->format('H:i') }} – {{ $reservation->end_time->format('H:i') }} WIB
@@ -156,11 +156,11 @@
 
                 <div class="flex items-center justify-end gap-3 pt-2">
                     <button type="button" data-close-dialog
-                        class="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">
+                        class="rounded-lg border border-[#D6DDF8] bg-white px-4 py-2 text-sm font-medium text-[#00236f] transition hover:bg-[#F2F3FF]">
                         Kembali
                     </button>
                     <button type="submit"
-                        class="rounded-lg bg-rose-600 px-4 py-2 text-sm font-medium text-white hover:bg-rose-700 focus:outline-none focus:ring-2 focus:ring-rose-500 focus:ring-offset-2">
+                        class="rounded-lg bg-rose-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-rose-700 focus:outline-none focus:ring-2 focus:ring-rose-500 focus:ring-offset-2">
                         Konfirmasi Pembatalan
                     </button>
                 </div>

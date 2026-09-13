@@ -7,8 +7,8 @@
 
 @php
     $stateClasses = [
-        'available' => 'border-slate-300 bg-white text-slate-700 hover:border-blue-500 hover:bg-blue-50',
-        'selected'  => 'border-blue-900 bg-blue-900 text-white',
+        'available' => 'border-slate-300 bg-white text-slate-700 hover:border-[#0051d5] hover:bg-[#F2F3FF]',
+        'selected'  => 'border-[#00236f] bg-[#00236f] text-white',
         'booked'    => 'cursor-not-allowed border-red-200 bg-red-50 text-red-500',
         'inactive'  => 'cursor-not-allowed border-slate-200 bg-slate-100 text-slate-400',
         'past'      => 'cursor-not-allowed border-transparent bg-slate-50 text-slate-300',
@@ -35,7 +35,7 @@
             @if ($isClickable)
                 <label class="block">
                     <input type="radio" name="{{ $name }}" value="{{ $slot['start'] }}" class="peer sr-only" @checked($isChecked)>
-                    <span class="flex h-11 w-full cursor-pointer items-center justify-center rounded-lg border text-sm font-medium transition-colors peer-focus-visible:ring-2 peer-focus-visible:ring-blue-500 peer-focus-visible:ring-offset-2 {{ $stateClasses[$effectiveState] }}">
+                    <span class="flex h-11 w-full cursor-pointer items-center justify-center rounded-lg border text-sm font-medium transition-colors peer-focus-visible:ring-2 peer-focus-visible:ring-[#0051d5] peer-focus-visible:ring-offset-2 {{ $stateClasses[$effectiveState] }}">
                         {{ $slot['start'] }}
                     </span>
                 </label>

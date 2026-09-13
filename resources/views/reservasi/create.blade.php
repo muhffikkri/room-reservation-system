@@ -3,19 +3,20 @@
 @section('title', 'Ajukan Reservasi Fasilitas')
 
 @section('content')
-    <div class="max-w-4xl mx-auto space-y-6">
+    <div class="mx-auto max-w-4xl space-y-8">
         <div>
             <a href="{{ route('reservasi.index') }}"
-                class="inline-flex items-center text-sm font-medium text-slate-500 hover:text-slate-700">
+                class="inline-flex items-center text-sm font-medium text-slate-500 transition hover:text-[#00236f]">
                 &larr; Kembali ke riwayat reservasi
             </a>
-            <h1 class="mt-2 text-2xl font-bold text-slate-800">Ajukan Reservasi Fasilitas</h1>
-            <p class="text-sm text-slate-500">Pilih fasilitas, tanggal, dan slot waktu yang tersedia untuk mengajukan
+            <p class="text-xs font-semibold uppercase tracking-[0.18em] text-[#0051d5]">Pemesanan fasilitas</p>
+            <h1 class="mt-2 text-2xl font-semibold tracking-tight text-[#00236f]">Ajukan Reservasi Fasilitas</h1>
+            <p class="mt-2 text-sm leading-6 text-slate-600">Pilih fasilitas, tanggal, dan slot waktu yang tersedia untuk mengajukan
                 peminjaman.</p>
         </div>
 
-        <div class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-            <form method="POST" action="{{ route('reservasi.store') }}" id="reservationForm" class="space-y-6">
+        <div class="rounded-2xl border border-[#E2E7FF] bg-white p-6 shadow-[0_14px_40px_rgba(15,23,42,0.06)] sm:p-8">
+            <form method="POST" action="{{ route('reservasi.store') }}" id="reservationForm" class="space-y-8">
                 @csrf
 
                 {{-- Fasilitas & Tanggal (Grid 2 Kolom) --}}
@@ -25,7 +26,7 @@
                         <label for="facility_id" class="block text-sm font-medium text-slate-700">Fasilitas Kampus <span
                                 class="text-rose-500">*</span></label>
                         <select id="facility_id" name="facility_id" required
-                            class="mt-1 block w-full rounded-lg border border-slate-300 px-3 py-2 text-slate-900 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 text-sm">
+                            class="mt-1 block w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-[#0051d5] focus:outline-none focus:ring-1 focus:ring-[#0051d5]">
                             <option value="" disabled {{ !$selectedFacility ? 'selected' : '' }}>-- Pilih Fasilitas
                                 --</option>
                             @foreach ($facilities as $facility)
@@ -46,7 +47,7 @@
                                 class="text-rose-500">*</span></label>
                         <input type="date" id="date" name="date" required min="{{ date('Y-m-d') }}"
                             value="{{ old('date', $selectedDate->format('Y-m-d')) }}"
-                            class="mt-1 block w-full rounded-lg border border-slate-300 px-3 py-2 text-slate-900 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 text-sm">
+                            class="mt-1 block w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-[#0051d5] focus:outline-none focus:ring-1 focus:ring-[#0051d5]">
                         @error('date')
                             <p class="mt-1 text-xs text-rose-600">{{ $message }}</p>
                         @enderror
@@ -55,10 +56,10 @@
 
                 {{-- Grid Ketersediaan Slot Waktu Interaktif --}}
                 @if ($selectedFacility)
-                    <div class="rounded-xl border border-slate-200 bg-slate-50/80 p-5">
+                    <div class="rounded-xl border border-[#E2E7FF] bg-[#F8FAFC] p-5">
                         <div class="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                             <div>
-                                <h2 class="text-sm font-semibold text-slate-800">
+                                <h2 class="text-sm font-semibold text-[#00236f]">
                                     Jadwal Ketersediaan Slot: {{ $selectedDate->translatedFormat('d F Y') }}
                                 </h2>
                                 <p class="text-xs text-slate-500">
@@ -80,7 +81,7 @@
                                 Tersedia (Bisa Dipilih)
                             </div>
                             <div
-                                class="flex items-center gap-1.5 rounded-lg border border-indigo-600 bg-indigo-600 px-2.5 py-1 text-white font-medium shadow-2xs">
+                                class="flex items-center gap-1.5 rounded-lg border border-[#00236f] bg-[#00236f] px-2.5 py-1 font-medium text-white shadow-2xs">
                                 <span class="h-2.5 w-2.5 rounded-full bg-white"></span>
                                 Terpilih
                             </div>
@@ -110,7 +111,7 @@
                                 <div data-slot-index="{{ $index }}" data-start="{{ $slot['start'] }}"
                                     data-end="{{ $slot['end'] }}" data-state="{{ $state }}"
                                     class="slot-item relative flex flex-col items-center justify-center rounded-lg border p-2.5 text-center transition-all duration-150
-                                    @if ($isAvailable) border-emerald-400 bg-white text-emerald-950 hover:border-indigo-500 hover:bg-indigo-50 cursor-pointer shadow-2xs
+                                    @if ($isAvailable) cursor-pointer border-emerald-400 bg-white text-emerald-950 shadow-2xs hover:border-[#0051d5] hover:bg-[#F2F3FF]
                                     @elseif($isBooked)
                                         border-rose-300 bg-rose-50/90 text-rose-600 cursor-not-allowed opacity-80
                                     @else
@@ -149,7 +150,7 @@
                         <label for="start_time" class="block text-sm font-medium text-slate-700">Waktu Mulai <span
                                 class="text-rose-500">*</span></label>
                         <select id="start_time" name="start_time" required
-                            class="mt-1 block w-full rounded-lg border border-slate-300 px-3 py-2 text-slate-900 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 text-sm">
+                            class="mt-1 block w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-[#0051d5] focus:outline-none focus:ring-1 focus:ring-[#0051d5]">
                             <option value="" disabled {{ old('start_time') ? '' : 'selected' }}>-- Pilih Waktu Mulai
                                 --</option>
                         </select>
@@ -162,7 +163,7 @@
                         <label for="end_time" class="block text-sm font-medium text-slate-700">Waktu Selesai <span
                                 class="text-rose-500">*</span></label>
                         <select id="end_time" name="end_time" required
-                            class="mt-1 block w-full rounded-lg border border-slate-300 px-3 py-2 text-slate-900 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 text-sm">
+                            class="mt-1 block w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-[#0051d5] focus:outline-none focus:ring-1 focus:ring-[#0051d5]">
                             <option value="" disabled {{ old('end_time') ? '' : 'selected' }}>-- Pilih Jam Mulai Dulu
                                 --</option>
                         </select>
@@ -182,24 +183,24 @@
                 <div>
                     <label for="purpose" class="block text-sm font-medium text-slate-700">Tujuan Penggunaan <span
                             class="text-rose-500">*</span></label>
-                    <p class="text-xs text-slate-500 mb-1">Jelaskan kegiatan atau keperluan peminjaman (minimal 10
+                    <p class="mb-1 text-xs text-slate-500">Jelaskan kegiatan atau keperluan peminjaman (minimal 10
                         karakter).</p>
                     <textarea id="purpose" name="purpose" rows="3" minlength="10" maxlength="255" required
                         placeholder="Contoh: Rapat koordinasi panitia seminar nasional BEM kampus."
-                        class="block w-full rounded-lg border border-slate-300 px-3 py-2 text-slate-900 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 text-sm">{{ old('purpose') }}</textarea>
+                        class="block w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-[#0051d5] focus:outline-none focus:ring-1 focus:ring-[#0051d5]">{{ old('purpose') }}</textarea>
                     @error('purpose')
                         <p class="mt-1 text-xs text-rose-600">{{ $message }}</p>
                     @enderror
                 </div>
 
                 {{-- Tombol Aksi --}}
-                <div class="flex items-center justify-end gap-3 border-t border-slate-200 pt-5">
+                <div class="flex items-center justify-end gap-3 border-t border-[#EEF2FF] pt-5">
                     <a href="{{ route('reservasi.index') }}"
-                        class="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50 focus:outline-none">
+                        class="rounded-lg border border-[#D6DDF8] bg-white px-4 py-2 text-sm font-medium text-[#00236f] shadow-sm transition hover:bg-[#F2F3FF] focus:outline-none focus:ring-2 focus:ring-[#0051d5] focus:ring-offset-2">
                         Batal
                     </a>
                     <button type="submit" id="submitBtn"
-                        class="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2">
+                        class="rounded-lg bg-[#0051d5] px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-[#00236f] focus:outline-none focus:ring-2 focus:ring-[#0051d5] focus:ring-offset-2">
                         Ajukan Reservasi
                     </button>
                 </div>
@@ -302,20 +303,20 @@
 
                 if (start && end && slotStart >= start && slotEnd <= end && state === 'available') {
                     hasSelection = true;
-                    el.classList.remove('border-emerald-400', 'bg-white', 'text-emerald-950', 'hover:bg-indigo-50');
-                    el.classList.add('border-indigo-600', 'bg-indigo-600', 'text-white', 'font-bold', 'ring-2',
-                        'ring-indigo-400', 'shadow-md');
+                    el.classList.remove('border-emerald-400', 'bg-white', 'text-emerald-950', 'hover:bg-[#F2F3FF]');
+                    el.classList.add('border-[#00236f]', 'bg-[#00236f]', 'text-white', 'font-bold', 'ring-2',
+                        'ring-[#0051d5]', 'shadow-md');
                     if (label) {
                         label.textContent = 'Dipilih';
                         label.className =
-                            'slot-status-label mt-1 inline-block rounded px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider bg-white text-indigo-700';
+                            'slot-status-label mt-1 inline-block rounded px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider bg-white text-[#00236f]';
                     }
                 } else {
-                    el.classList.remove('border-indigo-600', 'bg-indigo-600', 'text-white', 'font-bold', 'ring-2',
-                        'ring-indigo-400', 'shadow-md');
+                    el.classList.remove('border-[#00236f]', 'bg-[#00236f]', 'text-white', 'font-bold', 'ring-2',
+                        'ring-[#0051d5]', 'shadow-md');
                     if (state === 'available') {
                         el.classList.add('border-emerald-400', 'bg-white', 'text-emerald-950',
-                        'hover:bg-indigo-50');
+                        'hover:bg-[#F2F3FF]');
                         if (label) {
                             label.textContent = 'Tersedia';
                             label.className =
