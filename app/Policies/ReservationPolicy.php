@@ -1,0 +1,61 @@
+<?php
+
+namespace App\Policies;
+
+use App\Models\Reservation;
+use App\Models\User;
+
+class ReservationPolicy
+{
+    /**
+     * Tentukan apakah pengguna dapat melihat daftar reservasi.
+     */
+    public function viewAny(User $user): bool
+    {
+        return $user->account_status === 'aktif';
+    }
+
+    /**
+     * Tentukan apakah pengguna dapat melihat detail reservasi.
+     * Pengguna hanya dapat melihat reservasi miliknya sendiri, sedangkan petugas dan admin dapat melihat semua.
+     */
+    public function view(User $user, Reservation $reservation): bool
+    {
+        return $user->id === $reservation->user_id
+            || in_array($user->role, ['petugas', 'admin'], true);
+    }
+
+    /**
+     * Tentukan apakah pengguna dapat membuat reservasi.
+     */
+    public function create(User $user): bool
+    {
+        return $user->account_status === 'aktif';
+    }
+
+    /**
+     * Tentukan apakah pengguna dapat membatalkan reservasi (BR-8).
+     * Hanya pemilik yang dapat membatalkan reservasi miliknya yang berstatus
+     * pending atau approved, dan minimal 1 jam sebelum waktu mulai.
+     */
+    public function cancel(User $user, Reservation $reservation): bool
+    {
+        if ($user->id !== $reservation->user_id) {
+            return false;
+        }
+
+        if (! in_array($reservation->status, ['pending', 'approved'], true)) {
+            return false;
+        }
+
+        return $reservation->start_time->isAfter(now()->addHour());
+    }
+
+    /**
+     * Alias delete untuk route model binding / resource controller.
+     */
+    public function delete(User $user, Reservation $reservation): bool
+    {
+        return $this->cancel($user, $reservation);
+    }
+}
