@@ -15,6 +15,7 @@ use App\Http\Controllers\Officer\DashboardController as OfficerDashboardControll
 use App\Http\Controllers\Officer\ReportController as OfficerReportController;
 use App\Http\Controllers\Officer\ReservationController as OfficerReservationController;
 use App\Http\Controllers\ReportController;
+use App\Http\Controllers\ReservationController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', HomeController::class)->name('home');
@@ -33,6 +34,12 @@ Route::middleware('guest')->group(function (): void {
 
 Route::middleware(['auth', 'active'])->group(function (): void {
     Route::get('/dashboard', DashboardController::class)->name('dashboard');
+
+    Route::get('/reservasi', [ReservationController::class, 'index'])->name('reservasi.index');
+    Route::get('/reservasi/baru', [ReservationController::class, 'create'])->name('reservasi.create');
+    Route::post('/reservasi', [ReservationController::class, 'store'])->name('reservasi.store');
+    Route::get('/reservasi/{reservation}', [ReservationController::class, 'show'])->name('reservasi.show');
+    Route::delete('/reservasi/{reservation}', [ReservationController::class, 'destroy'])->name('reservasi.destroy');
 
     Route::get('/laporan', [ReportController::class, 'index'])->name('laporan.index');
     Route::get('/laporan/baru', [ReportController::class, 'create'])->name('laporan.create');

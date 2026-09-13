@@ -1,0 +1,170 @@
+@extends('layouts.app')
+
+@section('title', 'Detail Reservasi')
+
+@section('content')
+    <div class="max-w-3xl mx-auto space-y-6">
+        <div>
+            <a href="{{ route('reservasi.index') }}"
+                class="inline-flex items-center text-sm font-medium text-slate-500 hover:text-slate-700">
+                &larr; Kembali ke riwayat reservasi
+            </a>
+            <div class="mt-2 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                <h1 class="text-2xl font-bold text-slate-800">Detail Reservasi #{{ $reservation->id }}</h1>
+                <div>
+                    <x-ui.badge :status="$reservation->status">
+                        {{ match ($reservation->status) {
+                            'pending' => 'Menunggu Persetujuan',
+                            'approved' => 'Disetujui',
+                            'rejected' => 'Ditolak',
+                            'cancelled_by_user' => 'Dibatalkan Pengguna',
+                            'cancelled_by_officer' => 'Dibatalkan Petugas',
+                            default => ucfirst($reservation->status),
+                        } }}
+                    </x-ui.badge>
+                </div>
+            </div>
+        </div>
+
+        <div class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm space-y-6">
+            {{-- Info Fasilitas --}}
+            <div>
+                <h2 class="text-xs font-semibold uppercase tracking-wider text-slate-400">Informasi Fasilitas</h2>
+                <div class="mt-3 grid grid-cols-1 gap-4 sm:grid-cols-2">
+                    <div class="rounded-lg bg-slate-50 p-4">
+                        <p class="text-xs text-slate-500">Nama Fasilitas</p>
+                        <p class="mt-1 text-base font-semibold text-slate-900">{{ $reservation->facility->name }}</p>
+                    </div>
+                    <div class="rounded-lg bg-slate-50 p-4">
+                        <p class="text-xs text-slate-500">Lokasi / Gedung</p>
+                        <p class="mt-1 text-base font-semibold text-slate-900">{{ $reservation->facility->location }}</p>
+                    </div>
+                </div>
+            </div>
+
+            {{-- Waktu & Jadwal --}}
+            <div class="border-t border-slate-100 pt-5">
+                <h2 class="text-xs font-semibold uppercase tracking-wider text-slate-400">Jadwal Penggunaan</h2>
+                <div class="mt-3 grid grid-cols-1 gap-4 sm:grid-cols-3">
+                    <div class="rounded-lg bg-slate-50 p-4">
+                        <p class="text-xs text-slate-500">Tanggal</p>
+                        <p class="mt-1 text-sm font-medium text-slate-900">
+                            {{ $reservation->start_time->translatedFormat('l, d F Y') }}</p>
+                    </div>
+                    <div class="rounded-lg bg-slate-50 p-4">
+                        <p class="text-xs text-slate-500">Waktu Mulai & Selesai</p>
+                        <p class="mt-1 text-sm font-medium text-slate-900">
+                            {{ $reservation->start_time->format('H:i') }} - {{ $reservation->end_time->format('H:i') }} WIB
+                        </p>
+                    </div>
+                    <div class="rounded-lg bg-slate-50 p-4">
+                        <p class="text-xs text-slate-500">Durasi</p>
+                        <p class="mt-1 text-sm font-medium text-slate-900">
+                            {{ $reservation->start_time->diffInMinutes($reservation->end_time) / 60 }} Jam
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            {{-- Tujuan Peminjaman --}}
+            <div class="border-t border-slate-100 pt-5">
+                <h2 class="text-xs font-semibold uppercase tracking-wider text-slate-400">Tujuan Penggunaan</h2>
+                <div class="mt-2 rounded-lg bg-slate-50 p-4">
+                    <p class="text-sm text-slate-700 whitespace-pre-line">{{ $reservation->purpose }}</p>
+                </div>
+            </div>
+
+            {{-- Catatan Penolakan / Pembatalan --}}
+            @if ($reservation->reject_reason)
+                <div class="rounded-lg border border-rose-200 bg-rose-50 p-4">
+                    <h3 class="text-sm font-semibold text-rose-800">Alasan Penolakan:</h3>
+                    <p class="mt-1 text-sm text-rose-700">{{ $reservation->reject_reason }}</p>
+                </div>
+            @endif
+
+            @if ($reservation->cancel_reason)
+                <div
+                    class="rounded-lg border {{ $reservation->status === 'cancelled_by_officer' ? 'border-amber-200 bg-amber-50' : 'border-slate-200 bg-slate-50' }} p-4">
+                    <h3
+                        class="text-sm font-semibold {{ $reservation->status === 'cancelled_by_officer' ? 'text-amber-800' : 'text-slate-800' }}">
+                        {{ $reservation->status === 'cancelled_by_officer' ? 'Alasan Pembatalan oleh Petugas:' : 'Alasan Pembatalan:' }}
+                    </h3>
+                    <p
+                        class="mt-1 text-sm {{ $reservation->status === 'cancelled_by_officer' ? 'text-amber-700' : 'text-slate-700' }}">
+                        {{ $reservation->cancel_reason }}
+                    </p>
+                </div>
+            @endif
+
+            {{-- Tombol Batal untuk Pengguna (BR-8) --}}
+            @php
+                $canCancel =
+                    in_array($reservation->status, ['pending', 'approved'], true) &&
+                    $reservation->start_time->isAfter(now()->addHour()) &&
+                    $reservation->user_id === auth()->id();
+                $isTooLate =
+                    in_array($reservation->status, ['pending', 'approved'], true) &&
+                    !$reservation->start_time->isAfter(now()->addHour()) &&
+                    $reservation->user_id === auth()->id();
+            @endphp
+
+            <div class="border-t border-slate-200 pt-5 flex flex-col sm:flex-row items-center justify-between gap-4">
+                <a href="{{ route('reservasi.index') }}"
+                    class="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50">
+                    &larr; Kembali
+                </a>
+
+                @if ($canCancel)
+                    <button type="button" data-open-dialog="cancel-modal"
+                        class="rounded-lg bg-rose-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-rose-700 focus:outline-none focus:ring-2 focus:ring-rose-500 focus:ring-offset-2">
+                        Batalkan Reservasi
+                    </button>
+                @elseif ($isTooLate)
+                    <span class="text-xs text-slate-400 italic">
+                        Pembatalan ditutup (batas maksimal pembatalan adalah 1 jam sebelum jadwal mulai - BR-8).
+                    </span>
+                @endif
+            </div>
+        </div>
+    </div>
+
+    {{-- Dialog Modal Pembatalan Reservasi --}}
+    @if ($canCancel)
+        <dialog id="cancel-modal" class="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl backdrop:bg-slate-950/40">
+            <h3 class="text-lg font-semibold text-slate-900">Batalkan Reservasi?</h3>
+            <p class="mt-1 text-sm text-slate-500">
+                {{ $reservation->facility->name }} &bull; {{ $reservation->start_time->translatedFormat('d M Y') }},
+                {{ $reservation->start_time->format('H:i') }} – {{ $reservation->end_time->format('H:i') }} WIB
+            </p>
+
+            <form method="POST" action="{{ route('reservasi.destroy', $reservation) }}" class="mt-4 space-y-4">
+                @csrf
+                @method('DELETE')
+
+                <div>
+                    <label for="cancel_reason" class="block text-sm font-medium text-slate-700">
+                        Alasan Pembatalan <span class="text-rose-500">*</span>
+                    </label>
+                    <textarea id="cancel_reason" name="cancel_reason" rows="3" required minlength="5" maxlength="255"
+                        placeholder="Contoh: Kegiatan dibatalkan karena ada perubahan jadwal mendadak..."
+                        class="mt-1 block w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-rose-500 focus:outline-none focus:ring-1 focus:ring-rose-500"></textarea>
+                    <p class="mt-1 text-xs text-slate-400">Minimal 5 karakter.</p>
+                    @error('cancel_reason')
+                        <p class="mt-1 text-xs text-rose-600">{{ $message }}</p>
+                    @enderror
+                </div>
+
+                <div class="flex items-center justify-end gap-3 pt-2">
+                    <button type="button" data-close-dialog
+                        class="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">
+                        Kembali
+                    </button>
+                    <button type="submit"
+                        class="rounded-lg bg-rose-600 px-4 py-2 text-sm font-medium text-white hover:bg-rose-700 focus:outline-none focus:ring-2 focus:ring-rose-500 focus:ring-offset-2">
+                        Konfirmasi Pembatalan
+                    </button>
+                </div>
+            </form>
+        </dialog>
+    @endif
+@endsection
