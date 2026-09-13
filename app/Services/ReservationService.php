@@ -14,6 +14,7 @@ use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\ValidationException;
+use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 use Symfony\Component\HttpKernel\Exception\ConflictHttpException;
 
 /**
@@ -93,7 +94,7 @@ class ReservationService
             $facility = Facility::whereKey($locked->facility_id)->lockForUpdate()->firstOrFail();
 
             if ($facility->status !== 'aktif') {
-                throw new ConflictHttpException('Fasilitas sedang berstatus '.$facility->status.' sehingga reservasi tidak dapat disetujui.');
+                throw new ConflictHttpException('Fasilitas sedang berstatus ' . $facility->status . ' sehingga reservasi tidak dapat disetujui.');
             }
 
             try {
@@ -166,6 +167,37 @@ class ReservationService
                 'cancel_reason' => $reason,
                 'decided_by' => $officer->id,
                 'decided_at' => now(),
+            ]);
+
+            return $locked->refresh();
+        });
+    }
+
+    /**
+     * Batalkan reservasi oleh pengguna pemilik (BR-8).
+     *
+     * Hanya pemilik yang dapat membatalkan reservasi miliknya yang berstatus
+     * pending atau approved, dan minimal 1 jam sebelum start_time.
+     */
+    public function cancelByUser(Reservation $reservation, User $user): Reservation
+    {
+        return DB::transaction(function () use ($reservation, $user): Reservation {
+            $locked = Reservation::whereKey($reservation->id)->lockForUpdate()->firstOrFail();
+
+            if ($locked->user_id !== $user->id) {
+                throw new AccessDeniedHttpException('Anda hanya dapat membatalkan reservasi milik Anda sendiri.');
+            }
+
+            if (! in_array($locked->status, ['pending', 'approved'], true)) {
+                throw new ConflictHttpException('Hanya reservasi berstatus pending atau approved yang dapat dibatalkan.');
+            }
+
+            if ($locked->start_time->isBefore(now()->addHour())) {
+                throw new ConflictHttpException('Reservasi hanya dapat dibatalkan paling lambat 1 jam sebelum waktu mulai.');
+            }
+
+            $locked->update([
+                'status' => 'cancelled_by_user',
             ]);
 
             return $locked->refresh();
