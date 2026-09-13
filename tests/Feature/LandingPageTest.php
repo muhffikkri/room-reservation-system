@@ -32,6 +32,15 @@ it('menampilkan landing page publik dengan fasilitas dan grid 26 slot', function
         ->assertSee('Total 26 Slot');
 });
 
+it('menandai Beranda sebagai navigasi aktif pada posisi awal', function (): void {
+    $html = $this->get('/')->assertOk()->getContent();
+
+    expect($html)
+        ->toContain('data-landing-nav="top"')
+        ->toContain('aria-current="page">Beranda</a>')
+        ->not->toContain('aria-current="page">Jadwal</a>');
+});
+
 it('menandai slot lewat dan slot terpakai pada grid', function (): void {
     $facility = Facility::factory()->create(['name' => 'Lab Komputer 1']);
     $user = User::factory()->create(['role' => 'pengguna', 'account_status' => 'aktif']);

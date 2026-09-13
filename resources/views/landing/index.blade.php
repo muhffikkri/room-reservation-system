@@ -18,6 +18,8 @@
     ];
     $tabActiveClass = 'inline-flex items-center gap-2 rounded-lg bg-[#00236f] px-4 py-2 font-medium text-white shadow-sm transition-all';
     $tabInactiveClass = 'inline-flex items-center gap-2 rounded-lg bg-[#EEF2FF] px-4 py-2 font-medium text-[#475569] transition-all hover:bg-[#e2e7ff] hover:text-[#0F172A]';
+    $navActiveClass = 'rounded-lg bg-[#e2e7ff] px-3 py-2 text-sm font-semibold text-[#00236f] transition-colors';
+    $navInactiveClass = 'rounded-lg px-3 py-2 text-sm font-medium text-[#475569] transition-colors hover:bg-[#f2f3ff] hover:text-[#0F172A]';
 @endphp
 
 <!DOCTYPE html>
@@ -32,18 +34,18 @@
 <body data-landing class="min-h-screen bg-[#F8FAFC] text-[#0F172A] antialiased">
 
 <header class="fixed inset-x-0 top-0 z-50 bg-white/95 shadow-[0_1px_8px_rgba(0,0,0,0.04)] backdrop-blur-md">
-    <div class="flex h-16 items-center justify-between px-6">
-        <a href="#top" class="flex items-center gap-3">
+    <div class="mx-auto flex h-16 w-full max-w-7xl items-center justify-between gap-6 px-6">
+        <a href="#top" data-landing-nav="top" class="flex shrink-0 items-center gap-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0051d5] focus:ring-offset-2" aria-label="Kembali ke Beranda">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="h-8 w-8 text-[#00236f]" aria-hidden="true">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M3 21h18M5 21V7l7-4 7 4v14M9 21v-4h6v4M9 11h.01M15 11h.01M9 15h.01M15 15h.01"/>
             </svg>
             <span class="text-lg font-semibold text-[#00236f]">Sistem Reservasi Fasilitas Kampus</span>
         </a>
-        <nav class="hidden items-center gap-4 md:flex">
-            <a href="#top" class="rounded-lg px-3 py-2 text-sm font-medium text-[#475569] transition-colors hover:bg-[#f2f3ff] hover:text-[#0F172A]">Beranda</a>
-            <a href="#fasilitas" class="rounded-lg px-3 py-2 text-sm font-medium text-[#475569] transition-colors hover:bg-[#f2f3ff] hover:text-[#0F172A]">Fasilitas</a>
-            <a href="#jadwal-preview" class="rounded-lg bg-[#e2e7ff] px-3 py-2 text-sm font-medium text-[#0F172A] transition-colors">Jadwal</a>
-            <a href="#panduan" class="rounded-lg px-3 py-2 text-sm font-medium text-[#475569] transition-colors hover:bg-[#f2f3ff] hover:text-[#0F172A]">Panduan</a>
+        <nav class="hidden items-center gap-1 md:flex" aria-label="Navigasi halaman">
+            <a href="#top" data-landing-nav="top" data-nav-active="{{ $navActiveClass }}" data-nav-inactive="{{ $navInactiveClass }}" class="{{ $navActiveClass }}" aria-current="page">Beranda</a>
+            <a href="#fasilitas" data-landing-nav="fasilitas" data-nav-active="{{ $navActiveClass }}" data-nav-inactive="{{ $navInactiveClass }}" class="{{ $navInactiveClass }}">Fasilitas</a>
+            <a href="#jadwal-preview" data-landing-nav="jadwal-preview" data-nav-active="{{ $navActiveClass }}" data-nav-inactive="{{ $navInactiveClass }}" class="{{ $navInactiveClass }}">Jadwal</a>
+            <a href="#panduan" data-landing-nav="panduan" data-nav-active="{{ $navActiveClass }}" data-nav-inactive="{{ $navInactiveClass }}" class="{{ $navInactiveClass }}">Panduan</a>
         </nav>
         <div class="flex items-center gap-3">
             @auth
@@ -56,11 +58,11 @@
     </div>
 </header>
 
-<main id="top" class="w-full pt-16">
+<main class="w-full pt-16">
     <div class="mx-auto w-full max-w-7xl space-y-10 px-6 py-8">
 
         {{-- SECTION 1: Hero --}}
-        <section class="relative overflow-hidden rounded-xl bg-white p-8 shadow-sm md:p-12">
+        <section id="top" data-landing-section class="relative scroll-mt-24 overflow-hidden rounded-xl bg-white p-8 shadow-sm md:p-12">
             <div class="pointer-events-none absolute -right-20 -top-20 h-96 w-96 rounded-full bg-[#00236f]/5 blur-3xl"></div>
             <div class="relative z-10 max-w-3xl space-y-4">
                 <div class="inline-flex items-center gap-2 rounded-full bg-[#e2e7ff] px-3 py-1 text-xs font-medium text-[#00236f]">
@@ -146,7 +148,7 @@
         </section>
 
         {{-- SECTION 3: Grid Kartu Fasilitas --}}
-        <section id="fasilitas" class="space-y-6 scroll-mt-24">
+        <section id="fasilitas" data-landing-section class="scroll-mt-24 space-y-6">
             <div class="flex flex-wrap items-center justify-between gap-3">
                 <div>
                     <h2 class="text-xl font-semibold text-[#0F172A]">Fasilitas Kampus Unggulan</h2>
@@ -218,7 +220,7 @@
         </section>
 
         {{-- SECTION 4: Pratinjau Jadwal --}}
-        <section id="jadwal-preview" class="scroll-mt-24 space-y-6 rounded-xl bg-white p-6 shadow-sm md:p-8">
+        <section id="jadwal-preview" data-landing-section class="scroll-mt-24 space-y-6 rounded-xl bg-white p-6 shadow-sm md:p-8">
             <div class="flex flex-col justify-between gap-4 md:flex-row md:items-center">
                 <div>
                     <div class="flex items-center gap-2">
@@ -315,7 +317,7 @@
         </section>
 
         {{-- SECTION 5: Panduan --}}
-        <section id="panduan" class="scroll-mt-24 space-y-6 rounded-xl bg-white p-6 shadow-sm md:p-8">
+        <section id="panduan" data-landing-section class="scroll-mt-24 space-y-6 rounded-xl bg-white p-6 shadow-sm md:p-8">
             <div>
                 <h2 class="text-xl font-semibold text-[#0F172A]">Alur Peminjaman</h2>
                 <p class="text-xs text-[#475569]">Tiga langkah sederhana untuk menggunakan fasilitas kampus.</p>
