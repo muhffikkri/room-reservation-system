@@ -2,13 +2,13 @@
 
 | Meta | Nilai |
 |---|---|
-| Tanggal pembaruan | 2026-09-12 |
-| Referensi commit | `9df2d0d` (2026-09-12, revert PR #35 — pulihkan fitur reservasi) |
+| Tanggal pembaruan | 2026-09-13 |
+| Referensi commit | `e9c591a` (2026-09-12, merge PR #36 — docs v1.1.0; fitur reservasi sudah utuh) |
 | Dokumen sempai dasar | [spesifikasi-sistem-reservasi.md](spesifikasi-sistem-reservasi.md) |
 | Status publikasi | Checklist mengikuti **§16** dan **§8** dokumen spesifikasi |
 
 > Dokumen ini menandai fitur yang **sudah** dan **belum** tersedia sampai commit tercantum di atas.
-> Status merujuk **`dev`** (commit `9df2d0d`). Fitur yang selesai di **branch kerja tim** tetapi belum masuk `dev` ditandai **Di Branch** pada kolom Catatan.
+> Status merujuk **`dev`** (commit `e9c591a`). Fitur yang selesai di **branch kerja tim** tetapi belum masuk `dev` ditandai **Di Branch** pada kolom Catatan.
 > Legenda: ✔ = Selesai · ◐ = Sebagian · ✗ = Belum.
 
 ---
@@ -31,7 +31,7 @@
 | 12 | Rekap okupansi & frekuensi kerusakan + ekspor CSV & PDF | ✗ Belum | `RecapService`, `Admin\RecapController`, view `admin/rekap/*` belum dibuat. Ditunda ke milestone v1. |
 | 13 | Validasi server & client pada semua form penting | ◐ Sebagian | Server ✔ (FormRequest + Rule pada semua form yang ada). Client sebagian: atribut HTML5, dialog konfirmasi, preview gambar fasilitas; `resources/js/validation.js` (mirror frontend) belum lengkap untuk form reservasi/laporan yang belum ada. |
 | 14 | Seeder akun demo berjalan (`php artisan migrate:fresh --seed`) | ✔ Selesai | `UserSeeder`, `FacilitySeeder` (5 fasilitas sesuai §15), `ReservationSeeder`, `ReportSeeder`; akun demo §5.3. |
-| 15 | README berisi setup + informasi login | ✔ Selesai | README.md diperbarui 2026-09-09 (setup, arsitektur, akun demo, struktur folder, daftar snapshot). |
+| 15 | README berisi setup + informasi login | ✔ Selesai | README.md diperbarui (terakhir 2026-09-13): setup, arsitektur, akun demo, catatan pemecahan masalah seed, struktur folder, daftar snapshot. |
 
 ## 2. Kepatuhan Business Rules (§8 spesifikasi)
 
@@ -54,7 +54,7 @@
 | BR-15 | Petugas tidak registrasi mandiri | ✔ | Registrasi dibatasi role `pengguna` |
 | BR-16 | Reservasi approved di fasilitas `perbaikan` dibatalkan petugas | ◐ | Aksi cancel petugas tersedia; otomasi/alur penandaan selesai via laporan perbaikan (petugas dapat toggle fasilitas & membatalkan reservasi) |
 
-## 3. Yang Sudah Ada (ringkasan artefak commit `9df2d0d`)
+## 3. Yang Sudah Ada (ringkasan artefak commit `e9c591a`)
 
 - **41 route** (lihat `php artisan route:list`): home/landing publik, fasilitas publik (katalog/detail/jadwal), auth custom, laporan pengguna & petugas, admin (dashboard, akun, verifikasi, fasilitas CRUD), petugas (dashboard, antrian reservasi, laporan).
 - **120 tes Pest** lulus (439 assertions): auth, gate akun, verifikasi, akun admin/petugas, antrian reservasi petugas, CRUD fasilitas, dashboard admin & petugas, landing page, halaman fasilitas publik (katalog/detail/jadwal, BR-13), laporan pengguna & petugas (BR-10, BR-11), aturan slot/overlap (unit).
@@ -71,4 +71,4 @@
 
 ---
 
-*Terakhir diperbarui: 2026-09-12 · Komit referensi `9df2d0d` (dev) · Status branch: `feature/officer-report` & `feat/facility-system` sudah di-merge.*
+*Terakhir diperbarui: 2026-09-13 · Komit referensi `e9c591a` (dev) · Status branch: `feature/officer-report` & `feat/facility-system` sudah di-merge.*
