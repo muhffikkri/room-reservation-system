@@ -75,7 +75,7 @@ it('rejects cancellation when start time is less than 1 hour away (BR-8)', funct
 
     $service = app(ReservationService::class);
 
-    expect(fn() => $service->cancelByUser($reservation, $user))
+    expect(fn () => $service->cancelByUser($reservation, $user))
         ->toThrow(ConflictHttpException::class, 'Reservasi hanya dapat dibatalkan paling lambat 1 jam sebelum waktu mulai.');
 });
 
@@ -97,7 +97,7 @@ it('rejects cancellation of another users reservation', function () {
 
     $service = app(ReservationService::class);
 
-    expect(fn() => $service->cancelByUser($reservation, $userB))
+    expect(fn () => $service->cancelByUser($reservation, $userB))
         ->toThrow(AccessDeniedHttpException::class, 'Anda hanya dapat membatalkan reservasi milik Anda sendiri.');
 });
 
@@ -119,7 +119,7 @@ it('rejects cancellation when status is not pending or approved', function () {
 
     $service = app(ReservationService::class);
 
-    expect(fn() => $service->cancelByUser($reservation, $user))
+    expect(fn () => $service->cancelByUser($reservation, $user))
         ->toThrow(ConflictHttpException::class, 'Hanya reservasi berstatus pending atau approved yang dapat dibatalkan.');
 });
 
@@ -149,10 +149,10 @@ it('checks ReservationPolicy authorization rules correctly', function () {
         'end_time' => Carbon::now()->addHours(2),
     ]);
 
-    // Test view policy
+    // Test view policy (§7.4: pemilik atau petugas; admin tidak termasuk)
     expect($policy->view($owner, $validReservation))->toBeTrue()
         ->and($policy->view($petugas, $validReservation))->toBeTrue()
-        ->and($policy->view($admin, $validReservation))->toBeTrue()
+        ->and($policy->view($admin, $validReservation))->toBeFalse()
         ->and($policy->view($otherUser, $validReservation))->toBeFalse();
 
     // Test cancel policy

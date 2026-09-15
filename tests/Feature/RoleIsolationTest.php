@@ -194,6 +194,29 @@ it('redirects guests to login on private routes', function () {
     $this->get('/admin')->assertRedirect(route('login'));
 });
 
+it('shows only the admin menu to admins', function () {
+    $admin = User::factory()->create(['role' => 'admin', 'account_status' => 'aktif']);
+
+    $this->actingAs($admin)
+        ->get('/admin')
+        ->assertOk()
+        ->assertSee('Administrasi')
+        ->assertSee('Verifikasi Akun')
+        ->assertDontSee('Operasional')
+        ->assertDontSee('Antrian Reservasi');
+});
+
+it('shows only the officer menu to petugas', function () {
+    $petugas = User::factory()->create(['role' => 'petugas', 'account_status' => 'aktif']);
+
+    $this->actingAs($petugas)
+        ->get('/petugas')
+        ->assertOk()
+        ->assertSee('Operasional')
+        ->assertDontSee('Administrasi')
+        ->assertDontSee('Verifikasi Akun');
+});
+
 it('lets an active admin create another admin without self-registration', function () {
     $admin = User::factory()->create(['role' => 'admin', 'account_status' => 'aktif']);
 

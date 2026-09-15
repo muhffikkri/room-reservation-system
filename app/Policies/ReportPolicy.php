@@ -16,12 +16,14 @@ class ReportPolicy
     }
 
     /**
-     * Detail laporan: pemilik ATAU petugas/admin (spec §7.4).
+     * Detail laporan: pemilik pada alur pengguna ATAU petugas pada alur
+     * operasional (§7.4, BR-13). Admin tidak termasuk: ia hanya menerima
+     * agregat read-only di dashboard admin.
      */
     public function view(User $user, Report $report): bool
     {
         return $user->id === $report->user_id
-            || in_array($user->role, ['petugas', 'admin'], true);
+            || $user->role === 'petugas';
     }
 
     /**

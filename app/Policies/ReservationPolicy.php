@@ -17,12 +17,14 @@ class ReservationPolicy
 
     /**
      * Tentukan apakah pengguna dapat melihat detail reservasi.
-     * Pengguna hanya dapat melihat reservasi miliknya sendiri, sedangkan petugas dan admin dapat melihat semua.
+     * Pemilik pada alur pengguna ATAU petugas pada alur operasional
+     * (§7.4, BR-13). Admin tidak termasuk: ia hanya menerima agregat
+     * read-only di dashboard admin.
      */
     public function view(User $user, Reservation $reservation): bool
     {
         return $user->id === $reservation->user_id
-            || in_array($user->role, ['petugas', 'admin'], true);
+            || $user->role === 'petugas';
     }
 
     /**

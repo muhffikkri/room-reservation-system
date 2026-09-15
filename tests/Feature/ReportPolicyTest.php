@@ -7,7 +7,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 
 uses(RefreshDatabase::class);
 
-it('allows report owner, petugas, and admin to view but forbids other pengguna', function () {
+it('allows report owner and petugas to view but forbids admin and other pengguna', function () {
     $facility = Facility::factory()->create(['status' => 'aktif']);
     $owner = User::factory()->create(['role' => 'pengguna', 'account_status' => 'aktif']);
     $other = User::factory()->create(['role' => 'pengguna', 'account_status' => 'aktif']);
@@ -21,6 +21,7 @@ it('allows report owner, petugas, and admin to view but forbids other pengguna',
 
     $this->actingAs($owner)->get("/laporan/{$report->id}")->assertOk();
     $this->actingAs($petugas)->get("/petugas/laporan/{$report->id}")->assertOk();
-    $this->actingAs($admin)->get("/petugas/laporan/{$report->id}")->assertOk();
+    $this->actingAs($admin)->get("/petugas/laporan/{$report->id}")->assertForbidden();
+    $this->actingAs($admin)->get("/laporan/{$report->id}")->assertForbidden();
     $this->actingAs($other)->get("/laporan/{$report->id}")->assertForbidden();
 });
