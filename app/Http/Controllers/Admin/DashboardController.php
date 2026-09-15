@@ -11,48 +11,22 @@ use Illuminate\Http\Request;
 use Illuminate\View\View;
 
 /**
- * Dashboard admin — ringkasan operasional (§6, §11.1).
+ * Dashboard admin — ringkasan operasional read-only (§6, §7.3, §10).
  *
- * Strukturnya sengaja disetarakan dengan dashboard petugas agar admin
- * memantau antrean yang sama, ditambah satu kartu akun pending karena
- * verifikasi registrasi mandiri adalah tanggung jawab admin (BR-14).
+ * Hanya angka agregat yang dimuat: tanpa nama pemohon, tanpa detail
+ * antrean, tanpa aksi. Detail reservasi/laporan milik antrean petugas
+ * (BR-13); daftar akun pending ada di halaman verifikasi admin sendiri.
  */
 class DashboardController extends Controller
 {
     public function __invoke(Request $request): View
     {
-        $pendingReservations = Reservation::pending()
-            ->with(['user', 'facility'])
-            ->orderBy('start_time')
-            ->get();
-
-        $newReports = Report::query()
-            ->with(['user', 'facility'])
-            ->where('status', 'baru')
-            ->orderBy('created_at')
-            ->get();
-
-        $pendingAccounts = User::pendingAccount()
-            ->orderBy('created_at')
-            ->get();
-
-        $repairFacilityCount = Facility::query()
-            ->where('status', 'perbaikan')
-            ->count();
-
-        $processedReportCount = Report::query()
-            ->where('status', 'diproses')
-            ->count();
-
         return view('admin.dashboard.index', [
-            'pendingReservationCount' => $pendingReservations->count(),
-            'newReportCount' => $newReports->count(),
-            'processedReportCount' => $processedReportCount,
-            'repairFacilityCount' => $repairFacilityCount,
-            'pendingAccountCount' => $pendingAccounts->count(),
-            'pendingReservations' => $pendingReservations->take(5),
-            'newReports' => $newReports->take(5),
-            'pendingAccounts' => $pendingAccounts->take(5),
+            'pendingReservationCount' => Reservation::pending()->count(),
+            'newReportCount' => Report::where('status', 'baru')->count(),
+            'processedReportCount' => Report::where('status', 'diproses')->count(),
+            'repairFacilityCount' => Facility::where('status', 'perbaikan')->count(),
+            'pendingAccountCount' => User::pendingPengguna()->count(),
         ]);
     }
 }
