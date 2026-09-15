@@ -158,3 +158,38 @@ it('logs out an authenticated user', function () {
     $response->assertRedirect(route('login'));
     $this->assertGuest();
 });
+
+it('clears remember token when login is denied for a pending account', function () {
+    User::factory()->create([
+        'email' => 'pending-remember@student.kampus.test',
+        'password' => 'rahasia123',
+        'account_status' => 'pending',
+        'remember_token' => 'token-lama',
+    ]);
+
+    $this->post('/login', [
+        'email' => 'pending-remember@student.kampus.test',
+        'password' => 'rahasia123',
+        'remember' => true,
+    ]);
+
+    $this->assertGuest();
+    expect(User::where('email', 'pending-remember@student.kampus.test')->first()->remember_token)->toBeNull();
+});
+
+it('throttles repeated register attempts', function () {
+    foreach (range(1, 11) as $i) {
+        $response = $this->post('/register', [
+            'name' => 'Spam',
+            'email' => "spam-throttle-{$i}@student.kampus.test",
+            'password' => 'rahasia123',
+            'password_confirmation' => 'rahasia123',
+        ]);
+
+        if ($i <= 10) {
+            $response->assertRedirect(route('login'));
+        }
+    }
+
+    $response->assertStatus(429);
+});
