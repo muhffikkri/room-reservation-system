@@ -12,6 +12,8 @@ it('creates a pending pengguna account and ignores role input', function () {
         'email' => 'budi-baru@student.kampus.test',
         'password' => 'rahasia123',
         'password_confirmation' => 'rahasia123',
+        'identity' => '2110512100',
+        'phone' => '081200000100',
         'role' => 'petugas',
         'account_status' => 'aktif',
     ]);
@@ -22,6 +24,8 @@ it('creates a pending pengguna account and ignores role input', function () {
         'email' => 'budi-baru@student.kampus.test',
         'role' => 'pengguna',
         'account_status' => 'pending',
+        'identity' => '2110512100',
+        'phone' => '+6281200000100',
     ]);
 });
 
@@ -184,6 +188,8 @@ it('throttles repeated register attempts', function () {
             'email' => "spam-throttle-{$i}@student.kampus.test",
             'password' => 'rahasia123',
             'password_confirmation' => 'rahasia123',
+            'identity' => "2199000{$i}",
+            'phone' => "0812999000{$i}",
         ]);
 
         if ($i <= 10) {
