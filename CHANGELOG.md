@@ -2,7 +2,7 @@
 
 Format mengikuti riwayat commit tim. Tanggal terbaru di atas. Status merge: **Dev** = sudah masuk `dev`; **Branch** = masih di branch kerja anggota tim (belum di-merge ke `dev`).
 
-> Patokan status terakhir: `dev` = `e9c591a` (2026-09-12, merge PR #36 — docs v1.1.0; pemulihan fitur reservasi masuk via `a6a5d70`).
+> Patokan status terakhir: `dev` = `e03df57` (2026-09-15, merge PR #45 — riwayat verifikasi akun; baseline sebelumnya `e9c591a`).
 
 ---
 
@@ -10,11 +10,26 @@ Format mengikuti riwayat commit tim. Tanggal terbaru di atas. Status merge: **De
 
 _Bagian ini kosong; semua pekerjaan tim terkini sudah masuk `dev`._
 
-> Alur reservasi pengguna (form/slot picker/riwayat/batal-BR-8) & rekap/ekspor CSV-PDF masih menunggu milestone anggota tim.
+> Tersisa satu deliverable spesifikasi: rekap okupansi & frekuensi kerusakan dengan ekspor CSV/PDF (`Admin\RecapController` + `RecapService`).
 
 ---
 
-## v1.1.0 — 2026-09-12 (Minor, baseline `dev` saat ini)
+## [v1.2.0-dev] — Perkembangan `dev` sejak v1.1.0 (`e9c591a` → `e03df57`, 2026-09-15)
+
+Fitur berikut sudah masuk `dev` tetapi belum dipromosikan ke `staging`/`prod`. Belum ada release notes resmi; ringkasan teknis ada di snapshot 2026-09-15.
+
+### Dev — penambahan fitur (PR #37–#45)
+- **Dokumentasi sinkron v1.1.0** (PR #37 `docs/project-information` → `6ac099e`): baseline `dev` yang benar (`e9c591a`), snapshot 2026-09-12, perbaikan setup README (nama DB & seed demo).
+- **Alur reservasi pengguna** (PR #39 `feat/user-reservation-create` → `509585a`): `/reservasi` (riwayat), `/reservasi/baru` (form + slot picker), `/reservasi/{reservation}` (detail), `POST /reservasi` (store) — `ReservationController` + views `reservasi/*` + `UserReservationCreateTest`; aturan BR-1..BR-6, BR-12 diterapkan saat pengajuan.
+- **Pembatalan reservasi pengguna** (PR #38 `feat/reservation-cancellation` → `92309b9`): `DELETE /reservasi/{reservation}` — hanya milik sendiri, min 1 jam sebelum mulai, 403 untuk reservasi orang lain (BR-8) — `ReservationCancellationTest`.
+- **Isolasi role & auth hardening** (PR #41 `feat/auth-admin-isolation` → `e4de698`): grup route dipisah tegas `role:pengguna` / `role:petugas` / `role:admin`; redirect dashboard per role pasca-login (`08fc860`); view operasional dibatasi petugas via `ReportPolicy`/`ReservationPolicy` (`14655e0`); kelola & buat akun admin (`AdminAccountController` + `AdminAccountRequest`); pulihkan akun ditolak (`/admin/pengguna/{user}/pulihkan`); tolak perubahan status fasilitas saat `perbaikan` (`3349980`); dashboard admin read-only agregat (`028d6e0`); registrasi di-throttle `10,1`; `identity` & `phone` wajib unik pada registrasi mandiri (`6b67630` + migration `add_unique_identity_phone_to_users_table`); invalidasi sesi saat role/status berubah (`307ec70` via `UserObserver`); `AccountAttributes` helper; tes `RoleIsolationTest` (22 tes).
+- **Riwayat verifikasi akun** (PR #45 `feat/account-verification-history` → `e03df57`): `AccountVerificationAction` + tabel `account_verification_actions` + `AccountVerificationService` + kolom audit verifikasi di `users` (migration `add_verification_audit_to_users_table`) — `AccountVerificationHistoryTest`.
+- **Perapian UI & branding** (PR #40 `fix/landing-nav-active-state` → `8c854d0`): state nav aktif sinkron dengan section terlihat, layout navigasi responsif bermerek, dashboard pengguna berisi ringkasan aktivitas (`bea6f78`), penyelarasan tema login/register/landing/fasilitas/laporan/reservasi/petugas/admin.
+- **Docs spesifikasi** (PR #43 `docs/clarify-spec-after-auth-admin` → `0a2b6c8`): `docs/spesifikasi-sistem-reservasi.md` disinkronkan dengan isolasi role, audit verifikasi, dan BR-17 (multi-admin).
+
+---
+
+## v1.1.0 — 2026-09-12 (Minor)
 
 Rilis minor non-breaking dari `v1.0.0` (`060685f`): menambahkan modul laporan pengguna & petugas serta halaman publik fasilitas, lalu menjaga seluruh fitur reservasi yang sudah ada tetap utuh. Detail lengkap: [releases/v1.1.0.md](releases/v1.1.0.md).
 
@@ -71,6 +86,6 @@ Rilis stabil pertama. Detail lengkap: [releases/v1.0.0.md](releases/v1.0.0.md).
 
 ## Catatan Método
 
-- Rentang dok: `2026-08-30` → `2026-09-12`.
+- Rentang dok: `2026-08-30` → `2026-09-15`.
 - Commit tim di luar dev yang belum terdokumentasi di release: lihat bagian [Unreleased].
 - Snapshot detail per tanggal: `snapshots/`.
