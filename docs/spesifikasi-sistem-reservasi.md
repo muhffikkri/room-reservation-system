@@ -131,6 +131,10 @@ Nama database: `reservasi_kampus`. Migrasi dibuat dengan Laravel Schema Builder.
 | identity | VARCHAR(30) NULL | NIM/NIP |
 | phone | VARCHAR(20) NULL | |
 | account_status | ENUM('pending','aktif','ditolak') | default `pending`; akun buatan admin langsung `aktif` |
+| verified_by | FK → users NULL | admin yang memverifikasi (audit BR-14) |
+| verified_at | TIMESTAMP NULL | waktu verifikasi |
+| rejected_by | FK → users NULL | admin yang menolak (audit BR-14) |
+| rejected_at | TIMESTAMP NULL | waktu penolakan |
 | remember_token | VARCHAR(100) NULL | |
 
 Indeks: `UNIQUE(email)`, `INDEX(role, account_status)`.
@@ -251,7 +255,7 @@ Konvensi: semua model pakai `$fillable`, `casts()` untuk enum/datetime, dan TIDA
 | GET | `/fasilitas/{facility}/jadwal?date=` | `fasilitas.jadwal` | FacilityController@jadwal (grid slot tersedia/tidak) |
 
 ### Auth (custom, session-based)
-| GET/POST | `/register`, `/login`, `/logout`, `/dashboard` | | controller auth buatan sendiri + throttling `RateLimiter`; Registrasi mandiri hanya untuk role `pengguna` |
+| GET/POST | `/register`, `/login`, `/logout`, `/dashboard` | | controller auth buatan sendiri + throttling `RateLimiter` (login) dan `throttle:10,1` pada POST `/login` & `/register` (anti-spam); Registrasi mandiri hanya untuk role `pengguna` |
 
 ### Pengguna — `auth` + `EnsureAccountActive`
 | Method | URI | Nama | Catatan |
@@ -366,7 +370,7 @@ Ditambah custom Rule objects (logika di `App\Rules`, menerima Carbon langsung da
 | `Officer\ReportController` | index, show, updateStatus | transisi via `ReportService` + tulis `report_updates` |
 | `Officer\FacilityStatusController` | update | set `perbaikan`/`aktif`; hanya petugas/admin |
 | `Admin\OfficerAccountController` | index, create, store | buat akun petugas |
-| `Admin\UserAccountController` | index, create, store, verifikasi, tolak | verifikasi akun `pending` |
+| `Admin\UserAccountController` | index, create, store, verifikasi, tolak | verifikasi akun `pending` via `AccountVerificationService` (transaksi + `lockForUpdate`, guard role `pengguna`, audit `verified_by/at` & `rejected_by/at`) |
 | `Admin\FacilityController` | resource (tanpa destroy fisik) | nonaktifkan/aktifkan |
 | `Admin\RecapController` | index, export | agregasi via `RecapService`; export csv/pdf |
 | `Admin\DashboardController` | index | kartu ringkasan + grafik sederhana (opsional) |
@@ -397,7 +401,7 @@ Catatan implementasi: `Admin\OfficerAccountController` dan `Admin\UserAccountCon
 | BR-11 | Saat menangani laporan, petugas dapat menandai fasilitas `perbaikan`; ketika laporan ditandai `selesai` dan fasilitas terkait `perbaikan` karena laporan itu, sistem menampilkan aksi kembalikan fasilitas ke `aktif`. |
 | BR-12 | Fasilitas `perbaikan`/`nonaktif` tidak dapat direservasi; slot grid menampilkan tidak tersedia. |
 | BR-13 | Pengunjung (tanpa login) melihat daftar fasilitas + grid tersedia/tidak, **tanpa nama pemesan & tujuan**. Detail pemohon hanya untuk petugas/admin dan pemilik. |
-| BR-14 | Akun registrasi mandiri berstatus `pending` → login ditolak sampai admin memverifikasi; akun buatan admin langsung `aktif`. |
+| BR-14 | Akun registrasi mandiri berstatus `pending` → login ditolak sampai admin memverifikasi; akun buatan admin langsung `aktif`. Verifikasi/tolak berjalan dalam transaksi + `lockForUpdate` (anti-balapan dua admin), hanya untuk target role `pengguna`, dan selalu mencatat `verified_by/at` atau `rejected_by/at`. Target non-`pengguna` dikembalikan 404; target yang sudah diproses dikembalikan dengan pesan konflik (redirect + flash error di web). |
 | BR-15 | Petugas **tidak pernah** bisa registrasi mandiri — dibuat hanya oleh admin. |
 | BR-16 | Reservasi pada fasilitas berstatus `perbaikan` yang sudah approved → petugas harus membatalkannya (BR-9) bila jadwal bertabrakan dengan perbaikan. |
 
