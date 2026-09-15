@@ -89,9 +89,17 @@ class FacilityController extends Controller
 
     /**
      * Nonaktifkan fasilitas (soft-disable alih-alih hapus fisik).
+     *
+     * Status perbaikan milik alur petugas (§4.2): admin tidak boleh
+     * menonaktifkan fasilitas yang sedang ditangani sampai laporannya
+     * selesai dan statusnya kembali aktif.
      */
     public function deactivate(Facility $facility): RedirectResponse
     {
+        if ($facility->status === 'perbaikan') {
+            return back()->with('error', "Fasilitas {$facility->name} sedang dalam perbaikan dan tidak dapat dinonaktifkan sampai penanganannya selesai.");
+        }
+
         $facility->update(['status' => 'nonaktif']);
 
         return back()->with('success', "Fasilitas {$facility->name} dinonaktifkan.");
@@ -99,9 +107,16 @@ class FacilityController extends Controller
 
     /**
      * Aktifkan kembali fasilitas yang sebelumnya nonaktif.
+     *
+     * Mengaktifkan dari perbaikan adalah wewenang petugas via alur
+     * laporan (BR-11); admin hanya mengaktifkan dari nonaktif.
      */
     public function activate(Facility $facility): RedirectResponse
     {
+        if ($facility->status === 'perbaikan') {
+            return back()->with('error', "Fasilitas {$facility->name} sedang dalam perbaikan; pengembaliannya ke aktif dilakukan petugas melalui alur laporan.");
+        }
+
         $facility->update(['status' => 'aktif']);
 
         return back()->with('success', "Fasilitas {$facility->name} diaktifkan kembali.");

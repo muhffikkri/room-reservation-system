@@ -7,6 +7,7 @@ use App\Models\Facility;
 use App\Models\Report;
 use App\Services\ReportService;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\View\View;
 
 class ReportController extends Controller
@@ -54,9 +55,7 @@ class ReportController extends Controller
      */
     public function show(Report $report): View
     {
-        if ($report->user_id !== auth()->id() && ! in_array(auth()->user()->role, ['petugas', 'admin'], true)) {
-            abort(403, 'Anda tidak memiliki akses ke laporan ini.');
-        }
+        Gate::authorize('view', $report);
 
         $report->load(['facility', 'updates.user', 'handledBy']);
 

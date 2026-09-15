@@ -1,17 +1,17 @@
 @extends('layouts.app')
 
-@section('title', 'Tambah Akun Pengguna')
+@section('title', 'Tambah Akun Admin')
 
 @section('content')
     <div class="mx-auto max-w-md">
         <div class="rounded-2xl border border-[#E2E7FF] bg-white p-6 shadow-[0_14px_40px_rgba(15,23,42,0.06)] sm:p-8">
             <p class="text-xs font-semibold uppercase tracking-[0.18em] text-[#0051d5]">Manajemen akun</p>
-            <h1 class="mt-2 text-xl font-semibold tracking-tight text-[#00236f]">Tambah Akun Pengguna</h1>
+            <h1 class="mt-2 text-xl font-semibold tracking-tight text-[#00236f]">Tambah Akun Admin</h1>
             <p class="mt-2 mb-5 text-sm leading-6 text-slate-600">
                 Akun langsung aktif tanpa verifikasi karena admin yang membuatnya.
             </p>
 
-            <form method="POST" action="{{ route('admin.pengguna.store') }}" data-validate>
+            <form method="POST" action="{{ route('admin.admin.store') }}" data-validate>
                 @csrf
                 <div class="mb-4">
                     <label for="name" class="mb-1 block text-sm font-medium">Nama lengkap</label>
@@ -28,7 +28,7 @@
                 </div>
 
                 <div class="mb-4">
-                    <label for="identity" class="mb-1 block text-sm font-medium">NIM/NIP</label>
+                    <label for="identity" class="mb-1 block text-sm font-medium">NIP</label>
                     <input id="identity" name="identity" type="text" required maxlength="30" value="{{ old('identity') }}"
                            class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm transition focus:border-[#0051d5] focus:outline-none focus:ring-4 focus:ring-[#E2E7FF]">
                     @error('identity')<p class="mt-1 text-xs text-red-600">{{ $message }}</p>@enderror
@@ -56,7 +56,7 @@
 
                 <button type="submit"
                         class="w-full rounded-lg bg-[#0051d5] px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-[#00236f] focus:outline-none focus:ring-2 focus:ring-[#0051d5] focus:ring-offset-2">
-                    Buat Akun Pengguna
+                    Buat Akun Admin
                 </button>
             </form>
         </div>

@@ -77,30 +77,36 @@ it('verifies a pending account by admin', function () {
     expect($user->fresh()->account_status)->toBe('aktif');
 });
 
-it('returns 404 when verifying a non-pending account', function () {
+it('rejects verifying a non-pending account with a conflict message', function () {
     $admin = User::factory()->create([
         'role' => 'admin',
         'account_status' => 'aktif',
     ]);
 
     $activeUser = User::factory()->create([
+        'role' => 'pengguna',
         'account_status' => 'aktif',
     ]);
 
-    $this->actingAs($admin)->patch("/admin/pengguna/{$activeUser->id}/verifikasi")->assertNotFound();
+    $this->actingAs($admin)->patch("/admin/pengguna/{$activeUser->id}/verifikasi")
+        ->assertRedirect(route('admin.pengguna.verifikasi'))
+        ->assertSessionHas('error', 'Akun tersebut sudah diproses admin lain.');
 });
 
-it('returns 404 when rejecting a non-pending account', function () {
+it('rejects rejecting a non-pending account with a conflict message', function () {
     $admin = User::factory()->create([
         'role' => 'admin',
         'account_status' => 'aktif',
     ]);
 
     $activeUser = User::factory()->create([
+        'role' => 'pengguna',
         'account_status' => 'aktif',
     ]);
 
-    $this->actingAs($admin)->patch("/admin/pengguna/{$activeUser->id}/tolak")->assertNotFound();
+    $this->actingAs($admin)->patch("/admin/pengguna/{$activeUser->id}/tolak")
+        ->assertRedirect(route('admin.pengguna.verifikasi'))
+        ->assertSessionHas('error', 'Akun tersebut sudah diproses admin lain.');
 });
 
 it('forbids petugas from verifying accounts', function () {
@@ -114,4 +120,51 @@ it('forbids petugas from verifying accounts', function () {
     ]);
 
     $this->actingAs($petugas)->patch("/admin/pengguna/{$pending->id}/verifikasi")->assertForbidden();
+});
+
+it('returns 404 when verifying a non-pengguna pending account', function () {
+    $admin = User::factory()->create([
+        'role' => 'admin',
+        'account_status' => 'aktif',
+    ]);
+
+    $petugasPending = User::factory()->create([
+        'role' => 'petugas',
+        'account_status' => 'pending',
+    ]);
+
+    $this->actingAs($admin)->patch("/admin/pengguna/{$petugasPending->id}/verifikasi")->assertNotFound();
+    expect($petugasPending->fresh()->account_status)->toBe('pending');
+});
+
+it('records audit columns when verifying and rejecting', function () {
+    $admin = User::factory()->create([
+        'role' => 'admin',
+        'account_status' => 'aktif',
+    ]);
+
+    $toVerify = User::factory()->create(['account_status' => 'pending']);
+    $this->actingAs($admin)->patch("/admin/pengguna/{$toVerify->id}/verifikasi")->assertRedirect();
+    expect($toVerify->fresh()->verified_by)->toBe($admin->id)
+        ->and($toVerify->fresh()->verified_at)->not->toBeNull();
+
+    $toReject = User::factory()->create(['account_status' => 'pending']);
+    $this->actingAs($admin)->patch("/admin/pengguna/{$toReject->id}/tolak")->assertRedirect();
+    expect($toReject->fresh()->rejected_by)->toBe($admin->id)
+        ->and($toReject->fresh()->rejected_at)->not->toBeNull();
+});
+
+it('hides non-pengguna pending accounts from the verification list', function () {
+    $admin = User::factory()->create([
+        'role' => 'admin',
+        'account_status' => 'aktif',
+    ]);
+
+    $penggunaPending = User::factory()->create(['role' => 'pengguna', 'account_status' => 'pending']);
+    $petugasPending = User::factory()->create(['role' => 'petugas', 'account_status' => 'pending']);
+
+    $response = $this->actingAs($admin)->get('/admin/pengguna/verifikasi')->assertOk();
+
+    $response->assertSee($penggunaPending->email);
+    $response->assertDontSee($petugasPending->email);
 });

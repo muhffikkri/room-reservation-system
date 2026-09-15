@@ -29,13 +29,14 @@
                             <a href="{{ route('dashboard') }}" class="rounded-lg px-3 py-2 text-sm font-medium transition-colors {{ request()->routeIs('dashboard') ? 'bg-[#F2F3FF] text-[#00236f]' : 'text-slate-600 hover:bg-[#F8FAFC] hover:text-[#00236f]' }}">Ringkasan</a>
                             <a href="{{ route('reservasi.index') }}" class="rounded-lg px-3 py-2 text-sm font-medium transition-colors {{ request()->routeIs('reservasi.*') ? 'bg-[#F2F3FF] text-[#00236f]' : 'text-slate-600 hover:bg-[#F8FAFC] hover:text-[#00236f]' }}">Reservasi Saya</a>
                             <a href="{{ route('laporan.index') }}" class="rounded-lg px-3 py-2 text-sm font-medium transition-colors {{ request()->routeIs('laporan.*') ? 'bg-[#F2F3FF] text-[#00236f]' : 'text-slate-600 hover:bg-[#F8FAFC] hover:text-[#00236f]' }}">Laporan Kerusakan</a>
-                        @else
+                        @elseif ($role === 'petugas')
                             <a href="{{ route('petugas.dashboard') }}" class="rounded-lg px-3 py-2 text-sm font-medium transition-colors {{ request()->routeIs('petugas.dashboard') ? 'bg-[#F2F3FF] text-[#00236f]' : 'text-slate-600 hover:bg-[#F8FAFC] hover:text-[#00236f]' }}">Operasional</a>
                             <a href="{{ route('petugas.reservasi.index') }}" class="rounded-lg px-3 py-2 text-sm font-medium transition-colors {{ request()->routeIs('petugas.reservasi.*') ? 'bg-[#F2F3FF] text-[#00236f]' : 'text-slate-600 hover:bg-[#F8FAFC] hover:text-[#00236f]' }}">Antrian Reservasi</a>
                             <a href="{{ route('petugas.laporan.index') }}" class="rounded-lg px-3 py-2 text-sm font-medium transition-colors {{ request()->routeIs('petugas.laporan.*') ? 'bg-[#F2F3FF] text-[#00236f]' : 'text-slate-600 hover:bg-[#F8FAFC] hover:text-[#00236f]' }}">Laporan</a>
-                            @if ($role === 'admin')
-                                <a href="{{ route('admin.dashboard') }}" class="rounded-lg px-3 py-2 text-sm font-medium transition-colors {{ request()->routeIs('admin.*') ? 'bg-[#F2F3FF] text-[#00236f]' : 'text-slate-600 hover:bg-[#F8FAFC] hover:text-[#00236f]' }}">Administrasi</a>
-                            @endif
+                        @else
+                            <a href="{{ route('admin.dashboard') }}" class="rounded-lg px-3 py-2 text-sm font-medium transition-colors {{ request()->routeIs('admin.dashboard') ? 'bg-[#F2F3FF] text-[#00236f]' : 'text-slate-600 hover:bg-[#F8FAFC] hover:text-[#00236f]' }}">Administrasi</a>
+                            <a href="{{ route('admin.pengguna.verifikasi') }}" class="rounded-lg px-3 py-2 text-sm font-medium transition-colors {{ request()->routeIs('admin.pengguna.verifikasi') ? 'bg-[#F2F3FF] text-[#00236f]' : 'text-slate-600 hover:bg-[#F8FAFC] hover:text-[#00236f]' }}">Verifikasi Akun</a>
+                            <a href="{{ route('admin.fasilitas.index') }}" class="rounded-lg px-3 py-2 text-sm font-medium transition-colors {{ request()->routeIs('admin.fasilitas.*') ? 'bg-[#F2F3FF] text-[#00236f]' : 'text-slate-600 hover:bg-[#F8FAFC] hover:text-[#00236f]' }}">Fasilitas</a>
                         @endif
                     </div>
 
@@ -60,13 +61,14 @@
                             <a href="{{ route('dashboard') }}" class="rounded-lg px-3 py-2.5 {{ request()->routeIs('dashboard') ? 'bg-[#F2F3FF] text-[#00236f]' : 'text-slate-600 hover:bg-[#F8FAFC] hover:text-[#00236f]' }}">Ringkasan</a>
                             <a href="{{ route('reservasi.index') }}" class="rounded-lg px-3 py-2.5 {{ request()->routeIs('reservasi.*') ? 'bg-[#F2F3FF] text-[#00236f]' : 'text-slate-600 hover:bg-[#F8FAFC] hover:text-[#00236f]' }}">Reservasi Saya</a>
                             <a href="{{ route('laporan.index') }}" class="rounded-lg px-3 py-2.5 {{ request()->routeIs('laporan.*') ? 'bg-[#F2F3FF] text-[#00236f]' : 'text-slate-600 hover:bg-[#F8FAFC] hover:text-[#00236f]' }}">Laporan Kerusakan</a>
-                        @else
+                        @elseif ($role === 'petugas')
                             <a href="{{ route('petugas.dashboard') }}" class="rounded-lg px-3 py-2.5 {{ request()->routeIs('petugas.dashboard') ? 'bg-[#F2F3FF] text-[#00236f]' : 'text-slate-600 hover:bg-[#F8FAFC] hover:text-[#00236f]' }}">Operasional</a>
                             <a href="{{ route('petugas.reservasi.index') }}" class="rounded-lg px-3 py-2.5 {{ request()->routeIs('petugas.reservasi.*') ? 'bg-[#F2F3FF] text-[#00236f]' : 'text-slate-600 hover:bg-[#F8FAFC] hover:text-[#00236f]' }}">Antrian Reservasi</a>
                             <a href="{{ route('petugas.laporan.index') }}" class="rounded-lg px-3 py-2.5 {{ request()->routeIs('petugas.laporan.*') ? 'bg-[#F2F3FF] text-[#00236f]' : 'text-slate-600 hover:bg-[#F8FAFC] hover:text-[#00236f]' }}">Laporan</a>
-                            @if ($role === 'admin')
-                                <a href="{{ route('admin.dashboard') }}" class="rounded-lg px-3 py-2.5 {{ request()->routeIs('admin.*') ? 'bg-[#F2F3FF] text-[#00236f]' : 'text-slate-600 hover:bg-[#F8FAFC] hover:text-[#00236f]' }}">Administrasi</a>
-                            @endif
+                        @else
+                            <a href="{{ route('admin.dashboard') }}" class="rounded-lg px-3 py-2.5 {{ request()->routeIs('admin.dashboard') ? 'bg-[#F2F3FF] text-[#00236f]' : 'text-slate-600 hover:bg-[#F8FAFC] hover:text-[#00236f]' }}">Administrasi</a>
+                            <a href="{{ route('admin.pengguna.verifikasi') }}" class="rounded-lg px-3 py-2.5 {{ request()->routeIs('admin.pengguna.verifikasi') ? 'bg-[#F2F3FF] text-[#00236f]' : 'text-slate-600 hover:bg-[#F8FAFC] hover:text-[#00236f]' }}">Verifikasi Akun</a>
+                            <a href="{{ route('admin.fasilitas.index') }}" class="rounded-lg px-3 py-2.5 {{ request()->routeIs('admin.fasilitas.*') ? 'bg-[#F2F3FF] text-[#00236f]' : 'text-slate-600 hover:bg-[#F8FAFC] hover:text-[#00236f]' }}">Fasilitas</a>
                         @endif
                     </div>
                     <div class="mt-3 flex items-center justify-between border-t border-[#EEF2FF] px-3 pt-3 text-sm">

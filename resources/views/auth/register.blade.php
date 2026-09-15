@@ -40,8 +40,8 @@
 
                 <div class="grid gap-5 sm:grid-cols-2">
                     <div>
-                        <label for="identity" class="mb-1.5 block text-sm font-semibold text-[#334155]">NIM/NIP <span class="font-normal text-[#64748B]">(opsional)</span></label>
-                        <input id="identity" name="identity" type="text" maxlength="30" autocomplete="off" value="{{ old('identity') }}"
+                        <label for="identity" class="mb-1.5 block text-sm font-semibold text-[#334155]">NIM/NIP</label>
+                        <input id="identity" name="identity" type="text" maxlength="30" required autocomplete="off" value="{{ old('identity') }}"
                             class="h-11 w-full rounded-lg border border-[#CBD5E1] bg-[#F8FAFC] px-3 text-sm text-[#0F172A] outline-none transition focus:border-[#0051d5] focus:bg-white focus:ring-4 focus:ring-[#0051d5]/10">
                         @error('identity')
                             <p class="mt-1.5 text-xs leading-relaxed text-[#B42318]">{{ $message }}</p>
@@ -49,8 +49,8 @@
                     </div>
 
                     <div>
-                        <label for="phone" class="mb-1.5 block text-sm font-semibold text-[#334155]">No. HP <span class="font-normal text-[#64748B]">(opsional)</span></label>
-                        <input id="phone" name="phone" type="tel" maxlength="20" autocomplete="tel" value="{{ old('phone') }}"
+                        <label for="phone" class="mb-1.5 block text-sm font-semibold text-[#334155]">No. HP</label>
+                        <input id="phone" name="phone" type="tel" maxlength="20" required autocomplete="tel" value="{{ old('phone') }}"
                             class="h-11 w-full rounded-lg border border-[#CBD5E1] bg-[#F8FAFC] px-3 text-sm text-[#0F172A] outline-none transition focus:border-[#0051d5] focus:bg-white focus:ring-4 focus:ring-[#0051d5]/10">
                         @error('phone')
                             <p class="mt-1.5 text-xs leading-relaxed text-[#B42318]">{{ $message }}</p>

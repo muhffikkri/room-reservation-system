@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use App\Support\AccountAttributes;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -24,16 +25,27 @@ class RegisterController extends Controller
      * input, walau penyerang mengirimnya manual. Sistem selalu menulis
      * role pengguna dan status pending. Hanya admin yang dapat membuat
      * akun petugas atau mengaktifkan akun (§5.3).
+     *
+     * Email dinormalisasi SEBELUM validasi agar unique:users,email
+     * menangkap duplikat beda kapitalisasi; email akun yang sudah
+     * ditolak admin tetap ada di DB sehingga pendaftarannya otomatis
+     * tertolak unique (BR-14) dengan pesan field yang jelas.
      */
     public function store(Request $request): RedirectResponse
     {
+        $request->merge([
+            'email' => AccountAttributes::normalizeEmail($request->input('email')),
+            'identity' => AccountAttributes::normalizeIdentity($request->input('identity')),
+            'phone' => AccountAttributes::normalizePhone($request->input('phone')),
+        ]);
+
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:100'],
             'email' => ['required', 'string', 'email', 'max:150', 'unique:users,email'],
             'password' => ['required', 'string', Password::min(8)],
             'password_confirmation' => ['required', 'string', 'same:password'],
-            'identity' => ['nullable', 'string', 'max:30'],
-            'phone' => ['nullable', 'string', 'max:20'],
+            'identity' => ['required', 'string', 'max:30', 'unique:users,identity'],
+            'phone' => ['required', 'string', 'max:20', 'unique:users,phone'],
         ]);
 
         User::create([

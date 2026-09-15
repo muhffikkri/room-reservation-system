@@ -8,6 +8,7 @@ use App\Models\Report;
 use App\Services\ReportService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 
@@ -48,6 +49,8 @@ class ReportController extends Controller
      */
     public function show(Report $report): View
     {
+        Gate::authorize('view', $report);
+
         $report->load(['facility', 'user', 'updates.user', 'handledBy']);
 
         $allowedTransitions = ReportService::allowedTransitions($report->status);

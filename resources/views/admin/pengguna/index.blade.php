@@ -23,6 +23,7 @@
                     <th class="px-6 py-3">Email</th>
                     <th class="px-6 py-3">NIM/NIP</th>
                     <th class="px-6 py-3">Status</th>
+                    <th class="px-6 py-3">Aksi</th>
                 </tr>
             </thead>
             <tbody class="divide-y divide-[#EEF2FF]">
@@ -32,10 +33,25 @@
                         <td class="px-6 py-3">{{ $user->email }}</td>
                         <td class="px-6 py-3">{{ $user->identity ?? '-' }}</td>
                         <td class="px-6 py-3">{{ $user->account_status }}</td>
+                        <td class="px-6 py-3">
+                            @if ($user->account_status === 'ditolak')
+                                <form method="POST" action="{{ route('admin.pengguna.restore', $user) }}"
+                                      onsubmit="return confirm('Kembalikan akun ini ke pending?')">
+                                    @csrf
+                                    @method('PATCH')
+                                    <button type="submit"
+                                            class="rounded-lg bg-amber-500 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-amber-600">
+                                        Kembalikan ke pending
+                                    </button>
+                                </form>
+                            @else
+                                <span class="text-slate-400">-</span>
+                            @endif
+                        </td>
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="4" class="px-6 py-8 text-center text-slate-500">Belum ada akun pengguna.</td>
+                        <td colspan="5" class="px-6 py-8 text-center text-slate-500">Belum ada akun pengguna.</td>
                     </tr>
                 @endforelse
             </tbody>

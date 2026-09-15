@@ -33,18 +33,18 @@ it('shows an empty admin dashboard when there is no queue', function () {
         ->get('/admin')
         ->assertOk()
         ->assertSee('Dashboard Admin')
-        ->assertSee('Tidak ada reservasi yang menunggu.')
-        ->assertSee('Tidak ada laporan baru.')
-        ->assertSee('Tidak ada akun yang menunggu verifikasi.');
+        ->assertSee('Reservasi Menunggu')
+        ->assertSee('Fasilitas Dalam Perbaikan');
 });
 
-it('summarizes reservations, reports, repair facilities, and pending accounts', function () {
+it('summarizes queues as counts without applicant details', function () {
     $admin = User::factory()->create([
         'role' => 'admin',
         'account_status' => 'aktif',
     ]);
 
     $user = User::factory()->create([
+        'name' => 'Budi Pemohon',
         'role' => 'pengguna',
         'account_status' => 'aktif',
     ]);
@@ -82,8 +82,9 @@ it('summarizes reservations, reports, repair facilities, and pending accounts', 
     $this->actingAs($admin)
         ->get('/admin')
         ->assertOk()
-        ->assertSee('Aula Terpadu')
         ->assertSee('Fasilitas Dalam Perbaikan')
-        ->assertSee('menunggu@kampus.test')
-        ->assertSee('Pending');
+        ->assertSee('Akun Perlu Verifikasi')
+        ->assertDontSee('Aula Terpadu')
+        ->assertDontSee('Budi Pemohon')
+        ->assertDontSee('menunggu@kampus.test');
 });

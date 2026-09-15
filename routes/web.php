@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Admin\AccountVerificationController;
+use App\Http\Controllers\Admin\AdminAccountController;
 use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
 use App\Http\Controllers\Admin\FacilityController as AdminFacilityController;
 use App\Http\Controllers\Admin\OfficerAccountController;
@@ -29,10 +30,10 @@ Route::middleware('guest')->group(function (): void {
     Route::post('/login', [LoginController::class, 'store'])->middleware('throttle:10,1')->name('login.store');
 
     Route::get('/register', [RegisterController::class, 'show'])->name('register');
-    Route::post('/register', [RegisterController::class, 'store'])->name('register.store');
+    Route::post('/register', [RegisterController::class, 'store'])->middleware('throttle:10,1')->name('register.store');
 });
 
-Route::middleware(['auth', 'active'])->group(function (): void {
+Route::middleware(['auth', 'active', 'role:pengguna'])->group(function (): void {
     Route::get('/dashboard', DashboardController::class)->name('dashboard');
 
     Route::get('/reservasi', [ReservationController::class, 'index'])->name('reservasi.index');
@@ -47,7 +48,7 @@ Route::middleware(['auth', 'active'])->group(function (): void {
     Route::get('/laporan/{report}', [ReportController::class, 'show'])->name('laporan.show');
 });
 
-Route::middleware(['auth', 'active', 'role:petugas,admin'])->prefix('petugas')->group(function (): void {
+Route::middleware(['auth', 'active', 'role:petugas'])->prefix('petugas')->group(function (): void {
     Route::get('/', OfficerDashboardController::class)->name('petugas.dashboard');
     Route::get('/laporan', [OfficerReportController::class, 'index'])->name('petugas.laporan.index');
     Route::get('/laporan/{report}', [OfficerReportController::class, 'show'])->name('petugas.laporan.show');
@@ -72,6 +73,8 @@ Route::middleware(['auth', 'active', 'role:admin'])->prefix('admin')->group(func
         ->name('admin.pengguna.verify');
     Route::patch('/pengguna/{user}/tolak', [AccountVerificationController::class, 'reject'])
         ->name('admin.pengguna.reject');
+    Route::patch('/pengguna/{user}/pulihkan', [AccountVerificationController::class, 'restore'])
+        ->name('admin.pengguna.restore');
     Route::get('/pengguna', [UserAccountController::class, 'index'])
         ->name('admin.pengguna.index');
     Route::get('/pengguna/create', [UserAccountController::class, 'create'])
@@ -84,6 +87,12 @@ Route::middleware(['auth', 'active', 'role:admin'])->prefix('admin')->group(func
         ->name('admin.petugas.create');
     Route::post('/petugas', [OfficerAccountController::class, 'store'])
         ->name('admin.petugas.store');
+    Route::get('/admin', [AdminAccountController::class, 'index'])
+        ->name('admin.admin.index');
+    Route::get('/admin/create', [AdminAccountController::class, 'create'])
+        ->name('admin.admin.create');
+    Route::post('/admin', [AdminAccountController::class, 'store'])
+        ->name('admin.admin.store');
     Route::get('/fasilitas', [AdminFacilityController::class, 'index'])
         ->name('admin.fasilitas.index');
     Route::get('/fasilitas/create', [AdminFacilityController::class, 'create'])

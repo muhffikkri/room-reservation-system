@@ -61,8 +61,10 @@ class LoginController extends Controller
         $denial = AccountStatusGate::denialMessage($user);
 
         if ($denial !== null) {
+            // Hapus token ingat-saya yang sempat ditulis Auth::attempt agar
+            // akun pending/ditolak tidak meninggalkan token gantung di DB.
+            $user->forceFill(['remember_token' => null])->save();
             AccountStatusGate::logout($request);
-            RateLimiter::clear($throttleKey);
 
             return back()->with('error', $denial);
         }
@@ -70,7 +72,16 @@ class LoginController extends Controller
         RateLimiter::clear($throttleKey);
         $request->session()->regenerate();
 
-        return redirect()->intended(route('dashboard'));
+        // Tiap role mendarat di dashboardnya sendiri (§14.2#10): pengguna ke
+        // alur pengguna, petugas ke antrian operasional, admin ke ringkasan.
+        // Tanpa ini admin/petugas nyasar ke halaman pengguna yang bukan haknya.
+        $home = match ($user->role) {
+            'petugas' => route('petugas.dashboard'),
+            'admin' => route('admin.dashboard'),
+            default => route('dashboard'),
+        };
+
+        return redirect()->intended($home);
     }
 
     private function throttleKey(Request $request): string
