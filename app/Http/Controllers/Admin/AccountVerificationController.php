@@ -4,21 +4,25 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use App\Services\AccountVerificationService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\View\View;
+use Symfony\Component\HttpKernel\Exception\ConflictHttpException;
 
 /**
  * Verifikasi akun registrasi mandiri oleh admin (BR-14).
  *
- * Hanya akun pending yang tampil di daftar dan dapat berubah status.
- * Sistem mengembalikan 404 untuk akun aktif atau yang admin tolak agar
- * URL verifikasi tidak dapat dipakai ulang.
+ * Hanya akun pengguna pending yang tampil dan dapat berubah status.
+ * Mutasi tinggal di AccountVerificationService (transaksi + lock + audit);
+ * controller hanya redirect dengan flash message.
  */
 class AccountVerificationController extends Controller
 {
+    public function __construct(private readonly AccountVerificationService $verifications) {}
+
     public function index(): View
     {
-        $pendingUsers = User::pendingAccount()
+        $pendingUsers = User::pendingPengguna()
             ->orderBy('created_at')
             ->get();
 
@@ -27,23 +31,31 @@ class AccountVerificationController extends Controller
 
     public function verify(User $user): RedirectResponse
     {
-        abort_if($user->account_status !== 'pending', 404);
-
-        $user->update(['account_status' => 'aktif']);
+        try {
+            $verified = $this->verifications->verify($user, auth()->user());
+        } catch (ConflictHttpException $exception) {
+            return redirect()
+                ->route('admin.pengguna.verifikasi')
+                ->with('error', $exception->getMessage());
+        }
 
         return redirect()
             ->route('admin.pengguna.verifikasi')
-            ->with('success', "Akun {$user->email} berhasil diverifikasi.");
+            ->with('success', "Akun {$verified->email} berhasil diverifikasi.");
     }
 
     public function reject(User $user): RedirectResponse
     {
-        abort_if($user->account_status !== 'pending', 404);
-
-        $user->update(['account_status' => 'ditolak']);
+        try {
+            $rejected = $this->verifications->reject($user, auth()->user());
+        } catch (ConflictHttpException $exception) {
+            return redirect()
+                ->route('admin.pengguna.verifikasi')
+                ->with('error', $exception->getMessage());
+        }
 
         return redirect()
             ->route('admin.pengguna.verifikasi')
-            ->with('success', "Akun {$user->email} ditolak.");
+            ->with('success', "Akun {$rejected->email} ditolak.");
     }
 }
