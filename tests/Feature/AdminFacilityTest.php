@@ -202,6 +202,27 @@ it('deactivates and reactivates a facility', function () {
     expect($facility->refresh()->status)->toBe('aktif');
 });
 
+it('refuses to deactivate or activate a facility under repair', function () {
+    $admin = User::factory()->create([
+        'role' => 'admin',
+        'account_status' => 'aktif',
+    ]);
+
+    $facility = Facility::factory()->create(['status' => 'perbaikan']);
+
+    $this->actingAs($admin)
+        ->patch("/admin/fasilitas/{$facility->id}/nonaktifkan")
+        ->assertRedirect()
+        ->assertSessionHas('error');
+
+    $this->actingAs($admin)
+        ->patch("/admin/fasilitas/{$facility->id}/aktifkan")
+        ->assertRedirect()
+        ->assertSessionHas('error');
+
+    expect($facility->refresh()->status)->toBe('perbaikan');
+});
+
 it('filters the facility list by keyword', function () {
     $admin = User::factory()->create([
         'role' => 'admin',
