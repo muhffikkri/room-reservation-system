@@ -72,7 +72,16 @@ class LoginController extends Controller
         RateLimiter::clear($throttleKey);
         $request->session()->regenerate();
 
-        return redirect()->intended(route('dashboard'));
+        // Tiap role mendarat di dashboardnya sendiri (§14.2#10): pengguna ke
+        // alur pengguna, petugas ke antrian operasional, admin ke ringkasan.
+        // Tanpa ini admin/petugas nyasar ke halaman pengguna yang bukan haknya.
+        $home = match ($user->role) {
+            'petugas' => route('petugas.dashboard'),
+            'admin' => route('admin.dashboard'),
+            default => route('dashboard'),
+        };
+
+        return redirect()->intended($home);
     }
 
     private function throttleKey(Request $request): string
