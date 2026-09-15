@@ -62,7 +62,7 @@ class AccountVerificationController extends Controller
     public function restore(User $user): RedirectResponse
     {
         try {
-            $restored = $this->verifications->restore($user);
+            $restored = $this->verifications->restore($user, auth()->user());
         } catch (ConflictHttpException $exception) {
             return redirect()
                 ->route('admin.pengguna.index')

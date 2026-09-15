@@ -49,6 +49,16 @@ class User extends Authenticatable
         return $this->hasMany(ReportUpdate::class);
     }
 
+    public function verificationActions(): HasMany
+    {
+        return $this->hasMany(AccountVerificationAction::class, 'target_user_id');
+    }
+
+    public function performedVerificationActions(): HasMany
+    {
+        return $this->hasMany(AccountVerificationAction::class, 'actor_id');
+    }
+
     public function decidedReservations(): HasMany
     {
         return $this->hasMany(Reservation::class, 'decided_by');

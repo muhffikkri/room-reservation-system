@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\AccountVerificationAction;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
 use Symfony\Component\HttpKernel\Exception\ConflictHttpException;
@@ -40,6 +41,7 @@ class AccountVerificationService
                 'verified_by' => $admin->id,
                 'verified_at' => now(),
             ]);
+            $this->recordAction($locked, $admin, AccountVerificationAction::VERIFIED);
 
             return $locked->refresh();
         });
@@ -69,6 +71,7 @@ class AccountVerificationService
                 'rejected_by' => $admin->id,
                 'rejected_at' => now(),
             ]);
+            $this->recordAction($locked, $admin, AccountVerificationAction::REJECTED);
 
             return $locked->refresh();
         });
@@ -83,9 +86,9 @@ class AccountVerificationService
      * @throws NotFoundHttpException saat target bukan pengguna.
      * @throws ConflictHttpException saat target tidak berstatus ditolak.
      */
-    public function restore(User $target): User
+    public function restore(User $target, User $admin): User
     {
-        return DB::transaction(function () use ($target): User {
+        return DB::transaction(function () use ($target, $admin): User {
             $locked = User::whereKey($target->id)->lockForUpdate()->firstOrFail();
 
             if ($locked->role !== 'pengguna') {
@@ -101,8 +104,19 @@ class AccountVerificationService
                 'rejected_by' => null,
                 'rejected_at' => null,
             ]);
+            $this->recordAction($locked, $admin, AccountVerificationAction::RESTORED);
 
             return $locked->refresh();
         });
+    }
+
+    private function recordAction(User $target, User $admin, string $action): void
+    {
+        AccountVerificationAction::create([
+            'target_user_id' => $target->id,
+            'actor_id' => $admin->id,
+            'action' => $action,
+            'acted_at' => now(),
+        ]);
     }
 }
