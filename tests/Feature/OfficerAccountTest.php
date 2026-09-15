@@ -47,6 +47,7 @@ it('creates an active officer account by admin', function () {
         'password' => 'petugas123',
         'password_confirmation' => 'petugas123',
         'identity' => '198001012010',
+        'phone' => '081100001010',
     ]);
 
     $response->assertRedirect(route('admin.petugas.index'));
@@ -55,6 +56,7 @@ it('creates an active officer account by admin', function () {
 
     expect($officer->role)->toBe('petugas')
         ->and($officer->account_status)->toBe('aktif')
+        ->and($officer->phone)->toBe('+6281100001010')
         ->and(Hash::check('petugas123', $officer->password))->toBeTrue();
 });
 
@@ -69,12 +71,16 @@ it('lets the new officer log in immediately without verification', function () {
         'email' => 'baru@petugas.kampus.test',
         'password' => 'petugas123',
         'password_confirmation' => 'petugas123',
+        'identity' => '198001012011',
+        'phone' => '081100001011',
     ])->assertRedirect();
+
+    $this->post('/logout');
 
     $this->post('/login', [
         'email' => 'baru@petugas.kampus.test',
         'password' => 'petugas123',
-    ])->assertRedirect(route('dashboard'));
+    ])->assertRedirect(route('petugas.dashboard'));
 
     $this->assertAuthenticated();
 });
@@ -90,6 +96,8 @@ it('ignores role and status smuggled through the form', function () {
         'email' => 'sneaky@kampus.test',
         'password' => 'petugas123',
         'password_confirmation' => 'petugas123',
+        'identity' => '198001012012',
+        'phone' => '081100001012',
         'role' => 'admin',
         'account_status' => 'ditolak',
     ])->assertRedirect();
@@ -113,6 +121,8 @@ it('rejects duplicate email and short password', function () {
         'email' => 'taken@kampus.test',
         'password' => 'petugas123',
         'password_confirmation' => 'petugas123',
+        'identity' => '198001012013',
+        'phone' => '081100001013',
     ])->assertSessionHasErrors('email');
 
     $this->actingAs($admin)->post('/admin/petugas', [
@@ -120,6 +130,8 @@ it('rejects duplicate email and short password', function () {
         'email' => 'short@kampus.test',
         'password' => 'abc',
         'password_confirmation' => 'abc',
+        'identity' => '198001012014',
+        'phone' => '081100001014',
     ])->assertSessionHasErrors('password');
 
     expect(User::where('email', 'short@kampus.test')->exists())->toBeFalse();
