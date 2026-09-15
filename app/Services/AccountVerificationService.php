@@ -73,4 +73,36 @@ class AccountVerificationService
             return $locked->refresh();
         });
     }
+
+    /**
+     * Kembalikan akun pengguna yang ditolak ke pending (BR-14).
+     *
+     * Jejak penolakan (rejected_by/at) dibersihkan karena status saat ini
+     * kembali pending; kolom audit hanya satu slot per akun.
+     *
+     * @throws NotFoundHttpException saat target bukan pengguna.
+     * @throws ConflictHttpException saat target tidak berstatus ditolak.
+     */
+    public function restore(User $target): User
+    {
+        return DB::transaction(function () use ($target): User {
+            $locked = User::whereKey($target->id)->lockForUpdate()->firstOrFail();
+
+            if ($locked->role !== 'pengguna') {
+                throw new NotFoundHttpException;
+            }
+
+            if ($locked->account_status !== 'ditolak') {
+                throw new ConflictHttpException('Hanya akun yang ditolak yang dapat dikembalikan ke pending.');
+            }
+
+            $locked->update([
+                'account_status' => 'pending',
+                'rejected_by' => null,
+                'rejected_at' => null,
+            ]);
+
+            return $locked->refresh();
+        });
+    }
 }

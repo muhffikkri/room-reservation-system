@@ -28,15 +28,15 @@
                 </div>
 
                 <div class="mb-4">
-                    <label for="identity" class="mb-1 block text-sm font-medium">NIP (opsional)</label>
-                    <input id="identity" name="identity" type="text" maxlength="30" value="{{ old('identity') }}"
+                    <label for="identity" class="mb-1 block text-sm font-medium">NIP</label>
+                    <input id="identity" name="identity" type="text" required maxlength="30" value="{{ old('identity') }}"
                            class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm transition focus:border-[#0051d5] focus:outline-none focus:ring-4 focus:ring-[#E2E7FF]">
                     @error('identity')<p class="mt-1 text-xs text-red-600">{{ $message }}</p>@enderror
                 </div>
 
                 <div class="mb-4">
-                    <label for="phone" class="mb-1 block text-sm font-medium">No. HP (opsional)</label>
-                    <input id="phone" name="phone" type="text" maxlength="20" value="{{ old('phone') }}"
+                    <label for="phone" class="mb-1 block text-sm font-medium">No. HP</label>
+                    <input id="phone" name="phone" type="text" required maxlength="20" value="{{ old('phone') }}"
                            class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm transition focus:border-[#0051d5] focus:outline-none focus:ring-4 focus:ring-[#E2E7FF]">
                     @error('phone')<p class="mt-1 text-xs text-red-600">{{ $message }}</p>@enderror
                 </div>

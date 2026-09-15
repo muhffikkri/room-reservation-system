@@ -58,4 +58,19 @@ class AccountVerificationController extends Controller
             ->route('admin.pengguna.verifikasi')
             ->with('success', "Akun {$rejected->email} ditolak.");
     }
+
+    public function restore(User $user): RedirectResponse
+    {
+        try {
+            $restored = $this->verifications->restore($user);
+        } catch (ConflictHttpException $exception) {
+            return redirect()
+                ->route('admin.pengguna.index')
+                ->with('error', $exception->getMessage());
+        }
+
+        return redirect()
+            ->route('admin.pengguna.index')
+            ->with('success', "Akun {$restored->email} dikembalikan ke pending.");
+    }
 }
