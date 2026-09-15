@@ -9,6 +9,7 @@ use App\Services\ReservationService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
@@ -39,7 +40,7 @@ class ReservationController extends Controller
 
         $reservations = Reservation::with(['facility'])
             ->where('user_id', auth()->id())
-            ->when($status !== '', fn($query) => $query->where('status', $status))
+            ->when($status !== '', fn ($query) => $query->where('status', $status))
             ->orderByDesc('created_at')
             ->orderByDesc('id')
             ->paginate(10)
@@ -110,9 +111,7 @@ class ReservationController extends Controller
      */
     public function show(Reservation $reservation): View
     {
-        if ($reservation->user_id !== auth()->id() && ! in_array(auth()->user()->role, ['petugas', 'admin'], true)) {
-            abort(403, 'Anda tidak memiliki akses ke reservasi ini.');
-        }
+        Gate::authorize('view', $reservation);
 
         $reservation->load(['facility', 'decidedBy']);
 
@@ -140,7 +139,7 @@ class ReservationController extends Controller
 
             return redirect()->route('reservasi.show', $reservation)
                 ->with('success', 'Reservasi berhasil dibatalkan.');
-        } catch (ConflictHttpException | AccessDeniedHttpException $e) {
+        } catch (ConflictHttpException|AccessDeniedHttpException $e) {
             return back()->with('error', $e->getMessage());
         }
     }
@@ -166,7 +165,7 @@ class ReservationController extends Controller
             $slotEnd = $slotStart->copy()->addMinutes(30);
 
             $isBooked = $approvedReservations->contains(
-                fn(Reservation $reservation): bool => $reservation->start_time->lt($slotEnd) && $reservation->end_time->gt($slotStart),
+                fn (Reservation $reservation): bool => $reservation->start_time->lt($slotEnd) && $reservation->end_time->gt($slotStart),
             );
 
             $slots[] = [

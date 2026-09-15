@@ -61,8 +61,10 @@ class LoginController extends Controller
         $denial = AccountStatusGate::denialMessage($user);
 
         if ($denial !== null) {
+            // Hapus token ingat-saya yang sempat ditulis Auth::attempt agar
+            // akun pending/ditolak tidak meninggalkan token gantung di DB.
+            $user->forceFill(['remember_token' => null])->save();
             AccountStatusGate::logout($request);
-            RateLimiter::clear($throttleKey);
 
             return back()->with('error', $denial);
         }
