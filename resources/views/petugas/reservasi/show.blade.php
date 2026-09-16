@@ -5,42 +5,43 @@
 @section('content')
     <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
-            <h1 class="text-2xl font-bold tracking-tight text-slate-900">Detail Reservasi</h1>
+            <p class="text-xs font-semibold uppercase tracking-[0.18em] text-[#0051d5]">Pusat operasional</p>
+            <h1 class="mt-2 text-2xl font-semibold tracking-tight text-[#00236f]">Detail Reservasi</h1>
             <p class="mt-1 text-sm text-slate-600">
                 Reservasi No. {{ str_pad((string) $reservation->id, 5, '0', STR_PAD_LEFT) }}
             </p>
         </div>
         <a href="{{ route('petugas.reservasi.index') }}"
-           class="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-slate-300 bg-white px-4 text-sm font-semibold text-slate-700 transition-colors hover:bg-slate-50">
+           class="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-[#D6DDF8] bg-white px-4 text-sm font-semibold text-[#00236f] transition-colors hover:bg-[#F2F3FF] focus:outline-none focus:ring-2 focus:ring-[#0051d5] focus:ring-offset-2">
             Kembali ke Antrian
         </a>
     </div>
 
     <div class="mt-6 grid grid-cols-12 gap-6">
         <main class="col-span-12 lg:col-span-8">
-            <section class="rounded-xl border border-slate-200 bg-white shadow-sm">
-                <div class="border-b border-slate-200 px-6 py-4">
-                    <h2 class="text-base font-semibold text-slate-900">Informasi Reservasi</h2>
+            <section class="rounded-2xl border border-[#E2E7FF] bg-white shadow-sm">
+                <div class="border-b border-[#EEF2FF] px-6 py-4">
+                    <h2 class="text-base font-semibold text-[#00236f]">Informasi Reservasi</h2>
                 </div>
                 <dl class="divide-y divide-slate-100 px-6">
                     <div class="grid grid-cols-1 gap-1 py-4 sm:grid-cols-3">
                         <dt class="text-sm font-medium text-slate-600">Fasilitas</dt>
-                        <dd class="text-sm text-slate-900 sm:col-span-2">{{ $reservation->facility->name }}</dd>
+                        <dd class="text-sm font-medium text-[#00236f] sm:col-span-2">{{ $reservation->facility->name }}</dd>
                     </div>
                     <div class="grid grid-cols-1 gap-1 py-4 sm:grid-cols-3">
                         <dt class="text-sm font-medium text-slate-600">Lokasi</dt>
-                        <dd class="text-sm text-slate-900 sm:col-span-2">{{ $reservation->facility->location }}</dd>
+                        <dd class="text-sm font-medium text-[#00236f] sm:col-span-2">{{ $reservation->facility->location }}</dd>
                     </div>
                     <div class="grid grid-cols-1 gap-1 py-4 sm:grid-cols-3">
                         <dt class="text-sm font-medium text-slate-600">Jadwal</dt>
-                        <dd class="text-sm text-slate-900 sm:col-span-2">
+                        <dd class="text-sm font-medium text-[#00236f] sm:col-span-2">
                             {{ $reservation->start_time->format('l, d M Y') }} ·
                             {{ $reservation->start_time->format('H.i') }} – {{ $reservation->end_time->format('H.i') }}
                         </dd>
                     </div>
                     <div class="grid grid-cols-1 gap-1 py-4 sm:grid-cols-3">
                         <dt class="text-sm font-medium text-slate-600">Tujuan</dt>
-                        <dd class="text-sm text-slate-900 sm:col-span-2">{{ $reservation->purpose }}</dd>
+                        <dd class="text-sm font-medium text-[#00236f] sm:col-span-2">{{ $reservation->purpose }}</dd>
                     </div>
                     <div class="grid grid-cols-1 gap-1 py-4 sm:grid-cols-3">
                         <dt class="text-sm font-medium text-slate-600">Status</dt>
@@ -82,34 +83,34 @@
                 </dl>
             </section>
 
-            <section class="mt-6 rounded-xl border border-slate-200 bg-white shadow-sm">
-                <div class="border-b border-slate-200 px-6 py-4">
-                    <h2 class="text-base font-semibold text-slate-900">Informasi Pemohon</h2>
+            <section class="mt-6 rounded-2xl border border-[#E2E7FF] bg-white shadow-sm">
+                <div class="border-b border-[#EEF2FF] px-6 py-4">
+                    <h2 class="text-base font-semibold text-[#00236f]">Informasi Pemohon</h2>
                 </div>
                 <dl class="divide-y divide-slate-100 px-6">
                     <div class="grid grid-cols-1 gap-1 py-4 sm:grid-cols-3">
                         <dt class="text-sm font-medium text-slate-600">Nama</dt>
-                        <dd class="text-sm text-slate-900 sm:col-span-2">{{ $reservation->user->name }}</dd>
+                        <dd class="text-sm font-medium text-[#00236f] sm:col-span-2">{{ $reservation->user->name }}</dd>
                     </div>
                     <div class="grid grid-cols-1 gap-1 py-4 sm:grid-cols-3">
                         <dt class="text-sm font-medium text-slate-600">Email</dt>
-                        <dd class="text-sm text-slate-900 sm:col-span-2">{{ $reservation->user->email }}</dd>
+                        <dd class="text-sm font-medium text-[#00236f] sm:col-span-2">{{ $reservation->user->email }}</dd>
                     </div>
                     <div class="grid grid-cols-1 gap-1 py-4 sm:grid-cols-3">
                         <dt class="text-sm font-medium text-slate-600">NIM/NIP</dt>
-                        <dd class="text-sm text-slate-900 sm:col-span-2">{{ $reservation->user->identity ?? '-' }}</dd>
+                        <dd class="text-sm font-medium text-[#00236f] sm:col-span-2">{{ $reservation->user->identity ?? '-' }}</dd>
                     </div>
                     <div class="grid grid-cols-1 gap-1 py-4 sm:grid-cols-3">
                         <dt class="text-sm font-medium text-slate-600">No. HP</dt>
-                        <dd class="text-sm text-slate-900 sm:col-span-2">{{ $reservation->user->phone ?? '-' }}</dd>
+                        <dd class="text-sm font-medium text-[#00236f] sm:col-span-2">{{ $reservation->user->phone ?? '-' }}</dd>
                     </div>
                 </dl>
             </section>
         </main>
 
         <aside class="col-span-12 lg:col-span-4">
-            <section class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-                <h2 class="text-base font-semibold text-slate-900">Aksi</h2>
+            <section class="rounded-2xl border border-[#E2E7FF] bg-white p-6 shadow-sm">
+                <h2 class="text-base font-semibold text-[#00236f]">Aksi</h2>
                 <p class="mt-1 text-sm text-slate-600">
                     Menyetujui mengunci slot (dicek bentrok terhadap resevasi approved lainnya).
                 </p>
@@ -119,7 +120,7 @@
                         <form method="POST" action="{{ route('petugas.reservasi.approve', $reservation) }}">
                             @csrf
                             <button type="submit"
-                                    class="inline-flex h-10 w-full items-center justify-center gap-2 rounded-lg bg-blue-900 px-4 text-sm font-semibold text-white transition-colors hover:bg-blue-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2">
+                                    class="inline-flex h-10 w-full items-center justify-center gap-2 rounded-lg bg-[#0051d5] px-4 text-sm font-semibold text-white transition-colors hover:bg-[#00236f] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0051d5] focus-visible:ring-offset-2">
                                 Setujui Reservasi
                             </button>
                         </form>
@@ -141,8 +142,8 @@
     </div>
 
     <dialog id="reject-detail"
-            class="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl backdrop:bg-slate-950/40">
-        <h3 class="text-lg font-semibold text-slate-900">Tolak reservasi?</h3>
+            class="w-full max-w-md rounded-2xl border border-[#E2E7FF] bg-white p-6 shadow-xl backdrop:bg-slate-950/40">
+        <h3 class="text-lg font-semibold text-[#00236f]">Tolak reservasi?</h3>
         <p class="mt-1 text-sm text-slate-600">
             {{ $reservation->facility->name }} ·
             {{ $reservation->start_time->format('d M Y H.i') }} – {{ $reservation->end_time->format('H.i') }}
@@ -152,13 +153,13 @@
             <div>
                 <label for="reject-reason-detail" class="mb-1 block text-sm font-medium text-slate-700">Alasan penolakan</label>
                 <textarea id="reject-reason-detail" name="reason" rows="3" required minlength="10" maxlength="255"
-                          class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 transition focus:border-blue-500 focus:outline-none focus:ring-4 focus:ring-blue-100"
+                          class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 transition focus:border-[#0051d5] focus:outline-none focus:ring-4 focus:ring-[#E2E7FF]"
                           placeholder="Jelaskan alasan penolakan (min. 10 karakter)"></textarea>
                 @error('reason')<p class="mt-1 text-xs text-red-600">{{ $message }}</p>@enderror
             </div>
             <div class="mt-4 flex items-center justify-end gap-2">
                 <button type="button" data-close-dialog="reject-detail"
-                        class="inline-flex h-10 items-center justify-center rounded-lg border border-slate-300 bg-white px-4 text-sm font-semibold text-slate-700 transition-colors hover:bg-slate-50">
+                        class="inline-flex h-10 items-center justify-center rounded-lg border border-[#D6DDF8] bg-white px-4 text-sm font-semibold text-[#00236f] transition-colors hover:bg-[#F2F3FF]">
                     Kembali
                 </button>
                 <button type="submit"
@@ -170,8 +171,8 @@
     </dialog>
 
     <dialog id="cancel-detail"
-            class="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl backdrop:bg-slate-950/40">
-        <h3 class="text-lg font-semibold text-slate-900">Batalkan reservasi?</h3>
+            class="w-full max-w-md rounded-2xl border border-[#E2E7FF] bg-white p-6 shadow-xl backdrop:bg-slate-950/40">
+        <h3 class="text-lg font-semibold text-[#00236f]">Batalkan reservasi?</h3>
         <p class="mt-1 text-sm text-slate-600">
             {{ $reservation->facility->name }} ·
             {{ $reservation->start_time->format('d M Y H.i') }} – {{ $reservation->end_time->format('H.i') }}
@@ -181,13 +182,13 @@
             <div>
                 <label for="cancel-reason-detail" class="mb-1 block text-sm font-medium text-slate-700">Alasan pembatalan</label>
                 <textarea id="cancel-reason-detail" name="cancel_reason" rows="3" required minlength="10" maxlength="255"
-                          class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 transition focus:border-blue-500 focus:outline-none focus:ring-4 focus:ring-blue-100"
+                          class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 transition focus:border-[#0051d5] focus:outline-none focus:ring-4 focus:ring-[#E2E7FF]"
                           placeholder="Jelaskan alasan pembatalan (min. 10 karakter)"></textarea>
                 @error('cancel_reason')<p class="mt-1 text-xs text-red-600">{{ $message }}</p>@enderror
             </div>
             <div class="mt-4 flex items-center justify-end gap-2">
                 <button type="button" data-close-dialog="cancel-detail"
-                        class="inline-flex h-10 items-center justify-center rounded-lg border border-slate-300 bg-white px-4 text-sm font-semibold text-slate-700 transition-colors hover:bg-slate-50">
+                        class="inline-flex h-10 items-center justify-center rounded-lg border border-[#D6DDF8] bg-white px-4 text-sm font-semibold text-[#00236f] transition-colors hover:bg-[#F2F3FF]">
                     Kembali
                 </button>
                 <button type="submit"

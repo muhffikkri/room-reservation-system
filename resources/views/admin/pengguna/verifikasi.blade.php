@@ -3,14 +3,15 @@
 @section('title', 'Verifikasi Akun')
 
 @section('content')
-    <div class="rounded-lg border border-slate-200 bg-white shadow-sm">
-        <div class="border-b border-slate-200 px-6 py-4">
-            <h1 class="text-lg font-semibold">Verifikasi Akun Pengguna</h1>
-            <p class="text-sm text-slate-600">Akun hasil registrasi mandiri menunggu persetujuan admin.</p>
+    <div class="overflow-hidden rounded-2xl border border-[#E2E7FF] bg-white shadow-sm">
+        <div class="border-b border-[#EEF2FF] px-6 py-5">
+            <p class="text-xs font-semibold uppercase tracking-[0.18em] text-[#0051d5]">Manajemen akun</p>
+            <h1 class="mt-2 text-xl font-semibold tracking-tight text-[#00236f]">Verifikasi Akun Pengguna</h1>
+            <p class="mt-2 text-sm leading-6 text-slate-600">Akun hasil registrasi mandiri menunggu persetujuan admin.</p>
         </div>
 
         <table class="w-full text-sm">
-            <thead class="bg-slate-50 text-left text-xs uppercase text-slate-500">
+            <thead class="border-b border-[#E2E7FF] bg-[#F8FAFC] text-left text-xs uppercase tracking-wide text-slate-500">
                 <tr>
                     <th class="px-6 py-3">Nama</th>
                     <th class="px-6 py-3">Email</th>
@@ -19,10 +20,10 @@
                     <th class="px-6 py-3">Aksi</th>
                 </tr>
             </thead>
-            <tbody class="divide-y divide-slate-100">
+            <tbody class="divide-y divide-[#EEF2FF]">
                 @forelse ($pendingUsers as $pendingUser)
-                    <tr>
-                        <td class="px-6 py-3">{{ $pendingUser->name }}</td>
+                    <tr class="transition-colors hover:bg-[#F8FAFC]">
+                        <td class="px-6 py-3 font-semibold text-[#00236f]">{{ $pendingUser->name }}</td>
                         <td class="px-6 py-3">{{ $pendingUser->email }}</td>
                         <td class="px-6 py-3">{{ $pendingUser->identity ?? '-' }}</td>
                         <td class="px-6 py-3">{{ $pendingUser->created_at->format('d-m-Y H:i') }}</td>
@@ -32,7 +33,7 @@
                                     @csrf
                                     @method('PATCH')
                                     <button type="submit"
-                                            class="rounded bg-green-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-green-700">
+                                            class="rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-emerald-700">
                                         Verifikasi
                                     </button>
                                 </form>
@@ -41,7 +42,7 @@
                                     @csrf
                                     @method('PATCH')
                                     <button type="submit"
-                                            class="rounded bg-red-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-red-700">
+                                            class="rounded-lg bg-rose-600 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-rose-700">
                                         Tolak
                                     </button>
                                 </form>
@@ -50,7 +51,7 @@
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="5" class="px-6 py-6 text-center text-slate-500">Tidak ada akun yang menunggu verifikasi.</td>
+                        <td colspan="5" class="px-6 py-8 text-center text-slate-500">Tidak ada akun yang menunggu verifikasi.</td>
                     </tr>
                 @endforelse
             </tbody>

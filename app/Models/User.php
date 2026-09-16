@@ -7,11 +7,12 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
-#[Fillable(['name', 'email', 'password', 'role', 'account_status', 'identity', 'phone'])]
+#[Fillable(['name', 'email', 'password', 'role', 'account_status', 'identity', 'phone', 'verified_by', 'verified_at', 'rejected_by', 'rejected_at'])]
 #[Hidden(['password', 'remember_token'])]
 class User extends Authenticatable
 {
@@ -28,6 +29,8 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'verified_at' => 'datetime',
+            'rejected_at' => 'datetime',
         ];
     }
 
@@ -46,9 +49,35 @@ class User extends Authenticatable
         return $this->hasMany(ReportUpdate::class);
     }
 
+    public function verificationActions(): HasMany
+    {
+        return $this->hasMany(AccountVerificationAction::class, 'target_user_id');
+    }
+
+    public function performedVerificationActions(): HasMany
+    {
+        return $this->hasMany(AccountVerificationAction::class, 'actor_id');
+    }
+
     public function decidedReservations(): HasMany
     {
         return $this->hasMany(Reservation::class, 'decided_by');
+    }
+
+    /**
+     * Admin yang memverifikasi akun ini (audit BR-14).
+     */
+    public function verifiedBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'verified_by');
+    }
+
+    /**
+     * Admin yang menolak akun ini (audit BR-14).
+     */
+    public function rejectedBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'rejected_by');
     }
 
     /**
@@ -65,6 +94,17 @@ class User extends Authenticatable
     public function scopePendingAccount(Builder $query): Builder
     {
         return $query->where('account_status', 'pending');
+    }
+
+    /**
+     * Antrean verifikasi: hanya pendaftar role pengguna yang pending.
+     *
+     * Mencegah akun petugas/admin pending ikut tampil di daftar
+     * verifikasi pengguna.
+     */
+    public function scopePendingPengguna(Builder $query): Builder
+    {
+        return $query->where('role', 'pengguna')->where('account_status', 'pending');
     }
 
     public function isAdmin(): bool

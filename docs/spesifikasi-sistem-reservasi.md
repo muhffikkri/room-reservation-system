@@ -14,7 +14,9 @@
 Aplikasi web untuk mengelola penggunaan fasilitas kampus (ruang kelas, aula, laboratorium, alat, lapangan). Dua alur utama berjalan terpusat dalam satu sistem:
 
 1. **Alur Reservasi** — pengguna mengecek ketersediaan per slot waktu, mengajukan reservasi dengan tujuan penggunaan, petugas menyetujui/menolak/membatalkan.
-2. **Alur Pelaporan** — pengguna melaporkan kerusakan fasilitas (kategori, deskripsi, foto), petugas memproses hingga selesai dan memperbarui status ketersediaan fasilitas.
+2. **Alur Pelaporan** — pengguna melaporkan kerusakan fasilitas (kategori, deskripsi, foto opsional), petugas memproses hingga selesai dan memperbarui status ketersediaan fasilitas.
+
+**Pemisahan role:** `pengguna`, `petugas`, dan `admin` adalah tiga role yang berbeda. `pengguna` mengajukan reservasi serta laporan miliknya sendiri; `petugas` menjalankan aksi operasional pada antrian reservasi dan laporan; `admin` mengelola akun, fasilitas, dan rekap. `admin` tidak mewarisi hak `petugas`, tidak mengakses route/action `/petugas/*`, dan tidak menggunakan alur pengguna. Dashboard admin boleh menampilkan ringkasan operasional secara **read-only**, tetapi tidak boleh membuka detail atau menjalankan aksi pada antrian petugas.
 
 ### 1.1 Prinsip Implementasi (ketentuan tugas yang wajib dipenuhi)
 
@@ -82,14 +84,16 @@ sistem-reservasi/
 │   │   │   ├── FacilityController.php        # publik: daftar + jadwal
 │   │   │   ├── ReservationController.php     # pengguna
 │   │   │   ├── ReportController.php          # pengguna
-│   │   │   ├── Officer/         # petugas: ReservationController, ReportController, FacilityStatusController, DashboardController
-│   │   │   └── Admin/           # admin: OfficerAccountController, UserAccountController, FacilityController, RecapController, DashboardController
+│   │   │   ├── Officer/         # petugas: ReservationController, ReportController, DashboardController
+│   │   │   └── Admin/           # admin: AccountVerificationController, AdminAccountController, OfficerAccountController, UserAccountController, FacilityController, RecapController, DashboardController
 │   │   ├── Middleware/EnsureRole.php
 │   │   └── Requests/            # Form Request (validasi server)
 │   ├── Models/                  # User, Facility, Reservation, Report, ReportUpdate
 │   ├── Policies/                # ReservationPolicy, ReportPolicy
-│   ├── Rules/                   # SlotTimeValid, NoApprovedOverlap, SlotAvailable
+│   ├── Rules/                   # SlotTimeValid, NoApprovedOverlap, FacilityBookable, BookingLeadTime, PendingQuota
 │   └── Services/
+│       ├── AccountVerificationService.php # verifikasi/tolak/pulihkan akun (transaksi + audit)
+│       ├── AccountStatusGate.php     # keputusan akses akun berdasarkan status
 │       ├── ReservationService.php   # logika slot, bentrok, approve (transaksi)
 │       ├── ReportService.php        # transisi status laporan + audit
 │       └── RecapService.php         # agregasi okupansi & kerusakan
@@ -128,12 +132,16 @@ Nama database: `reservasi_kampus`. Migrasi dibuat dengan Laravel Schema Builder.
 | email_verified_at | TIMESTAMP NULL | tidak dipakai; alur verifikasi memakai `account_status` |
 | password | VARCHAR(255) | bcrypt |
 | role | ENUM('pengguna','petugas','admin') | default `pengguna` |
-| identity | VARCHAR(30) NULL | NIM/NIP |
-| phone | VARCHAR(20) NULL | |
+| identity | VARCHAR(30) | wajib, unik; gunakan penanda `NIM-`/`NIP-` bila diperlukan |
+| phone | VARCHAR(20) | wajib, unik; disimpan dalam format ternormalisasi `+62...` |
 | account_status | ENUM('pending','aktif','ditolak') | default `pending`; akun buatan admin langsung `aktif` |
+| verified_by | FK → users NULL | admin yang memverifikasi (audit BR-14) |
+| verified_at | TIMESTAMP NULL | waktu verifikasi |
+| rejected_by | FK → users NULL | admin yang menolak (audit BR-14) |
+| rejected_at | TIMESTAMP NULL | waktu penolakan |
 | remember_token | VARCHAR(100) NULL | |
 
-Indeks: `UNIQUE(email)`, `INDEX(role, account_status)`.
+Indeks: `UNIQUE(email)`, `UNIQUE(identity)`, `UNIQUE(phone)`, `INDEX(role, account_status)`.
 
 
 ### 4.2 Tabel `facilities`
@@ -150,6 +158,8 @@ Indeks: `UNIQUE(email)`, `INDEX(role, account_status)`.
 | status | ENUM('aktif','perbaikan','nonaktif') | default `aktif` |
 
 Indeks: `INDEX(type)`, `INDEX(location)`, `INDEX(status)`.
+
+Kepemilikan perubahan status dipisahkan: admin mengubah status master `aktif` ↔ `nonaktif`, sedangkan petugas mengubah status operasional `aktif` ↔ `perbaikan` berdasarkan laporan. Transisi silang tidak diperbolehkan. Jika fasilitas sedang `perbaikan`, admin tidak dapat mengubahnya menjadi `nonaktif` sampai penanganan selesai; jika fasilitas `nonaktif`, petugas tidak dapat memulai status `perbaikan`.
 
 ### 4.3 Tabel `reservations`
 
@@ -225,10 +235,11 @@ Konvensi: semua model pakai `$fillable`, `casts()` untuk enum/datetime, dan TIDA
 
 ### 5.2 Role & Middleware
 
-- Middleware custom `EnsureRole`: dipakai sebagai `->middleware('role:petugas')` atau `->middleware('role:admin,petugas')` (daftar role di-parameter, user harus salah satu).
+- Middleware custom `EnsureRole`: role diterapkan eksklusif per kelompok route — `role:pengguna` untuk `/dashboard`, `/reservasi`, dan `/laporan`; `role:petugas` untuk seluruh route `/petugas/*`; `role:admin` untuk seluruh route `/admin/*`. Jangan menggunakan `role:petugas,admin` pada route operasional karena `admin` tidak mewarisi hak `petugas`.
 - Alias middleware di `bootstrap/app.php` (Laravel 13): `'role' => EnsureRole::class`.
 - Gate tambahan: `verify-accounts` (admin only) — opsional, middleware role sudah cukup.
-- Auth check akun: saat login, jika `account_status = 'pending'` → tolak login dengan pesan **"Akun Anda menunggu verifikasi admin"**; jika `ditolak` → tolak dengan pesan penolakan. Implementasi: override `validateLogin` di `Auth/AuthenticatedSessionController` atau middleware `EnsureAccountActive` (pilih yang ini, dipasang pada group `auth`).
+- Auth check akun: saat login, jika `account_status = 'pending'` → tolak login dengan pesan **"Akun Anda menunggu verifikasi admin"**; jika `ditolak` → tolak login tanpa menyimpan alasan penolakan. Implementasi: override `validateLogin` di `Auth/AuthenticatedSessionController` atau middleware `EnsureAccountActive` (pilih yang ini, dipasang pada group `auth`).
+- Perubahan role/status akun membatalkan seluruh session aktif akun tersebut; request berikutnya harus login ulang.
 
 ### 5.3 Akun Demo (Seeder — wajib ada agar demo/presentasi konsisten)
 
@@ -239,6 +250,8 @@ Konvensi: semua model pakai `$fillable`, `casts()` untuk enum/datetime, dan TIDA
 | pengguna | budi@student.kampus.test | user123 | aktif |
 | pengguna | sari@dosen.kampus.test | user123 | aktif |
 | pengguna | pending@kampus.test | user123 | pending (untuk demo verifikasi admin) |
+
+Sistem mendukung lebih dari satu admin. Seeder cukup menyediakan satu admin untuk demo; admin aktif dapat membuat akun admin tambahan.
 
 ## 6. Daftar Routes (`routes/web.php`)
 
@@ -251,9 +264,11 @@ Konvensi: semua model pakai `$fillable`, `casts()` untuk enum/datetime, dan TIDA
 | GET | `/fasilitas/{facility}/jadwal?date=` | `fasilitas.jadwal` | FacilityController@jadwal (grid slot tersedia/tidak) |
 
 ### Auth (custom, session-based)
-| GET/POST | `/register`, `/login`, `/logout`, `/dashboard` | | controller auth buatan sendiri + throttling `RateLimiter`; Registrasi mandiri hanya untuk role `pengguna` |
+| GET/POST | `/register`, `/login`, `/logout`, `/dashboard` | | controller auth buatan sendiri + throttling `RateLimiter` (login) dan `throttle:10,1` pada POST `/login` & `/register` (anti-spam); Registrasi mandiri hanya untuk role `pengguna` |
 
-### Pengguna — `auth` + `EnsureAccountActive`
+Route privat membutuhkan autentikasi. Guest yang membuka route privat diarahkan ke `/login`; pengguna yang sudah login tetapi rolenya tidak sesuai menerima HTTP 403. Route publik tetap dapat diakses semua role.
+
+### Pengguna — `auth` + `EnsureAccountActive` + `role:pengguna`
 | Method | URI | Nama | Catatan |
 |---|---|---|---|
 | GET | `/reservasi` | `reservasi.index` | riwayat + status milik sendiri |
@@ -266,32 +281,40 @@ Konvensi: semua model pakai `$fillable`, `casts()` untuk enum/datetime, dan TIDA
 | POST | `/laporan` | `laporan.store` | simpan + upload foto |
 | GET | `/laporan/{report}` | `laporan.show` | detail + status + riwayat |
 
-### Petugas — `auth` + `role:petugas,admin` (prefix `petugas`)
+### Petugas — `auth` + `EnsureAccountActive` + `role:petugas` (prefix `petugas`)
+
+Semua route berikut eksklusif untuk `petugas`. `admin` tidak dapat membaca halaman maupun menjalankan aksi pada endpoint ini.
+
 | Method | URI | Nama | Catatan |
 |---|---|---|---|
 | GET | `/petugas` | `petugas.dashboard` | jumlah antrian reservasi & laporan `pending`/`baru` |
 | GET | `/petugas/reservasi?status=&date=` | `petugas.reservasi.index` | antrian + filter |
+| GET | `/petugas/reservasi/{reservation}` | `petugas.reservasi.show` | detail reservasi operasional |
 | POST | `/petugas/reservasi/{id}/approve` | `petugas.reservasi.approve` | cek bentrok (BR-7) |
 | POST | `/petugas/reservasi/{id}/reject` | `petugas.reservasi.reject` | wajib `reason` |
 | POST | `/petugas/reservasi/{id}/cancel` | `petugas.reservasi.cancel` | wajib `cancel_reason` (BR-9) |
 | GET | `/petugas/laporan?status=` | `petugas.laporan.index` | antrian laporan |
 | PATCH | `/petugas/laporan/{id}/status` | `petugas.laporan.status` | transisi status + catatan (BR-10) |
-| PATCH | `/petugas/fasilitas/{id}/status` | `petugas.fasilitas.status` | set `perbaikan` / kembali `aktif` (BR-11) |
+| PATCH | `/petugas/laporan/{report}/fasilitas-status` | `petugas.laporan.fasilitas-status` | set `perbaikan` / kembali `aktif` dari alur laporan (BR-11) |
 
 
 ### Admin — `auth` + `role:admin` (prefix `admin`)
+
+Route admin eksklusif untuk `admin`. Dashboard admin hanya boleh memuat ringkasan operasional read-only; detail dan aksi antrian tetap berada pada route `petugas`.
 
 | Method | URI | Nama | Catatan |
 |---|---|---|---|
 | GET | `/admin` | `admin.dashboard` | ringkasan: antrian, fasilitas perbaikan, akun pending |
 | GET/POST | `/admin/petugas`, `/admin/petugas/create` | `admin.petugas.*` | daftar & buat akun petugas (US-13); TIDAK ada registrasi mandiri petugas |
 | GET/POST | `/admin/pengguna`, `/admin/pengguna/create` | `admin.pengguna.*` | daftar & buat akun pengguna langsung (US-14) |
+| GET/POST | `/admin/admin`, `/admin/admin/create` | `admin.admin.*` | daftar & buat akun admin; tidak ada registrasi mandiri admin |
 | GET | `/admin/pengguna/verifikasi` | `admin.pengguna.verifikasi` | daftar akun `pending` |
 | PATCH | `/admin/pengguna/{id}/verifikasi` | `admin.pengguna.verify` | set `aktif` |
 | PATCH | `/admin/pengguna/{id}/tolak` | `admin.pengguna.reject` | set `ditolak` |
+| PATCH | `/admin/pengguna/{id}/pulihkan` | `admin.pengguna.restore` | kembalikan akun `ditolak` ke `pending` |
 | GET/POST/PUT | `/admin/fasilitas`, `.../create`, `.../{id}/edit` | `admin.fasilitas.*` | CRUD fasilitas; "hapus" = set status `nonaktif` (soft-disable) |
 | GET | `/admin/rekap?from=&to=` | `admin.rekap.index` | okupansi + frekuensi kerusakan per fasilitas/lokasi |
-| GET | `/admin/rekap/export?format=csv|pdf` | `admin.rekap.export` | ekspor rekap (lihat §13) |
+| GET | `/admin/rekap/export?format=csv|xlsx|pdf` | `admin.rekap.export` | ekspor rekap (lihat §13) |
 
 Middleware group ringkas:
 
@@ -299,11 +322,11 @@ Middleware group ringkas:
 Route::middleware('guest')->group(function () {
     // auth routes custom: register, login
 });
-Route::middleware(['auth', 'active'])->group(function () {
+Route::middleware(['auth', 'active', 'role:pengguna'])->group(function () {
     // /reservasi, /laporan (pengguna)
 });
-Route::middleware(['auth', 'role:petugas,admin'])->prefix('petugas')->group(/* antrian */);
-Route::middleware(['auth', 'role:admin'])->prefix('admin')->group(/* master data */);
+Route::middleware(['auth', 'active', 'role:petugas'])->prefix('petugas')->group(/* antrian */);
+Route::middleware(['auth', 'active', 'role:admin'])->prefix('admin')->group(/* master data + ringkasan read-only */);
 ```
 
 ## 7. Controller & Validasi (Server + Client)
@@ -320,9 +343,12 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->group(/* master data
 'purpose'     => ['required', 'string', 'min:10', 'max:255'],
 ```
 
-Ditambah custom Rule objects (logika di `App\Rules`, dipanggil via `withValidator` atau `after()`):
+Ditambah custom Rule objects (logika di `App\Rules`, menerima Carbon langsung dari Service — tanpa parse ulang string):
 - `SlotTimeValid`: menit harus `00`/`30` (kelipatan slot 30 menit); rentang `07:00–20:00`; `end > start`; durasi maksimal 8 slot (4 jam) — BR-1, BR-2.
-- `SlotAvailable`: fasilitas berstatus `aktif`; `start_time >= now + 30 menit`; tanpa overlap dengan reservasi `approved` pada fasilitas sama (BR-4, BR-5, BR-6).
+- `FacilityBookable`: fasilitas harus ada dan berstatus `aktif` (BR-3).
+- `BookingLeadTime`: `start >= now + 30 menit` (BR-5).
+- `PendingQuota`: maksimal 2 reservasi `pending` per hari untuk satu pengguna (BR-4).
+- `NoApprovedOverlap`: tanpa overlap dengan reservasi `approved` pada fasilitas sama (BR-6).
 
 **`StoreReportRequest`** (laporan kerusakan):
 
@@ -334,11 +360,11 @@ Ditambah custom Rule objects (logika di `App\Rules`, dipanggil via `withValidato
 ```
 
 **Form admin/petugas lainnya:**
-- `CreateOfficerRequest` / `CreateUserByAdminRequest`: `name` wajib, `email` wajib+unique, `password` wajib `min:8 confirmed`, `identity` nullable, langsung set `role` & `account_status = 'aktif'`. Kedua request berbagi base `AdminAccountRequest` (isi aturan hidup di satu tempat, nama keduanya dipertahankan).
+- `CreateAdminRequest` / `CreateOfficerRequest` / `CreateUserByAdminRequest`: `name`, `identity`, dan `phone` wajib; `identity` dan `phone` unique; `email` wajib+unique, di-trim lalu dinormalisasi lowercase; `password` wajib `min:8 confirmed`; input telepon `08...` atau `+62...` dinormalisasi ke `+62...`; langsung set `role` & `account_status = 'aktif'`. Request berbagi aturan dasar akun.
 - `FacilityRequest`: `name`, `type` in enum, `location`, `capacity` integer min 1, `description` nullable, `photo` nullable image.
 - `RejectReservationRequest` / `CancelReservationOfficerRequest`: `reason`/`cancel_reason` wajib `min:10`.
 - `UpdateReportStatusRequest`: `status` in enum; `resolution_note` `required_if:status,selesai,ditolak` `min:10`.
-- `UpdateFacilityStatusRequest`: `status` in `aktif,perbaikan,nonaktif`.
+- `UpdateFacilityStatusRequest`: `status` in `aktif,perbaikan,nonaktif`; Service tetap wajib memeriksa kewenangan role dan transisi yang diizinkan pada §4.2.
 
 
 ### 7.2 Validasi sisi CLIENT (wajib, untuk form penting)
@@ -357,23 +383,25 @@ Ditambah custom Rule objects (logika di `App\Rules`, dipanggil via `withValidato
 |---|---|---|
 | `FacilityController` | index, jadwal, show | daftar + filter; grid 26 slot/hari (07.00–19.30 mulai); slot `booked` jika overlap dengan `approved` |
 | `ReservationController` | index, create, store, show, destroy | store → `ReservationService::create()`; destroy → cek pemilik + BR-8 |
-| `ReportController` | index, create, store, show | store → simpan foto (`store('reports','public')`) + status `baru` |
-| `Officer\DashboardController` | index | hitung antrian: reservasi `pending`, laporan `baru`/`diproses` |
+| `ReportController` | index, create, store, show | store → simpan foto bila ada (`store('reports','public')`) + status `baru` |
+| `Officer\DashboardController` | index | hitung antrian: reservasi `pending`, laporan `baru`/`diproses`; hanya untuk petugas |
 | `Officer\ReservationController` | index, approve, reject, cancel | approve/reject/cancel via `ReservationService` (transaksi + lock) |
-| `Officer\ReportController` | index, show, updateStatus | transisi via `ReportService` + tulis `report_updates` |
-| `Officer\FacilityStatusController` | update | set `perbaikan`/`aktif`; hanya petugas/admin |
+| `Officer\ReportController` | index, show, updateStatus, toggleFacilityStatus | transisi via `ReportService` + tulis `report_updates`; status fasilitas mengikuti alur laporan |
+| `Admin\AdminAccountController` | index, create, store | buat akun admin |
 | `Admin\OfficerAccountController` | index, create, store | buat akun petugas |
-| `Admin\UserAccountController` | index, create, store, verifikasi, tolak | verifikasi akun `pending` |
+| `Admin\AccountVerificationController` | index, verifikasi, tolak, pulihkan | delegasikan verifikasi akun `pending` ke `AccountVerificationService` (transaksi + `lockForUpdate`, guard role `pengguna`, audit `verified_by/at` & `rejected_by/at`) |
+| `Admin\UserAccountController` | index, create, store | buat akun pengguna langsung aktif oleh admin |
 | `Admin\FacilityController` | resource (tanpa destroy fisik) | nonaktifkan/aktifkan |
-| `Admin\RecapController` | index, export | agregasi via `RecapService`; export csv/pdf |
-| `Admin\DashboardController` | index | kartu ringkasan + grafik sederhana (opsional) |
+| `Admin\RecapController` | index, export | agregasi via `RecapService`; export csv/xlsx/pdf |
+| `Admin\DashboardController` | index | kartu ringkasan operasional read-only + grafik sederhana (opsional); tanpa detail/aksi antrian |
 
-Catatan implementasi: `Admin\OfficerAccountController` dan `Admin\UserAccountController` berbagi base `BaseAccountController` (alur daftar-formulir-simpan + penguncian `role`/`aktif` hidup di satu tempat, nama keduanya dipertahankan). Keputusan `pending`/`ditolak` vs `aktif` (BR-14) dimiliki satu modul `AccountStatusGate`; middleware `active` dan login hanya menjadi adapter.
+Catatan implementasi: `Admin\AdminAccountController`, `Admin\OfficerAccountController`, dan `Admin\UserAccountController` berbagi base `BaseAccountController` (alur daftar-formulir-simpan + penguncian `role`/`aktif` hidup di satu tempat). Keputusan `pending`/`ditolak` vs `aktif` (BR-14) dimiliki satu modul `AccountStatusGate`; middleware `active` dan login hanya menjadi adapter.
 
 ### 7.4 Policy
 
-- `ReservationPolicy`: `view` (pemilik ATAU role petugas/admin), `cancel` (pemilik + BR-8).
-- `ReportPolicy`: `view` (pemilik ATAU petugas/admin).
+- `ReservationPolicy`: `view` (pemilik pada alur pengguna ATAU role petugas pada alur operasional), `cancel` (pemilik + BR-8).
+- `ReportPolicy`: `view` (pemilik pada alur pengguna ATAU role petugas pada alur operasional).
+- Admin hanya menerima agregat read-only di dashboard admin; akses ini tidak diberikan melalui Policy operasional petugas.
 - Otomatis dipakai via route model binding (`authorizeResource`).
 
 
@@ -390,13 +418,14 @@ Catatan implementasi: `Admin\OfficerAccountController` dan `Admin\UserAccountCon
 | BR-7 | **Approve** dilakukan dalam DB transaction + `lockForUpdate`: cek ulang overlap terhadap `approved` pada fasilitas sama; bila bentrok → kembalikan HTTP 409 dengan pesan jelas (kondisi balapan dicegah). |
 | BR-8 | Pembatalan oleh pengguna: hanya reservasi miliknya, status `pending`/`approved`, dan **minimal 1 jam sebelum `start_time`** (batas pembatalan). |
 | BR-9 | Pembatalan oleh petugas (`cancelled_by_officer`): wajib `cancel_reason` (min. 10 karakter); alasan tampil di detail reservasi. |
-| BR-10 | Laporan: transisi `baru → diproses → selesai/ditolak`; menutup laporan (`selesai`/`ditolak`) wajib `resolution_note`. Setiap transisi tercatat di `report_updates`. |
+| BR-10 | Laporan wajib mengikuti alur `baru → diproses → selesai/ditolak`; tidak boleh langsung dari `baru` ke status akhir. Menutup laporan (`selesai`/`ditolak`) wajib `resolution_note`. Setiap transisi tercatat di `report_updates`. |
 | BR-11 | Saat menangani laporan, petugas dapat menandai fasilitas `perbaikan`; ketika laporan ditandai `selesai` dan fasilitas terkait `perbaikan` karena laporan itu, sistem menampilkan aksi kembalikan fasilitas ke `aktif`. |
 | BR-12 | Fasilitas `perbaikan`/`nonaktif` tidak dapat direservasi; slot grid menampilkan tidak tersedia. |
-| BR-13 | Pengunjung (tanpa login) melihat daftar fasilitas + grid tersedia/tidak, **tanpa nama pemesan & tujuan**. Detail pemohon hanya untuk petugas/admin dan pemilik. |
-| BR-14 | Akun registrasi mandiri berstatus `pending` → login ditolak sampai admin memverifikasi; akun buatan admin langsung `aktif`. |
+| BR-13 | Pengunjung (tanpa login) melihat daftar fasilitas + grid tersedia/tidak, **tanpa nama pemesan & tujuan**. Detail pemohon hanya untuk petugas melalui route operasional dan untuk pemilik melalui alur pengguna; admin hanya menerima agregat read-only di dashboard. |
+| BR-14 | Akun registrasi mandiri berstatus `pending` → login ditolak sampai admin memverifikasi; akun buatan admin langsung `aktif`. Verifikasi/tolak berjalan dalam transaksi + `lockForUpdate` (anti-balapan dua admin), hanya untuk target role `pengguna`, dan selalu mencatat `verified_by/at` atau `rejected_by/at` tanpa alasan penolakan. Target non-`pengguna` dikembalikan 404; target yang sudah diproses dikembalikan dengan pesan konflik (redirect + flash error di web). Akun `ditolak` tidak boleh mendaftar ulang dengan email yang sama, tetapi admin boleh mengembalikannya ke `pending`. |
 | BR-15 | Petugas **tidak pernah** bisa registrasi mandiri — dibuat hanya oleh admin. |
 | BR-16 | Reservasi pada fasilitas berstatus `perbaikan` yang sudah approved → petugas harus membatalkannya (BR-9) bila jadwal bertabrakan dengan perbaikan. |
+| BR-17 | Sistem boleh memiliki lebih dari satu admin. Admin aktif boleh membuat admin baru; tidak ada registrasi mandiri untuk admin. |
 
 Definisi slot: slot `[h, h+30m)` dianggap **terisi** bila ada reservasi `approved` dengan `start_time < h+30m AND end_time > h`. Grid jadwal menampilkan slot 07.00 s.d. 19.30.
 
@@ -407,7 +436,7 @@ Definisi slot: slot `[h, h+30m)` dianggap **terisi** bila ada reservasi `approve
 ```mermaid
 stateDiagram-v2
     [*] --> pending: pengguna mengajukan
-    pending --> approved: petugas setujui (cek bentrok BR-7)
+    pending --> approved: petugas setujui (cek bentrok BR-7 + fasilitas aktif BR-12, dalam satu transaksi)
     pending --> rejected: petugas tolak (alasan wajib)
     pending --> cancelled_by_user: batal sendiri (BR-8)
     approved --> cancelled_by_user: batal sendiri (BR-8)
@@ -421,7 +450,7 @@ stateDiagram-v2
 
 ```mermaid
 stateDiagram-v2
-    [*] --> baru: pengguna melapor (+foto)
+    [*] --> baru: pengguna melapor (foto opsional)
     baru --> diproses: petugas menangani
     diproses --> selesai: catatan resolusi wajib
     diproses --> ditolak: catatan resolusi wajib
@@ -438,20 +467,21 @@ Setiap transisi laporan menulis baris `report_updates` (audit trail, tampil di d
 |---|---|---|---|---|
 | Lihat daftar fasilitas + filter | ✔ | ✔ | ✔ | ✔ |
 | Lihat grid ketersediaan slot | ✔ (tanpa detail pemohon) | ✔ | ✔ | ✔ |
-| Ajukan reservasi | ✖ (diminta login) | ✔ | ✔* | ✔* |
+| Ajukan reservasi | ✖ (diminta login) | ✔ | ✖ | ✖ |
 | Batalkan reservasi sendiri | ✖ | ✔ (BR-8) | — | — |
-| Lapor kerusakan | ✖ | ✔ | ✔* | ✔* |
+| Lapor kerusakan | ✖ | ✔ | ✖ | ✖ |
 | Lihat riwayat/detail milik sendiri | ✖ | ✔ | — | — |
-| Dashboard antrian | ✖ | ✖ | ✔ | ✔ |
-| Approve/reject/cancel reservasi | ✖ | ✖ | ✔ | ✔ |
-| Ubah status laporan + catatan resolusi | ✖ | ✖ | ✔ | ✔ |
-| Set fasilitas `perbaikan`/`aktif` | ✖ | ✖ | ✔ | ✔ |
-| Buat akun petugas/pengguna | ✖ | ✖ | ✖ | ✔ |
+| Dashboard antrian petugas | ✖ | ✖ | ✔ | ✖ |
+| Lihat ringkasan operasional read-only | ✖ | ✖ | ✖ | ✔ |
+| Approve/reject/cancel reservasi | ✖ | ✖ | ✔ | ✖ |
+| Ubah status laporan + catatan resolusi | ✖ | ✖ | ✔ | ✖ |
+| Set fasilitas `perbaikan`/`aktif` dari alur laporan | ✖ | ✖ | ✔ | ✖ |
+| Buat akun admin/petugas/pengguna | ✖ | ✖ | ✖ | ✔ |
 | Verifikasi/tolak akun registrasi mandiri | ✖ | ✖ | ✖ | ✔ |
 | CRUD data master fasilitas | ✖ | ✖ | ✖ | ✔ |
-| Rekap + ekspor CSV/PDF | ✖ | ✖ | ✖ | ✔ |
+| Rekap + ekspor CSV/XLSX/PDF | ✖ | ✖ | ✖ | ✔ |
 
-`*` = diperbolehkan karena rolenya mencakup, namun alur utama memang ditujukan untuk role pengguna.
+Role `admin` dan `petugas` tidak saling mencakup. Ringkasan operasional admin bersifat agregat/read-only dan tidak memberikan akses ke route, detail, atau aksi operasional petugas.
 
 ## 11. UI/Views & Komponen
 
@@ -462,16 +492,18 @@ Setiap transisi laporan menulis baris `report_updates` (audit trail, tampil di d
 | Daftar fasilitas | `fasilitas/index` | publik | filter (keyword, tipe, lokasi, kapasitas min) + kartu fasilitas + badge status |
 | Jadwal fasilitas | `fasilitas/jadwal` | publik | grid slot per tanggal, navigasi hari, tombol "Ajukan Reservasi" (arahkan ke login bila belum) |
 | Registrasi/Login | `auth/*` | custom auth | registrasi mandiri role `pengguna` saja |
-| Dashboard pengguna | `dashboard/index` | login | ringkasan reservasi & laporan milik sendiri |
+| Dashboard pengguna | `dashboard/index` | pengguna | ringkasan reservasi & laporan milik sendiri |
 | Buat reservasi | `reservasi/create` | pengguna | form tujuan + slot picker |
 | Riwayat & detail reservasi | `reservasi/index`, `reservasi/show` | pengguna | status + alasan reject/cancel |
-| Buat & lihat laporan | `laporan/*` | pengguna | form (kategori, deskripsi, foto) + riwayat status |
+| Buat & lihat laporan | `laporan/*` | pengguna | form (kategori, deskripsi, foto opsional) + riwayat status |
 | Dashboard petugas | `petugas/dashboard` | petugas | kartu jumlah antrian + daftar terbaru |
 | Antrian reservasi | `petugas/reservasi/index` | petugas | tabel + aksi approve/reject/cancel (+modal alasan) |
 | Antrian laporan | `petugas/laporan/index`, `show` | petugas | ubah status + catatan resolusi + tombol set fasilitas `perbaikan` |
-| Kelola akun | `admin/petugas/*`, `admin/pengguna/*` | admin | form buat akun; tabel verifikasi |
+| Kelola akun | `admin/admin/*`, `admin/petugas/*`, `admin/pengguna/*` | admin | form buat akun; tabel verifikasi |
 | Master fasilitas | `admin/fasilitas/*` | admin | tabel + form tambah/edit/nonaktifkan |
-| Rekap | `admin/rekap/index` | admin | tabel okupansi + frekuensi kerusakan + tombol ekspor |
+| Rekap | `admin/rekap/index` | admin | tabel okupansi + frekuensi kerusakan + tombol ekspor CSV/XLSX/PDF |
+
+Menu operasional hanya ditampilkan untuk `petugas`; menu administrasi hanya ditampilkan untuk `admin`. Admin tidak melihat menu antrian/aksi petugas.
 
 
 ### 11.2 Komponen UI (gaya shadcn-lite, murni Blade + Tailwind)
@@ -494,7 +526,7 @@ Prinsip UX: semua aksi memakai konfirmasi untuk tindakan destruktif (cancel/reje
 3. Mass assignment: `$fillable` di semua model; never use `$guarded = []` tanpa pertimbangan.
 4. SQL injection aman: hanya Eloquent/Query Builder dengan binding — tidak ada raw query dengan input mentah.
 5. XSS: selalu `{{ }}` (Blade auto-escape); tidak pernah `{!! !!}` untuk input user.
-6. Otorisasi: middleware role + Policy; endpoint petugas/admin terlindungi ganda.
+6. Otorisasi: middleware role + Policy; endpoint petugas dan admin terlindungi ganda dengan role yang tidak tumpang tindih. Admin tidak memperoleh akses ke endpoint petugas; dashboard admin hanya memakai query ringkasan read-only.
 7. Upload foto: validasi mimes+size, nama file random (`store()`), simpan di disk `public`, tampil via `Storage::url()`.
 8. Info pemohon (nama, tujuan) TIDAK pernah dikirim ke endpoint publik jadwal.
 9. Aktivitas penting (approve/reject/cancel, transisi laporan) selalu tercatat (`decided_by`, `report_updates`).
@@ -508,9 +540,12 @@ Periode rekap diisi dari form (`from`, `to`, default bulan berjalan).
 
 **Frekuensi kerusakan per fasilitas/lokasi:** jumlah laporan per fasilitas, di-uraikan per kategori, plus jumlah laporan `selesai`.
 
-- **CSV**: streamed response dengan `fputcsv` (delimeter `;` agar Excel Indonesia langsung membaca kolom), nama file `rekap-{from}-sd-{to}.csv`.
+Ketiga format ekspor harus merepresentasikan data rekap yang sama; perbedaannya hanya format file dan tata letak.
+
+- **CSV**: streamed response dengan `fputcsv` (delimiter `;` agar Excel Indonesia langsung membaca kolom), nama file `rekap-{from}-sd-{to}.csv`.
+- **XLSX**: file workbook Excel dengan isi rekap yang setara dengan CSV dan PDF, nama file `rekap-{from}-sd-{to}.xlsx`.
 - **PDF**: paket `barryvdh/laravel-dompdf`, view Blade khusus cetak (`admin/rekap/pdf.blade.php`, landscape).
-- Ketentuan tugas menyebut CSV/Excel/PDF — implementasi **CSV + PDF** dipilih (CSV dibuka Excel); tidak ada dependency Excel tambahan.
+- Ketentuan tugas mewajibkan tiga format: CSV, XLSX, dan PDF. Pemilihan package XLSX menjadi bagian milestone implementasi berikutnya.
 
 
 ## 14. Rencana Testing (PHPUnit/Pest)
@@ -529,14 +564,15 @@ Periode rekap diisi dari form (`from`, `to`, default bulan berjalan).
 ### 14.2 Feature — Alur Utama
 
 1. Registrasi mandiri → `account_status = pending` → login DITOLAK dengan pesan verifikasi → admin verifikasi → login sukses.
-2. Buat akun petugas oleh admin → petugas login → TIDAK ada jalur registrasi mandiri petugas (BR-15).
+2. Buat akun petugas/admin oleh admin → akun langsung aktif → login → TIDAK ada jalur registrasi mandiri petugas/admin (BR-15/BR-17).
 3. Ajukan reservasi valid → status `pending` → muncul di antrian petugas → approve → muncul sebagai terisi di grid publik.
 4. **Bentrok**: approved 08.00–09.00 di fasilitas F1 → pengajuan baru 08.30–09.00 F1 ditolak validasi; jika keduanya pending, approve kedua mengembalikan 409 (BR-6/BR-7).
 5. Batalkan reservasi milik sendiri < 1 jam sebelum mulai → ditolak; batalkan milik orang lain → 403.
 6. Cancel oleh petugas tanpa alasan → error validasi; dengan alasan → status `cancelled_by_officer`, alasan terlihat di detail.
-7. Laporan: buat laporan + foto → `baru` → petugas ubah `diproses` → tandai fasilitas `perbaikan` → tutup `selesai` wajib catatan → riwayat tercatat di `report_updates` → fasilitas dikembalikan `aktif`.
+7. Laporan: buat laporan dengan atau tanpa foto → `baru` → petugas ubah `diproses` → tandai fasilitas `perbaikan` → tutup `selesai` wajib catatan → riwayat tercatat di `report_updates` → fasilitas dikembalikan `aktif`.
 8. Pengunjung tanpa login melihat fasilitas + grid slot TANPA nama pemesan/tujuan.
-9. Rekap admin: angka okupansi & frekuensi kerusakan sesuai data uji; ekspor CSV & PDF berhasil diunduh.
+9. Rekap admin: angka okupansi & frekuensi kerusakan sesuai data uji; ekspor CSV, XLSX, dan PDF berhasil diunduh.
+10. Isolasi role: setelah login, `pengguna` masuk ke alur pengguna, `petugas` ke dashboard petugas, dan `admin` ke dashboard admin; akses admin ke `/petugas/*` dan akses petugas ke `/admin/*` menghasilkan 403. Dashboard admin tetap hanya menampilkan ringkasan read-only.
 
 ### 14.3 Feature — Pencarian & Ketangguhan Input
 
@@ -544,6 +580,7 @@ Periode rekap diisi dari form (`from`, `to`, default bulan berjalan).
 - Katakunci yang tidak ada di data (mis. `xyzabc`) mengembalikan **0 hasil** dengan pesan ramah "fasilitas tidak ditemukan", bukan error.
 - Input non-numerik pada `kapasitas_min` (mis. `abc`, `-5`) ditolak validasi server dengan pesan jelas, bukan error 500.
 - Input tujuan berisi tag `<script>alert(1)</script>` harus tersimpan aman dan ditampilkan sebagai teks biasa (ter-escape) di halaman detail — bukan dieksekusi.
+- Identity atau nomor telepon duplikat ditolak validasi server dengan pesan field yang jelas, bukan error 500.
 
 ### 14.4 Kriteria Lulus (Definition of Done)
 - Semua kasus di atas lulus; tidak ada error 500 pada input tidak valid.
@@ -564,23 +601,24 @@ Periode rekap diisi dari form (`from`, `to`, default bulan berjalan).
 
 **Akun demo** — lihat §5.3. Password di-hash bcrypt oleh seeder.
 
-**Data uji:** 2–3 reservasi (pending, approved, rejected) tanggal besok; 2 laporan (baru, diproses) dengan foto placeholder.
+**Data uji:** 2–3 reservasi (pending, approved, rejected) tanggal besok; 2 laporan (baru, diproses), minimal satu dengan foto dan satu tanpa foto.
 
 
 ## 16. Checklist Deliverables (sesuai ketentuan tugas)
 
 - [ ] Registrasi (mandiri, role pengguna, status pending), login, logout
-- [ ] Verifikasi/tolak akun oleh admin; petugas dibuat admin; pengguna bisa dibuat admin
+- [ ] Isolasi hak akses: role admin dan petugas terpisah; admin tidak dapat mengakses route/action operasional petugas
+- [ ] Verifikasi/tolak akun oleh admin; admin dapat membuat admin/petugas/pengguna; pengguna dapat registrasi mandiri
 - [ ] Daftar fasilitas publik + filter tipe/lokasi/kapasitas + grid ketersediaan tanpa data pemohon
 - [ ] Ajukan reservasi (tujuan wajib) + validasi slot server & client
 - [ ] Riwayat, detail, dan pembatalan reservasi milik sendiri (batas waktu)
 - [ ] Dashboard antrian petugas (reservasi + laporan)
 - [ ] Approve/reject/cancel reservasi; anti-bentrok saat approve
-- [ ] Laporan kerusakan (kategori, deskripsi, foto) + status laporan untuk pelapor
+- [ ] Laporan kerusakan (kategori, deskripsi, foto opsional) + status laporan untuk pelapor
 - [ ] Transisi status laporan + catatan resolusi + riwayat
 - [ ] Status fasilitas `perbaikan` ↔ `aktif` dari alur laporan
 - [ ] CRUD fasilitas (tambah/edit/nonaktifkan)
-- [ ] Rekap okupansi & frekuensi kerusakan + ekspor CSV & PDF
+- [ ] Rekap okupansi & frekuensi kerusakan + ekspor CSV, XLSX, dan PDF
 - [ ] Validasi server & client pada semua form penting
 - [ ] Seeder akun demo berjalan: `php artisan migrate:fresh --seed`
 - [ ] README berisi setup + informasi login
@@ -597,7 +635,5 @@ Periode rekap diisi dari form (`from`, `to`, default bulan berjalan).
 ---
 
 *Akhir dokumen — versi 1.0. Perubahan apa pun terhadap keputusan teknis di atas wajib diperbarui di dokumen ini dan dikomunikasikan ke tim.*
-
-
 
 

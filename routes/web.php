@@ -1,39 +1,80 @@
 <?php
 
 use App\Http\Controllers\Admin\AccountVerificationController;
+use App\Http\Controllers\Admin\AdminAccountController;
+use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
+use App\Http\Controllers\Admin\FacilityController as AdminFacilityController;
 use App\Http\Controllers\Admin\OfficerAccountController;
 use App\Http\Controllers\Admin\UserAccountController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\LogoutController;
 use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\FacilityController;
+use App\Http\Controllers\HomeController;
 use App\Http\Controllers\Officer\DashboardController as OfficerDashboardController;
+use App\Http\Controllers\Officer\ReportController as OfficerReportController;
 use App\Http\Controllers\Officer\ReservationController as OfficerReservationController;
+use App\Http\Controllers\ReportController;
+use App\Http\Controllers\ReservationController;
 use Illuminate\Support\Facades\Route;
 
-Route::get('/', function () {
-    return view('welcome');
-});
+Route::get('/', HomeController::class)->name('home');
+
+Route::get('/fasilitas', [FacilityController::class, 'index'])->name('fasilitas.index');
+Route::get('/fasilitas/{facility}', [FacilityController::class, 'show'])->name('fasilitas.show');
+Route::get('/fasilitas/{facility}/jadwal', [FacilityController::class, 'jadwal'])->name('fasilitas.jadwal');
 
 Route::middleware('guest')->group(function (): void {
     Route::get('/login', [LoginController::class, 'showLoginForm'])->name('login');
     Route::post('/login', [LoginController::class, 'store'])->middleware('throttle:10,1')->name('login.store');
 
     Route::get('/register', [RegisterController::class, 'show'])->name('register');
-    Route::post('/register', [RegisterController::class, 'store'])->name('register.store');
+    Route::post('/register', [RegisterController::class, 'store'])->middleware('throttle:10,1')->name('register.store');
 });
 
-Route::middleware(['auth', 'active'])->group(function (): void {
+Route::middleware(['auth', 'active', 'role:pengguna'])->group(function (): void {
     Route::get('/dashboard', DashboardController::class)->name('dashboard');
+
+    Route::get('/reservasi', [ReservationController::class, 'index'])->name('reservasi.index');
+    Route::get('/reservasi/baru', [ReservationController::class, 'create'])->name('reservasi.create');
+    Route::post('/reservasi', [ReservationController::class, 'store'])->name('reservasi.store');
+    Route::get('/reservasi/{reservation}', [ReservationController::class, 'show'])->name('reservasi.show');
+    Route::delete('/reservasi/{reservation}', [ReservationController::class, 'destroy'])->name('reservasi.destroy');
+
+    Route::get('/laporan', [ReportController::class, 'index'])->name('laporan.index');
+    Route::get('/laporan/baru', [ReportController::class, 'create'])->name('laporan.create');
+    Route::post('/laporan', [ReportController::class, 'store'])->name('laporan.store');
+    Route::get('/laporan/{report}', [ReportController::class, 'show'])->name('laporan.show');
+});
+
+Route::middleware(['auth', 'active', 'role:petugas'])->prefix('petugas')->group(function (): void {
+    Route::get('/', OfficerDashboardController::class)->name('petugas.dashboard');
+    Route::get('/laporan', [OfficerReportController::class, 'index'])->name('petugas.laporan.index');
+    Route::get('/laporan/{report}', [OfficerReportController::class, 'show'])->name('petugas.laporan.show');
+    Route::patch('/laporan/{report}/status', [OfficerReportController::class, 'updateStatus'])->name('petugas.laporan.status');
+    Route::patch('/laporan/{report}/fasilitas-status', [OfficerReportController::class, 'toggleFacilityStatus'])->name('petugas.laporan.fasilitas-status');
+    Route::get('/reservasi', [OfficerReservationController::class, 'index'])->name('petugas.reservasi.index');
+    Route::get('/reservasi/{reservation}', [OfficerReservationController::class, 'show'])->name('petugas.reservasi.show');
+    Route::post('/reservasi/{reservation}/approve', [OfficerReservationController::class, 'approve'])
+        ->name('petugas.reservasi.approve');
+    Route::post('/reservasi/{reservation}/reject', [OfficerReservationController::class, 'reject'])
+        ->name('petugas.reservasi.reject');
+    Route::post('/reservasi/{reservation}/cancel', [OfficerReservationController::class, 'cancel'])
+        ->name('petugas.reservasi.cancel');
 });
 
 Route::middleware(['auth', 'active', 'role:admin'])->prefix('admin')->group(function (): void {
+    Route::get('/', AdminDashboardController::class)
+        ->name('admin.dashboard');
     Route::get('/pengguna/verifikasi', [AccountVerificationController::class, 'index'])
         ->name('admin.pengguna.verifikasi');
     Route::patch('/pengguna/{user}/verifikasi', [AccountVerificationController::class, 'verify'])
         ->name('admin.pengguna.verify');
     Route::patch('/pengguna/{user}/tolak', [AccountVerificationController::class, 'reject'])
         ->name('admin.pengguna.reject');
+    Route::patch('/pengguna/{user}/pulihkan', [AccountVerificationController::class, 'restore'])
+        ->name('admin.pengguna.restore');
     Route::get('/pengguna', [UserAccountController::class, 'index'])
         ->name('admin.pengguna.index');
     Route::get('/pengguna/create', [UserAccountController::class, 'create'])
@@ -46,18 +87,26 @@ Route::middleware(['auth', 'active', 'role:admin'])->prefix('admin')->group(func
         ->name('admin.petugas.create');
     Route::post('/petugas', [OfficerAccountController::class, 'store'])
         ->name('admin.petugas.store');
-});
-
-Route::middleware(['auth', 'active', 'role:petugas,admin'])->prefix('petugas')->group(function (): void {
-    Route::get('/', OfficerDashboardController::class)->name('petugas.dashboard');
-    Route::get('/reservasi', [OfficerReservationController::class, 'index'])->name('petugas.reservasi.index');
-    Route::get('/reservasi/{reservation}', [OfficerReservationController::class, 'show'])->name('petugas.reservasi.show');
-    Route::post('/reservasi/{reservation}/approve', [OfficerReservationController::class, 'approve'])
-        ->name('petugas.reservasi.approve');
-    Route::post('/reservasi/{reservation}/reject', [OfficerReservationController::class, 'reject'])
-        ->name('petugas.reservasi.reject');
-    Route::post('/reservasi/{reservation}/cancel', [OfficerReservationController::class, 'cancel'])
-        ->name('petugas.reservasi.cancel');
+    Route::get('/admin', [AdminAccountController::class, 'index'])
+        ->name('admin.admin.index');
+    Route::get('/admin/create', [AdminAccountController::class, 'create'])
+        ->name('admin.admin.create');
+    Route::post('/admin', [AdminAccountController::class, 'store'])
+        ->name('admin.admin.store');
+    Route::get('/fasilitas', [AdminFacilityController::class, 'index'])
+        ->name('admin.fasilitas.index');
+    Route::get('/fasilitas/create', [AdminFacilityController::class, 'create'])
+        ->name('admin.fasilitas.create');
+    Route::post('/fasilitas', [AdminFacilityController::class, 'store'])
+        ->name('admin.fasilitas.store');
+    Route::get('/fasilitas/{facility}/edit', [AdminFacilityController::class, 'edit'])
+        ->name('admin.fasilitas.edit');
+    Route::put('/fasilitas/{facility}', [AdminFacilityController::class, 'update'])
+        ->name('admin.fasilitas.update');
+    Route::patch('/fasilitas/{facility}/nonaktifkan', [AdminFacilityController::class, 'deactivate'])
+        ->name('admin.fasilitas.deactivate');
+    Route::patch('/fasilitas/{facility}/aktifkan', [AdminFacilityController::class, 'activate'])
+        ->name('admin.fasilitas.activate');
 });
 
 Route::middleware('auth')->group(function (): void {

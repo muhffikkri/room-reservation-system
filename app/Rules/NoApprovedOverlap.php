@@ -13,8 +13,8 @@ use Illuminate\Translation\PotentiallyTranslatedString;
  * ada reservasi approved pada fasilitas sama dengan
  * start_time < end_baru AND end_time > start_baru.
  *
- * Dipakai saat pengajuan (via SlotAvailable) dan dicek ulang saat
- * approve di dalam transaksi (BR-7). Overlap dengan pending lain
+ * Dipakai saat pengajuan (bersama Rules slot lain di ReservationService)
+ * dan dicek ulang saat approve di dalam transaksi (BR-7). Overlap dengan pending lain
  * diperbolehkan masuk antrian.
  */
 class NoApprovedOverlap implements ValidationRule
@@ -31,9 +31,9 @@ class NoApprovedOverlap implements ValidationRule
      */
     public function validate(string $attribute, mixed $value, Closure $fail): void
     {
-        $conflict = Reservation::approved()
-            ->overlap($this->facilityId, $this->start, $this->end)
-            ->when($this->ignoreId !== null, fn ($query) => $query->where('id', '!=', $this->ignoreId))
+        // Definisi penghalang hidup di model (satu pemilik, BR-6);
+        // Rules ini hanya meneruskannya ke validator.
+        $conflict = Reservation::blockingOverlap($this->facilityId, $this->start, $this->end, $this->ignoreId)
             ->exists();
 
         if ($conflict) {

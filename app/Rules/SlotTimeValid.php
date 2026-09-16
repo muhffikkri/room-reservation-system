@@ -3,7 +3,6 @@
 namespace App\Rules;
 
 use Closure;
-use Illuminate\Contracts\Validation\DataAwareRule;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Support\Carbon;
 use Illuminate\Translation\PotentiallyTranslatedString;
@@ -12,10 +11,10 @@ use Illuminate\Translation\PotentiallyTranslatedString;
  * Bentuk slot waktu reservasi (BR-1, BR-2).
  *
  * Slot operasional 07.00–20.00, kelipatan 30 menit, durasi 1–8 slot.
- * Membaca date + start_time + end_time dari data request (DataAwareRule),
- * sehingga satu kartu berlaku untuk pasangan mulai–selesai.
+ * Menerima Carbon jadi sehingga tidak ada parse ulang dan tidak ada
+ * lolos diam-diam: input yang bukan waktu valid tidak bisa sampai ke sini.
  */
-class SlotTimeValid implements DataAwareRule, ValidationRule
+class SlotTimeValid implements ValidationRule
 {
     public const OPEN_HOUR = 7;
 
@@ -25,44 +24,15 @@ class SlotTimeValid implements DataAwareRule, ValidationRule
 
     public const MAX_SLOTS = 8;
 
-    /** @var array<string, mixed> */
-    protected array $data = [];
-
-    /**
-     * @param  array<string, mixed>  $data
-     */
-    public function setData(array $data)
-    {
-        $this->data = $data;
-
-        return $this;
-    }
+    public function __construct(protected Carbon $start, protected Carbon $end) {}
 
     /**
      * @param  Closure(string, ?string=): PotentiallyTranslatedString  $fail
      */
     public function validate(string $attribute, mixed $value, Closure $fail): void
     {
-        $date = $this->data['date'] ?? null;
-        $startTime = $this->data['start_time'] ?? null;
-        $endTime = $this->data['end_time'] ?? null;
-
-        if (! is_string($date) || ! is_string($startTime) || ! is_string($endTime)) {
-            return;
-        }
-
-        if (! preg_match('/^\d{2}:\d{2}$/', $startTime) || ! preg_match('/^\d{2}:\d{2}$/', $endTime)) {
-            return;
-        }
-
-        $timezone = config('app.timezone');
-
-        try {
-            $start = Carbon::parse("{$date} {$startTime}", $timezone);
-            $end = Carbon::parse("{$date} {$endTime}", $timezone);
-        } catch (\Exception) {
-            return;
-        }
+        $start = $this->start;
+        $end = $this->end;
 
         if ($start->minute % self::SLOT_MINUTES !== 0 || $end->minute % self::SLOT_MINUTES !== 0) {
             $fail('Waktu mulai dan selesai harus kelipatan 30 menit (contoh: 07:00, 07:30).');

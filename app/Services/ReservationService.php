@@ -5,13 +5,16 @@ namespace App\Services;
 use App\Models\Facility;
 use App\Models\Reservation;
 use App\Models\User;
+use App\Rules\BookingLeadTime;
+use App\Rules\FacilityBookable;
 use App\Rules\NoApprovedOverlap;
-use App\Rules\SlotAvailable;
+use App\Rules\PendingQuota;
 use App\Rules\SlotTimeValid;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\ValidationException;
+use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 use Symfony\Component\HttpKernel\Exception\ConflictHttpException;
 
 /**
@@ -27,14 +30,19 @@ class ReservationService
      */
     public function create(User $user, Facility $facility, Carbon $start, Carbon $end, string $purpose): Reservation
     {
+        // Aturan menerima Carbon langsung: tidak ada bongkar-pasang string,
+        // tidak ada parse ulang, tidak ada lolos diam-diam.
         Validator::make([
+            'slot' => true,
             'facility_id' => $facility->id,
-            'date' => $start->toDateString(),
-            'start_time' => $start->format('H:i'),
-            'end_time' => $end->format('H:i'),
         ], [
-            'start_time' => [new SlotTimeValid],
-            'facility_id' => [new SlotAvailable($user->id)],
+            'slot' => [new SlotTimeValid($start, $end)],
+            'facility_id' => [
+                new FacilityBookable($facility->id),
+                new BookingLeadTime($start),
+                new PendingQuota($user->id, $start),
+                new NoApprovedOverlap($facility->id, $start, $end),
+            ],
         ])->validate();
 
         return DB::transaction(function () use ($user, $facility, $start, $end, $purpose): Reservation {
@@ -63,10 +71,12 @@ class ReservationService
     }
 
     /**
-     * Setujui reservasi pending dalam transaksi + lock (BR-7).
+     * Setujui reservasi pending dalam transaksi + lock (BR-7, BR-12).
      *
      * Overlap dicek ulang terhadap approved pada fasilitas sama; bila
-     * bentrok (kondisi balapan), kembalikan HTTP 409.
+     * bentrok (kondisi balapan), kembalikan HTTP 409. Fasilitas juga
+     * dikunci dan harus berstatus aktif: persetujuan yang diberikan
+     * setelah fasilitas rusak melanggar BR-12.
      */
     public function approve(Reservation $reservation, User $officer): Reservation
     {
@@ -77,6 +87,14 @@ class ReservationService
 
             if ($locked->status !== 'pending') {
                 throw new ConflictHttpException('Hanya reservasi pending yang dapat disetujui.');
+            }
+
+            // Sistem mengunci fasilitas agar perubahan status (misal ke
+            // perbaikan, BR-11) tidak menyelinap di tengah persetujuan.
+            $facility = Facility::whereKey($locked->facility_id)->lockForUpdate()->firstOrFail();
+
+            if ($facility->status !== 'aktif') {
+                throw new ConflictHttpException('Fasilitas sedang berstatus ' . $facility->status . ' sehingga reservasi tidak dapat disetujui.');
             }
 
             try {
@@ -149,6 +167,38 @@ class ReservationService
                 'cancel_reason' => $reason,
                 'decided_by' => $officer->id,
                 'decided_at' => now(),
+            ]);
+
+            return $locked->refresh();
+        });
+    }
+
+    /**
+     * Batalkan reservasi oleh pengguna pemilik (BR-8).
+     *
+     * Hanya pemilik yang dapat membatalkan reservasi miliknya yang berstatus
+     * pending atau approved, dan minimal 1 jam sebelum start_time.
+     */
+    public function cancelByUser(Reservation $reservation, User $user, ?string $reason = null): Reservation
+    {
+        return DB::transaction(function () use ($reservation, $user, $reason): Reservation {
+            $locked = Reservation::whereKey($reservation->id)->lockForUpdate()->firstOrFail();
+
+            if ($locked->user_id !== $user->id) {
+                throw new AccessDeniedHttpException('Anda hanya dapat membatalkan reservasi milik Anda sendiri.');
+            }
+
+            if (! in_array($locked->status, ['pending', 'approved'], true)) {
+                throw new ConflictHttpException('Hanya reservasi berstatus pending atau approved yang dapat dibatalkan.');
+            }
+
+            if ($locked->start_time->isBefore(now()->addHour())) {
+                throw new ConflictHttpException('Reservasi hanya dapat dibatalkan paling lambat 1 jam sebelum waktu mulai.');
+            }
+
+            $locked->update([
+                'status' => 'cancelled_by_user',
+                'cancel_reason' => $reason,
             ]);
 
             return $locked->refresh();

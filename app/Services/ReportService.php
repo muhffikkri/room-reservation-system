@@ -6,6 +6,7 @@ use App\Models\Facility;
 use App\Models\Report;
 use App\Models\ReportUpdate;
 use App\Models\User;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
@@ -18,6 +19,28 @@ use Illuminate\Validation\ValidationException;
  */
 class ReportService
 {
+    /**
+     * Buat laporan kerusakan baru oleh pengguna + simpan foto jika ada.
+     *
+     * @param  array<string, mixed>  $data
+     */
+    public function createReport(User $user, array $data): Report
+    {
+        $photoPath = null;
+        if (isset($data['photo']) && $data['photo'] instanceof UploadedFile) {
+            $photoPath = $data['photo']->store('reports', 'public');
+        }
+
+        return Report::create([
+            'user_id' => $user->id,
+            'facility_id' => $data['facility_id'],
+            'category' => $data['category'],
+            'description' => $data['description'],
+            'photo' => $photoPath,
+            'status' => 'baru',
+        ]);
+    }
+
     /**
      * Status tujuan yang legal dari setiap status (§9.2).
      *

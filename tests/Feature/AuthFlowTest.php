@@ -12,6 +12,8 @@ it('creates a pending pengguna account and ignores role input', function () {
         'email' => 'budi-baru@student.kampus.test',
         'password' => 'rahasia123',
         'password_confirmation' => 'rahasia123',
+        'identity' => '2110512100',
+        'phone' => '081200000100',
         'role' => 'petugas',
         'account_status' => 'aktif',
     ]);
@@ -22,6 +24,8 @@ it('creates a pending pengguna account and ignores role input', function () {
         'email' => 'budi-baru@student.kampus.test',
         'role' => 'pengguna',
         'account_status' => 'pending',
+        'identity' => '2110512100',
+        'phone' => '+6281200000100',
     ]);
 });
 
@@ -157,4 +161,41 @@ it('logs out an authenticated user', function () {
 
     $response->assertRedirect(route('login'));
     $this->assertGuest();
+});
+
+it('clears remember token when login is denied for a pending account', function () {
+    User::factory()->create([
+        'email' => 'pending-remember@student.kampus.test',
+        'password' => 'rahasia123',
+        'account_status' => 'pending',
+        'remember_token' => 'token-lama',
+    ]);
+
+    $this->post('/login', [
+        'email' => 'pending-remember@student.kampus.test',
+        'password' => 'rahasia123',
+        'remember' => true,
+    ]);
+
+    $this->assertGuest();
+    expect(User::where('email', 'pending-remember@student.kampus.test')->first()->remember_token)->toBeNull();
+});
+
+it('throttles repeated register attempts', function () {
+    foreach (range(1, 11) as $i) {
+        $response = $this->post('/register', [
+            'name' => 'Spam',
+            'email' => "spam-throttle-{$i}@student.kampus.test",
+            'password' => 'rahasia123',
+            'password_confirmation' => 'rahasia123',
+            'identity' => "2199000{$i}",
+            'phone' => "0812999000{$i}",
+        ]);
+
+        if ($i <= 10) {
+            $response->assertRedirect(route('login'));
+        }
+    }
+
+    $response->assertStatus(429);
 });
