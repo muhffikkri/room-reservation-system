@@ -16,7 +16,7 @@ _Bagian ini kosong; semua pekerjaan tim terkini sudah masuk `dev`._
 
 ## [v1.2.0-dev] — Perkembangan `dev` sejak v1.1.0 (`e9c591a` → `e03df57`, 2026-09-15)
 
-Fitur berikut sudah masuk `dev` tetapi belum dipromosikan ke `staging`/`prod`. Belum ada release notes resmi; ringkasan teknis ada di snapshot 2026-09-15.
+Fitur berikut sudah masuk `dev` tetapi belum dipromosikan ke `staging`/`prod`. Release notes: [releases/v1.2.0.md](releases/v1.2.0.md) · snapshot 2026-09-15 · suite terverifikasi **168 tes / 627 assertions hijau** (MySQL, 2026-09-16).
 
 ### Dev — penambahan fitur (PR #37–#45)
 - **Dokumentasi sinkron v1.1.0** (PR #37 `docs/project-information` → `6ac099e`): baseline `dev` yang benar (`e9c591a`), snapshot 2026-09-12, perbaikan setup README (nama DB & seed demo).

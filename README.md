@@ -29,7 +29,7 @@ Dokumen acuan:
 - Antrian laporan petugas (`/petugas/laporan`): filter status, transisi `baru → diproses → selesai/tolak` dengan catatan resolusi, tandai fasilitas `perbaikan` ↔ `aktif` (BR-10, BR-11)
 - Mesin aturan reservasi: slot 30 menit (07.00–20.00), kuota pending, lead time, anti-bentrok approved, approve dengan kunci transaksi
 - Seeder akun demo + fasilitas + data uji
-- 168 tes Pest (dev; 120 tes / 439 assertions terverifikasi hijau di v1.1.0)
+- 168 tes Pest — 627 assertions terverifikasi hijau (`php artisan test`, MySQL; 2026-09-16)
 
 Status per fitur & business rules lengkap: [docs/feature-checklist.md](docs/feature-checklist.md).
 
@@ -43,7 +43,7 @@ Status per fitur & business rules lengkap: [docs/feature-checklist.md](docs/feat
 - **Service layer**: `ReservationService` (slot, bentrok, approve transaksi + `lockForUpdate`), `ReportService` (buat laporan + transisi status + audit + toggle status fasilitas), `AccountVerificationService` (audit verifikasi/pulihkan), `AccountStatusGate`, `AccountAttributes`.
 - **Validasi server** via FormRequest + custom Rule objects (`SlotTimeValid`, `NoApprovedOverlap`, `BookingLeadTime`, `PendingQuota`, `FacilityBookable`).
 - **Keamanan**: password bcrypt, CSRF di semua form, Eloquent binding bebas SQLi, output ter-escape (XSS), upload foto diverifikasi mimes+size, register & login di-throttle.
-- **Testing**: Pest (feature + unit) — 168 tes terdefinisi, termasuk unit test aturan slot/overlap, isolasi role, alur reservasi/pembatalan pengguna, laporan & fasilitas publik.
+- **Testing**: Pest (feature + unit) — 168 tes / 627 assertions hijau, termasuk unit test aturan slot/overlap, isolasi role, alur reservasi/pembatalan pengguna, laporan & fasilitas publik.
 - **Deploy**: GitHub Actions (`.github/workflows/deploy.yml`) mendorong ke VPS saat push ke `dev`; aplikasi dikontainerkan (`Dockerfile`, `docker-compose.yml`).
 
 ## Stack
@@ -136,7 +136,14 @@ docker compose up -d --build
 vendor/bin/pest                   # atau: php artisan test --compact
 ```
 
-Konfigurasi tes memakai DB `reservasi_kampus_testing` (MySQL) sesuai `phpunit.xml`. Bundle schema memakai sintaks MySQL (`MODIFY`, `CHARACTER SET`), jadi **sqlite in-memory tidak didukung** — pastikan MySQL aktif dan test DB tersedia (`mysql -u root -e "CREATE DATABASE reservasi_kampus_testing"`).
+Konfigurasi tes memakai DB `reservasi_kampus_testing` (MySQL) sesuai `phpunit.xml` — pastikan MySQL aktif dan test DB tersedia sebelum menjalankan:
+
+```bash
+mysql -u root -p -e "CREATE DATABASE IF NOT EXISTS reservasi_kampus_testing CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci"
+vendor/bin/pest                   # atau: php artisan test --compact
+```
+
+Bundle schema memakai sintaks MySQL (`MODIFY`, `CHARACTER SET`), jadi **sqlite in-memory tidak didukung** — tes memakai MySQL. Status terverifikasi: **168 tes / 627 assertions hijau** (2026-09-16).
 
 ### Akun Demo
 
@@ -154,6 +161,7 @@ Disediakan oleh seeder (`php artisan db:seed`):
 
 ## Release
 
+- [v1.2.0 — Candidate 2026-09-16](releases/v1.2.0.md)
 - [v1.1.0 — Minor 2026-09-12](releases/v1.1.0.md)
 - [v1.0.0 — Stable 2026-09-09](releases/v1.0.0.md)
 

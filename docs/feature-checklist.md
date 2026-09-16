@@ -2,7 +2,7 @@
 
 | Meta | Nilai |
 |---|---|
-| Tanggal pembaruan | 2026-09-15 |
+| Tanggal pembaruan | 2026-09-16 |
 | Referensi commit | `e03df57` (2026-09-15, merge PR #45 — riwayat verifikasi akun) |
 | Dokumen sempai dasar | [spesifikasi-sistem-reservasi.md](spesifikasi-sistem-reservasi.md) |
 | Status publikasi | Checklist mengikuti **§16** dan **§8** dokumen spesifikasi |
@@ -58,7 +58,7 @@
 ## 3. Yang Sudah Ada (ringkasan artefak commit `e03df57`)
 
 - **50 route** (lihat `php artisan route:list`): home/landing publik, fasilitas publik (katalog/detail/jadwal), auth custom, laporan pengguna & petugas, reservasi pengguna (riwayat/baru/detail/batal), admin (dashboard, akun pengguna/petugas/admin, verifikasi + pulihkan, fasilitas CRUD), petugas (dashboard, antrian reservasi, laporan).
-- **168 tes Pest** terdefinisi — auth & gate akun, verifikasi + riwayat verifikasi, isolasi role (22), akun admin/petugas, reservasi pengguna (create + cancel BR-8) & petugas (BR-7/BR-9/BR-16), CRUD fasilitas, dashboard admin & petugas, landing page, halaman fasilitas publik (BR-13), laporan (BR-10, BR-11), aturan slot/overlap (unit). (Angka 120 tes / 439 assertions terverifikasi hijau pada v1.1.0 `e9c591a`; angka terbaru = deklarasi di `e03df57`.)
+- **168 tes Pest / 627 assertions — terverifikasi hijau** (2026-09-16, MySQL `reservasi_kampus_testing`): auth & gate akun, verifikasi + riwayat verifikasi, isolasi role (22), akun admin/petugas, reservasi pengguna (create + cancel BR-8) & petugas (BR-7/BR-9/BR-16), CRUD fasilitas, dashboard admin & petugas, landing page, halaman fasilitas publik (BR-13), laporan (BR-10, BR-11), aturan slot/overlap (unit). Referensi: 120 tes / 439 assertions pada v1.1.0 `e9c591a`.
 - Isolasi peran tegas: grup route `role:pengguna`, `role:petugas`, `role:admin`; kebijakan `ReportPolicy`/`ReservationPolicy`; error 403 untuk akses lintas peran.
 - Validasi server semua form lewat FormRequest + Rule; flash `success`/`error` konsisten.
 - Deploy: `Dockerfile`, `docker-compose.yml` (frontend dibangun di container via `docker compose run --rm frontend` → `npm ci && npm run build`), `deploy.yml` (GitHub Actions → VPS saat push ke `dev`; server pull-only via `git fetch` + `git reset --hard origin/dev`, host tidak pernah menjalankan `npm install`/`npm run build`).
@@ -72,4 +72,4 @@
 
 ---
 
-*Terakhir diperbarui: 2026-09-15 · Komit referensi `e03df57` (dev) · Status branch: seluruh fitur di atas sudah di-merge ke `dev`; branch `separate-admin-officer-roles`, `revert-30-feature/officer-report`, `test` tidak di-merge (superseded/stale).*
+*Terakhir diperbarui: 2026-09-16 · Komit referensi `e03df57` (dev) · Status branch: seluruh fitur di atas sudah di-merge ke `dev`; branch `separate-admin-officer-roles`, `revert-30-feature/officer-report`, `test` tidak di-merge (superseded/stale).*
