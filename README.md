@@ -29,7 +29,7 @@ Dokumen acuan:
 - Antrian laporan petugas (`/petugas/laporan`): filter status, transisi `baru → diproses → selesai/tolak` dengan catatan resolusi, tandai fasilitas `perbaikan` ↔ `aktif` (BR-10, BR-11)
 - Mesin aturan reservasi: slot 30 menit (07.00–20.00), kuota pending, lead time, anti-bentrok approved, approve dengan kunci transaksi
 - Seeder akun demo + fasilitas + data uji (password hanya dari environment lokal)
-- 179 tes Pest — 673 assertions terverifikasi hijau (`php artisan test`, MySQL; 2026-09-16)
+- 180 tes Pest — 674 assertions terverifikasi hijau (`php artisan test`, MySQL; 2026-09-16)
 
 Status per fitur & business rules lengkap: [docs/feature-checklist.md](docs/feature-checklist.md).
 
@@ -43,7 +43,7 @@ Status per fitur & business rules lengkap: [docs/feature-checklist.md](docs/feat
 - **Service layer**: `ReservationService` (slot, bentrok, approve transaksi + `lockForUpdate`), `ReportService` (buat laporan + transisi status + audit + toggle status fasilitas), `AccountVerificationService` (audit verifikasi/pulihkan), `AccountStatusGate`, `AccountAttributes`.
 - **Validasi server** via FormRequest + custom Rule objects (`SlotTimeValid`, `NoApprovedOverlap`, `BookingLeadTime`, `PendingQuota`, `FacilityBookable`).
 - **Keamanan**: password bcrypt, CSRF di semua form, Eloquent binding bebas SQLi, output ter-escape (XSS), header keamanan/CSP, otorisasi berlapis, upload dibatasi mimes+size+dimensi dan laporan disimpan private, rate limit + quota, validasi reservasi atomic.
-- **Testing**: Pest (feature + unit) — 179 tes / 673 assertions hijau, termasuk regression test hardening keamanan.
+- **Testing**: Pest (feature + unit) — 180 tes / 674 assertions hijau, termasuk regression test hardening keamanan.
 - **Deploy**: GitHub Actions (`.github/workflows/deploy.yml`) mendorong ke VPS saat push ke `dev`; aplikasi dikontainerkan (`Dockerfile`, `docker-compose.yml`).
 
 ## Stack
@@ -150,7 +150,7 @@ mysql -u root -p -e "CREATE DATABASE IF NOT EXISTS reservasi_kampus_testing CHAR
 vendor/bin/pest                   # atau: php artisan test --compact
 ```
 
-Bundle schema memakai sintaks MySQL (`MODIFY`, `CHARACTER SET`), jadi **sqlite in-memory tidak didukung** — tes memakai MySQL. Status terverifikasi: **179 tes / 673 assertions hijau** (2026-09-16).
+Bundle schema memakai sintaks MySQL (`MODIFY`, `CHARACTER SET`), jadi **sqlite in-memory tidak didukung** — tes memakai MySQL. Status terverifikasi: **180 tes / 674 assertions hijau** (2026-09-16).
 
 ### Akun Demo
 
