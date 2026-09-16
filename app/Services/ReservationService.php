@@ -32,28 +32,34 @@ class ReservationService
     {
         $this->ensureActivePengguna($user);
 
-        // Aturan menerima Carbon langsung: tidak ada bongkar-pasang string,
-        // tidak ada parse ulang, tidak ada lolos diam-diam.
-        Validator::make([
-            'slot' => true,
-            'facility_id' => $facility->id,
-        ], [
-            'slot' => [new SlotTimeValid($start, $end)],
-            'facility_id' => [
-                new FacilityBookable($facility->id),
-                new BookingLeadTime($start),
-                new PendingQuota($user->id, $start),
-                new NoApprovedOverlap($facility->id, $start, $end),
-            ],
-        ])->validate();
-
         return DB::transaction(function () use ($user, $facility, $start, $end, $purpose): Reservation {
-            // Sistem memeriksa ulang bentrok di dalam transaksi karena
-            // reservasi lain dapat lolos validasi di atas lebih dulu.
-            // Bentrok di titik ini berarti kondisi balapan, sehingga
-            // sistem menjawab 409, bukan error validasi (BR-7).
+            $lockedUser = User::whereKey($user->id)->lockForUpdate()->firstOrFail();
+            $this->ensureActivePengguna($lockedUser);
+
+            $lockedFacility = Facility::whereKey($facility->id)->lockForUpdate()->firstOrFail();
+
+            // Semua aturan yang bergantung pada state database berjalan setelah
+            // row user dan fasilitas dikunci, sehingga validasi dan insert tidak
+            // dapat diselipkan request paralel (BR-4, BR-5, BR-6, BR-7).
+            Validator::make([
+                'slot' => true,
+                'purpose' => $purpose,
+                'facility_id' => $lockedFacility->id,
+            ], [
+                'slot' => [new SlotTimeValid($start, $end)],
+                'purpose' => ['required', 'string', 'min:10', 'max:255'],
+                'facility_id' => [
+                    new FacilityBookable($lockedFacility->id),
+                    new BookingLeadTime($start),
+                    new PendingQuota($lockedUser->id, $start),
+                    new NoApprovedOverlap($lockedFacility->id, $start, $end),
+                ],
+            ])->validate();
+
+            // Bentrok yang muncul dari writer di luar service berarti kondisi
+            // balapan; tetap jawab 409 agar caller tidak menganggap booking sukses.
             $conflict = Reservation::approved()
-                ->overlap($facility->id, $start, $end)
+                ->overlap($lockedFacility->id, $start, $end)
                 ->lockForUpdate()
                 ->exists();
 
@@ -62,8 +68,8 @@ class ReservationService
             }
 
             return Reservation::create([
-                'user_id' => $user->id,
-                'facility_id' => $facility->id,
+                'user_id' => $lockedUser->id,
+                'facility_id' => $lockedFacility->id,
                 'purpose' => $purpose,
                 'start_time' => $start,
                 'end_time' => $end,

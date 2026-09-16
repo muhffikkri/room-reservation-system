@@ -39,7 +39,9 @@ Route::middleware(['auth', 'active', 'role:pengguna'])->group(function (): void 
 
     Route::get('/reservasi', [ReservationController::class, 'index'])->name('reservasi.index');
     Route::get('/reservasi/baru', [ReservationController::class, 'create'])->name('reservasi.create');
-    Route::post('/reservasi', [ReservationController::class, 'store'])->name('reservasi.store');
+    Route::post('/reservasi', [ReservationController::class, 'store'])
+        ->middleware('throttle:reservation-submissions')
+        ->name('reservasi.store');
     Route::get('/reservasi/{reservation}', [ReservationController::class, 'show'])->name('reservasi.show');
     Route::delete('/reservasi/{reservation}', [ReservationController::class, 'destroy'])->name('reservasi.destroy');
 
