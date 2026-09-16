@@ -18,8 +18,8 @@ class UserSeeder extends Seeder
 {
     public function run(): void
     {
-        if (app()->environment('production')) {
-            throw new LogicException('UserSeeder tidak boleh dijalankan di production.');
+        if (app()->environment(['production', 'staging'])) {
+            throw new LogicException('UserSeeder tidak boleh dijalankan di production atau staging.');
         }
 
         $passwords = [
