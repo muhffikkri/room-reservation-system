@@ -25,10 +25,19 @@ class StoreReportRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'facility_id' => ['required', 'exists:facilities,id'],
+            'facility_id' => [
+                'required',
+                Rule::exists('facilities', 'id')->where('status', 'aktif'),
+            ],
             'category' => ['required', Rule::in(['kerusakan_alat', 'listrik', 'kebersihan', 'sarana_prasarana', 'lainnya'])],
             'description' => ['required', 'string', 'min:15', 'max:2000'],
-            'photo' => ['nullable', 'image', 'mimes:jpg,jpeg,png', 'max:2048'],
+            'photo' => [
+                'nullable',
+                'image',
+                'mimes:jpg,jpeg,png',
+                'max:2048',
+                'dimensions:max_width=6000,max_height=6000',
+            ],
         ];
     }
 
@@ -50,6 +59,7 @@ class StoreReportRequest extends FormRequest
             'photo.image' => 'Berkas foto harus berupa gambar.',
             'photo.mimes' => 'Format foto harus jpg, jpeg, atau png.',
             'photo.max' => 'Ukuran foto maksimal 2 MB.',
+            'photo.dimensions' => 'Dimensi foto maksimal 6000 x 6000 piksel.',
         ];
     }
 }

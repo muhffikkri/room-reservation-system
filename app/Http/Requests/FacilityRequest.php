@@ -36,7 +36,13 @@ class FacilityRequest extends FormRequest
             'location' => ['required', 'string', 'max:120'],
             'capacity' => ['required', 'integer', 'min:1', 'max:100000'],
             'description' => ['nullable', 'string', 'max:2000'],
-            'photo' => ['nullable', 'image', 'mimes:jpg,jpeg,png', 'max:2048'],
+            'photo' => [
+                'nullable',
+                'image',
+                'mimes:jpg,jpeg,png',
+                'max:2048',
+                'dimensions:max_width=6000,max_height=6000',
+            ],
         ];
     }
 }

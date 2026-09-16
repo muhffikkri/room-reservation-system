@@ -38,7 +38,7 @@ it('stores a report with photo upload successfully', function () {
 
     $user = User::factory()->create(['role' => 'pengguna', 'account_status' => 'aktif']);
     $facility = Facility::factory()->create(['status' => 'aktif']);
-    $photo = UploadedFile::fake()->create('bukti.jpg', 100, 'image/jpeg');
+    $photo = UploadedFile::fake()->image('bukti.jpg', 100, 100);
 
     $response = $this->actingAs($user)->post(route('laporan.store'), [
         'facility_id' => $facility->id,
