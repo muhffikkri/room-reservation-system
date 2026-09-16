@@ -24,7 +24,8 @@ abstract class AdminAccountRequest extends FormRequest
     {
         // Sistem mengunci pembuatan akun hanya untuk admin sebagai kunci
         // kedua; rute sudah dijaga middleware role:admin (§10).
-        return $this->user()?->role === 'admin';
+        return $this->user()?->isAdmin() === true
+            && $this->user()?->isActive() === true;
     }
 
     /**

@@ -12,7 +12,7 @@ class ReportPolicy
      */
     public function viewAny(User $user): bool
     {
-        return $user->account_status === 'aktif';
+        return $user->isActive() && ($user->isPengguna() || $user->isPetugas());
     }
 
     /**
@@ -22,8 +22,9 @@ class ReportPolicy
      */
     public function view(User $user, Report $report): bool
     {
-        return $user->id === $report->user_id
-            || $user->role === 'petugas';
+        return $user->isActive()
+            && (($user->isPengguna() && $user->id === $report->user_id)
+                || $user->isPetugas());
     }
 
     /**
@@ -31,6 +32,6 @@ class ReportPolicy
      */
     public function create(User $user): bool
     {
-        return $user->account_status === 'aktif';
+        return $user->isActive() && $user->isPengguna();
     }
 }

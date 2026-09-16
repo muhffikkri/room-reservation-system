@@ -9,6 +9,7 @@ use App\Models\User;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
+use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 
 /**
  * Satu-satunya pemilik daur hidup Report + ReportUpdate (BR-10, BR-11).
@@ -26,6 +27,8 @@ class ReportService
      */
     public function createReport(User $user, array $data): Report
     {
+        $this->ensureActivePengguna($user);
+
         $photoPath = null;
         if (isset($data['photo']) && $data['photo'] instanceof UploadedFile) {
             $photoPath = $data['photo']->store('reports', 'public');
@@ -73,6 +76,8 @@ class ReportService
      */
     public function transition(Report $report, User $officer, string $newStatus, ?string $note = null): Report
     {
+        $this->ensureActivePetugas($officer);
+
         return DB::transaction(function () use ($report, $officer, $newStatus, $note): Report {
             // Kunci baris laporan agar dua petugas tidak memproses laporan yang sama bersamaan.
             $locked = Report::whereKey($report->id)->lockForUpdate()->firstOrFail();
@@ -118,6 +123,8 @@ class ReportService
      */
     public function markFacilityForRepair(Report $report, User $officer): Facility
     {
+        $this->ensureActivePetugas($officer);
+
         // Ambil data terbaru agar pengecekan status tidak memakai data basi.
         $report = $report->fresh() ?? $report;
 
@@ -139,6 +146,8 @@ class ReportService
      */
     public function restoreFacilityToActive(Report $report, User $officer): Facility
     {
+        $this->ensureActivePetugas($officer);
+
         // Ambil data terbaru agar pengecekan status tidak memakai data basi.
         $report = $report->fresh() ?? $report;
 
@@ -161,5 +170,19 @@ class ReportService
         $facility->update(['status' => 'aktif']);
 
         return $facility->refresh();
+    }
+
+    private function ensureActivePengguna(User $user): void
+    {
+        if (! $user->isPengguna() || ! $user->isActive()) {
+            throw new AccessDeniedHttpException('Akun tidak memiliki akses untuk membuat laporan.');
+        }
+    }
+
+    private function ensureActivePetugas(User $user): void
+    {
+        if (! $user->isPetugas() || ! $user->isActive()) {
+            throw new AccessDeniedHttpException('Akun tidak memiliki akses ke operasi petugas.');
+        }
     }
 }

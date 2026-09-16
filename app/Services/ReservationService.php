@@ -30,6 +30,8 @@ class ReservationService
      */
     public function create(User $user, Facility $facility, Carbon $start, Carbon $end, string $purpose): Reservation
     {
+        $this->ensureActivePengguna($user);
+
         // Aturan menerima Carbon langsung: tidak ada bongkar-pasang string,
         // tidak ada parse ulang, tidak ada lolos diam-diam.
         Validator::make([
@@ -80,6 +82,8 @@ class ReservationService
      */
     public function approve(Reservation $reservation, User $officer): Reservation
     {
+        $this->ensureActivePetugas($officer);
+
         return DB::transaction(function () use ($reservation, $officer): Reservation {
             // Sistem mengunci baris ini agar dua petugas yang menekan
             // approve bersamaan tidak meloloskan dua pemenang (BR-7).
@@ -94,7 +98,7 @@ class ReservationService
             $facility = Facility::whereKey($locked->facility_id)->lockForUpdate()->firstOrFail();
 
             if ($facility->status !== 'aktif') {
-                throw new ConflictHttpException('Fasilitas sedang berstatus ' . $facility->status . ' sehingga reservasi tidak dapat disetujui.');
+                throw new ConflictHttpException('Fasilitas sedang berstatus '.$facility->status.' sehingga reservasi tidak dapat disetujui.');
             }
 
             try {
@@ -128,6 +132,8 @@ class ReservationService
      */
     public function reject(Reservation $reservation, User $officer, string $reason): Reservation
     {
+        $this->ensureActivePetugas($officer);
+
         return DB::transaction(function () use ($reservation, $officer, $reason): Reservation {
             $locked = Reservation::whereKey($reservation->id)->lockForUpdate()->firstOrFail();
 
@@ -155,6 +161,8 @@ class ReservationService
      */
     public function cancel(Reservation $reservation, User $officer, string $reason): Reservation
     {
+        $this->ensureActivePetugas($officer);
+
         return DB::transaction(function () use ($reservation, $officer, $reason): Reservation {
             $locked = Reservation::whereKey($reservation->id)->lockForUpdate()->firstOrFail();
 
@@ -181,6 +189,8 @@ class ReservationService
      */
     public function cancelByUser(Reservation $reservation, User $user, ?string $reason = null): Reservation
     {
+        $this->ensureActivePengguna($user);
+
         return DB::transaction(function () use ($reservation, $user, $reason): Reservation {
             $locked = Reservation::whereKey($reservation->id)->lockForUpdate()->firstOrFail();
 
@@ -203,5 +213,19 @@ class ReservationService
 
             return $locked->refresh();
         });
+    }
+
+    private function ensureActivePengguna(User $user): void
+    {
+        if (! $user->isPengguna() || ! $user->isActive()) {
+            throw new AccessDeniedHttpException('Akun tidak memiliki akses ke operasi pengguna.');
+        }
+    }
+
+    private function ensureActivePetugas(User $user): void
+    {
+        if (! $user->isPetugas() || ! $user->isActive()) {
+            throw new AccessDeniedHttpException('Akun tidak memiliki akses ke operasi petugas.');
+        }
     }
 }

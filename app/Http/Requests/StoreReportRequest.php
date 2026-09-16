@@ -13,7 +13,8 @@ class StoreReportRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return auth()->check();
+        return $this->user()?->isPengguna() === true
+            && $this->user()?->isActive() === true;
     }
 
     /**
