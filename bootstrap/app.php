@@ -18,6 +18,18 @@ return Application::configure(basePath: dirname(__DIR__))
             'active' => EnsureAccountActive::class,
             'role' => EnsureRole::class,
         ]);
+
+        $trustedProxies = array_values(array_filter(array_map(
+            trim(...),
+            explode(',', (string) env('TRUSTED_PROXIES', '')),
+        )));
+
+        if ($trustedProxies !== []) {
+            $middleware->trustProxies(
+                $trustedProxies,
+                Request::HEADER_X_FORWARDED_FOR | Request::HEADER_X_FORWARDED_PROTO,
+            );
+        }
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->shouldRenderJsonWhen(
