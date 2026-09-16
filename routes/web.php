@@ -16,6 +16,7 @@ use App\Http\Controllers\Officer\DashboardController as OfficerDashboardControll
 use App\Http\Controllers\Officer\ReportController as OfficerReportController;
 use App\Http\Controllers\Officer\ReservationController as OfficerReservationController;
 use App\Http\Controllers\ReportController;
+use App\Http\Controllers\ReportPhotoController;
 use App\Http\Controllers\ReservationController;
 use Illuminate\Support\Facades\Route;
 
@@ -45,12 +46,14 @@ Route::middleware(['auth', 'active', 'role:pengguna'])->group(function (): void 
     Route::get('/laporan', [ReportController::class, 'index'])->name('laporan.index');
     Route::get('/laporan/baru', [ReportController::class, 'create'])->name('laporan.create');
     Route::post('/laporan', [ReportController::class, 'store'])->name('laporan.store');
+    Route::get('/laporan/{report}/foto', ReportPhotoController::class)->name('laporan.photo');
     Route::get('/laporan/{report}', [ReportController::class, 'show'])->name('laporan.show');
 });
 
 Route::middleware(['auth', 'active', 'role:petugas'])->prefix('petugas')->group(function (): void {
     Route::get('/', OfficerDashboardController::class)->name('petugas.dashboard');
     Route::get('/laporan', [OfficerReportController::class, 'index'])->name('petugas.laporan.index');
+    Route::get('/laporan/{report}/foto', ReportPhotoController::class)->name('petugas.laporan.photo');
     Route::get('/laporan/{report}', [OfficerReportController::class, 'show'])->name('petugas.laporan.show');
     Route::patch('/laporan/{report}/status', [OfficerReportController::class, 'updateStatus'])->name('petugas.laporan.status');
     Route::patch('/laporan/{report}/fasilitas-status', [OfficerReportController::class, 'toggleFacilityStatus'])->name('petugas.laporan.fasilitas-status');

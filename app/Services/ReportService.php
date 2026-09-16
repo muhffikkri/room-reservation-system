@@ -8,8 +8,10 @@ use App\Models\ReportUpdate;
 use App\Models\User;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
+use Throwable;
 
 /**
  * Satu-satunya pemilik daur hidup Report + ReportUpdate (BR-10, BR-11).
@@ -30,18 +32,27 @@ class ReportService
         $this->ensureActivePengguna($user);
 
         $photoPath = null;
-        if (isset($data['photo']) && $data['photo'] instanceof UploadedFile) {
-            $photoPath = $data['photo']->store('reports', 'public');
-        }
 
-        return Report::create([
-            'user_id' => $user->id,
-            'facility_id' => $data['facility_id'],
-            'category' => $data['category'],
-            'description' => $data['description'],
-            'photo' => $photoPath,
-            'status' => 'baru',
-        ]);
+        try {
+            if (isset($data['photo']) && $data['photo'] instanceof UploadedFile) {
+                $photoPath = $data['photo']->store('reports', 'local');
+            }
+
+            return Report::create([
+                'user_id' => $user->id,
+                'facility_id' => $data['facility_id'],
+                'category' => $data['category'],
+                'description' => $data['description'],
+                'photo' => $photoPath,
+                'status' => 'baru',
+            ]);
+        } catch (Throwable $exception) {
+            if ($photoPath !== null) {
+                Storage::disk('local')->delete($photoPath);
+            }
+
+            throw $exception;
+        }
     }
 
     /**

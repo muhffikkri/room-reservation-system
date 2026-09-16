@@ -34,7 +34,7 @@ it('renders report creation form with active facilities', function () {
 });
 
 it('stores a report with photo upload successfully', function () {
-    Storage::fake('public');
+    Storage::fake('local');
 
     $user = User::factory()->create(['role' => 'pengguna', 'account_status' => 'aktif']);
     $facility = Facility::factory()->create(['status' => 'aktif']);
@@ -56,7 +56,7 @@ it('stores a report with photo upload successfully', function () {
         ->and($report->category)->toBe('kerusakan_alat')
         ->and($report->status)->toBe('baru');
 
-    Storage::disk('public')->assertExists($report->photo);
+    Storage::disk('local')->assertExists($report->photo);
 });
 
 it('prevents user from viewing reports owned by other users', function () {
