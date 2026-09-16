@@ -1,3 +1,5 @@
+import { initializeReservationForm } from './reservation-form';
+
 document.addEventListener('click', (event) => {
     const openTrigger = event.target.closest('[data-open-dialog]');
 
@@ -23,6 +25,30 @@ document.addEventListener('click', (event) => {
         return;
     }
 });
+
+document.addEventListener('submit', (event) => {
+    const form = event.target;
+
+    if (form instanceof HTMLFormElement
+        && form.dataset.confirmMessage
+        && ! window.confirm(form.dataset.confirmMessage)) {
+        event.preventDefault();
+    }
+});
+
+document.addEventListener('change', (event) => {
+    const input = event.target;
+
+    if (!(input instanceof HTMLInputElement)
+        || input.dataset.submitOnChange === undefined
+        || input.form === null) {
+        return;
+    }
+
+    input.form.requestSubmit();
+});
+
+document.querySelectorAll('[data-reservation-form]').forEach(initializeReservationForm);
 
 document.querySelectorAll('[data-image-preview]').forEach((input) => {
     const preview = document.getElementById(input.dataset.imagePreview);
