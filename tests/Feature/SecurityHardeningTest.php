@@ -5,15 +5,29 @@ use App\Models\Report;
 use App\Models\User;
 use App\Services\ReportService;
 use App\Services\ReservationService;
+use Database\Seeders\UserSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
+use LogicException;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 use Symfony\Component\HttpKernel\Exception\TooManyRequestsHttpException;
 
 uses(RefreshDatabase::class);
+
+it('refuses demo seeding in staging', function (): void {
+    $originalEnvironment = (string) app()->environment();
+    app()->detectEnvironment(static fn (): string => 'staging');
+
+    try {
+        expect(fn () => (new UserSeeder)->run())
+            ->toThrow(LogicException::class);
+    } finally {
+        app()->detectEnvironment(static fn (): string => $originalEnvironment);
+    }
+});
 
 it('adds baseline security headers to public responses', function (): void {
     $this->get('/')
