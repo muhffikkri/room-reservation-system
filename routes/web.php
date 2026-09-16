@@ -45,7 +45,9 @@ Route::middleware(['auth', 'active', 'role:pengguna'])->group(function (): void 
 
     Route::get('/laporan', [ReportController::class, 'index'])->name('laporan.index');
     Route::get('/laporan/baru', [ReportController::class, 'create'])->name('laporan.create');
-    Route::post('/laporan', [ReportController::class, 'store'])->name('laporan.store');
+    Route::post('/laporan', [ReportController::class, 'store'])
+        ->middleware('throttle:report-submissions')
+        ->name('laporan.store');
     Route::get('/laporan/{report}/foto', ReportPhotoController::class)->name('laporan.photo');
     Route::get('/laporan/{report}', [ReportController::class, 'show'])->name('laporan.show');
 });

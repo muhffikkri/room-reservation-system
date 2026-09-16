@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
+use Symfony\Component\HttpKernel\Exception\TooManyRequestsHttpException;
 use Throwable;
 
 /**
@@ -22,6 +23,8 @@ use Throwable;
  */
 class ReportService
 {
+    public const DAILY_REPORT_QUOTA = 20;
+
     /**
      * Buat laporan kerusakan baru oleh pengguna + simpan foto jika ada.
      *
@@ -34,18 +37,35 @@ class ReportService
         $photoPath = null;
 
         try {
-            if (isset($data['photo']) && $data['photo'] instanceof UploadedFile) {
-                $photoPath = $data['photo']->store('reports', 'local');
-            }
+            return DB::transaction(function () use ($user, $data, &$photoPath): Report {
+                $lockedUser = User::whereKey($user->id)->lockForUpdate()->firstOrFail();
+                $today = now();
 
-            return Report::create([
-                'user_id' => $user->id,
-                'facility_id' => $data['facility_id'],
-                'category' => $data['category'],
-                'description' => $data['description'],
-                'photo' => $photoPath,
-                'status' => 'baru',
-            ]);
+                $reportsToday = Report::query()
+                    ->where('user_id', $lockedUser->id)
+                    ->whereBetween('created_at', [$today->copy()->startOfDay(), $today->copy()->endOfDay()])
+                    ->count();
+
+                if ($reportsToday >= self::DAILY_REPORT_QUOTA) {
+                    throw new TooManyRequestsHttpException(
+                        null,
+                        'Batas laporan harian telah tercapai. Coba lagi besok.',
+                    );
+                }
+
+                if (isset($data['photo']) && $data['photo'] instanceof UploadedFile) {
+                    $photoPath = $data['photo']->store('reports', 'local');
+                }
+
+                return Report::create([
+                    'user_id' => $lockedUser->id,
+                    'facility_id' => $data['facility_id'],
+                    'category' => $data['category'],
+                    'description' => $data['description'],
+                    'photo' => $photoPath,
+                    'status' => 'baru',
+                ]);
+            });
         } catch (Throwable $exception) {
             if ($photoPath !== null) {
                 Storage::disk('local')->delete($photoPath);
