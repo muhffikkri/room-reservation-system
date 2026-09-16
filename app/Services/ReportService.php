@@ -156,20 +156,30 @@ class ReportService
     {
         $this->ensureActivePetugas($officer);
 
-        // Ambil data terbaru agar pengecekan status tidak memakai data basi.
-        $report = $report->fresh() ?? $report;
+        return DB::transaction(function () use ($report): Facility {
+            $lockedReport = Report::whereKey($report->id)->lockForUpdate()->firstOrFail();
 
-        // Fasilitas hanya boleh ditandai perbaikan saat laporan sedang ditangani (diproses, BR-11).
-        if ($report->status !== 'diproses') {
-            throw ValidationException::withMessages([
-                'status' => 'Fasilitas hanya dapat ditandai perbaikan saat laporan sedang diproses.',
+            if ($lockedReport->status !== 'diproses') {
+                throw ValidationException::withMessages([
+                    'status' => 'Fasilitas hanya dapat ditandai perbaikan saat laporan sedang diproses.',
+                ]);
+            }
+
+            $facility = Facility::whereKey($lockedReport->facility_id)->lockForUpdate()->firstOrFail();
+
+            if ($facility->status !== 'aktif') {
+                throw ValidationException::withMessages([
+                    'status' => 'Fasilitas harus berstatus aktif sebelum ditandai perbaikan.',
+                ]);
+            }
+
+            $facility->update([
+                'status' => 'perbaikan',
+                'repair_report_id' => $lockedReport->id,
             ]);
-        }
 
-        $facility = $report->facility;
-        $facility->update(['status' => 'perbaikan']);
-
-        return $facility->refresh();
+            return $facility->refresh();
+        });
     }
 
     /**
@@ -179,28 +189,30 @@ class ReportService
     {
         $this->ensureActivePetugas($officer);
 
-        // Ambil data terbaru agar pengecekan status tidak memakai data basi.
-        $report = $report->fresh() ?? $report;
+        return DB::transaction(function () use ($report): Facility {
+            $lockedReport = Report::whereKey($report->id)->lockForUpdate()->firstOrFail();
 
-        // Fasilitas hanya boleh dikembalikan aktif setelah laporannya selesai (BR-11).
-        if ($report->status !== 'selesai') {
-            throw ValidationException::withMessages([
-                'status' => 'Fasilitas hanya dapat dikembalikan aktif setelah laporannya selesai.',
+            if ($lockedReport->status !== 'selesai') {
+                throw ValidationException::withMessages([
+                    'status' => 'Fasilitas hanya dapat dikembalikan aktif setelah laporannya selesai.',
+                ]);
+            }
+
+            $facility = Facility::whereKey($lockedReport->facility_id)->lockForUpdate()->firstOrFail();
+
+            if ($facility->status !== 'perbaikan' || (int) $facility->repair_report_id !== $lockedReport->id) {
+                throw ValidationException::withMessages([
+                    'status' => 'Fasilitas tidak sedang dalam perbaikan oleh laporan ini.',
+                ]);
+            }
+
+            $facility->update([
+                'status' => 'aktif',
+                'repair_report_id' => null,
             ]);
-        }
 
-        $facility = $report->facility;
-
-        // Jangan ubah apa pun jika fasilitas tidak sedang dalam perbaikan.
-        if ($facility->status !== 'perbaikan') {
-            throw ValidationException::withMessages([
-                'status' => 'Fasilitas tidak sedang dalam perbaikan.',
-            ]);
-        }
-
-        $facility->update(['status' => 'aktif']);
-
-        return $facility->refresh();
+            return $facility->refresh();
+        });
     }
 
     private function ensureActivePengguna(User $user): void
