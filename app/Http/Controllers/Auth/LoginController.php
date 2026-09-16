@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Services\AccountStatusGate;
+use App\Support\AccountAttributes;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -30,15 +31,24 @@ class LoginController extends Controller
      */
     public function store(Request $request): RedirectResponse
     {
+        $request->merge([
+            'email' => AccountAttributes::normalizeEmail($request->input('email')),
+        ]);
+
         $credentials = $request->validate([
-            'email' => ['required', 'string', 'email'],
-            'password' => ['required', 'string'],
+            'email' => ['required', 'string', 'email', 'max:254'],
+            'password' => ['required', 'string', 'max:255'],
         ]);
 
         $throttleKey = $this->throttleKey($request);
+        $accountThrottleKey = $this->accountThrottleKey($request);
 
-        if (RateLimiter::tooManyAttempts($throttleKey, 5)) {
-            $seconds = RateLimiter::availableIn($throttleKey);
+        if (RateLimiter::tooManyAttempts($throttleKey, 5)
+            || RateLimiter::tooManyAttempts($accountThrottleKey, 10)) {
+            $seconds = max(
+                RateLimiter::availableIn($throttleKey),
+                RateLimiter::availableIn($accountThrottleKey),
+            );
 
             throw ValidationException::withMessages([
                 'email' => "Terlalu banyak percobaan login. Coba lagi dalam {$seconds} detik.",
@@ -47,6 +57,7 @@ class LoginController extends Controller
 
         if (! Auth::attempt($credentials, $request->boolean('remember'))) {
             RateLimiter::hit($throttleKey);
+            RateLimiter::hit($accountThrottleKey);
 
             throw ValidationException::withMessages([
                 'email' => 'Email atau password salah.',
@@ -70,6 +81,7 @@ class LoginController extends Controller
         }
 
         RateLimiter::clear($throttleKey);
+        RateLimiter::clear($accountThrottleKey);
         $request->session()->regenerate();
 
         // Tiap role mendarat di dashboardnya sendiri (§14.2#10): pengguna ke
@@ -87,5 +99,10 @@ class LoginController extends Controller
     private function throttleKey(Request $request): string
     {
         return strtolower((string) $request->input('email')).'|'.$request->ip();
+    }
+
+    private function accountThrottleKey(Request $request): string
+    {
+        return 'login-account:'.hash('sha256', strtolower((string) $request->input('email')));
     }
 }

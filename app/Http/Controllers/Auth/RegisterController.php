@@ -26,10 +26,9 @@ class RegisterController extends Controller
      * role pengguna dan status pending. Hanya admin yang dapat membuat
      * akun petugas atau mengaktifkan akun (§5.3).
      *
-     * Email dinormalisasi SEBELUM validasi agar unique:users,email
-     * menangkap duplikat beda kapitalisasi; email akun yang sudah
-     * ditolak admin tetap ada di DB sehingga pendaftarannya otomatis
-     * tertolak unique (BR-14) dengan pesan field yang jelas.
+     * Atribut akun dinormalisasi SEBELUM validasi agar unique menangkap
+     * duplikat beda format. Pesan unique dibuat generik agar endpoint ini
+     * tidak menjadi oracle keberadaan email, identitas, atau nomor telepon.
      */
     public function store(Request $request): RedirectResponse
     {
@@ -41,12 +40,12 @@ class RegisterController extends Controller
 
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:100'],
-            'email' => ['required', 'string', 'email', 'max:150', 'unique:users,email'],
-            'password' => ['required', 'string', Password::min(8)],
+            'email' => ['required', 'string', 'email', 'max:254', 'unique:users,email'],
+            'password' => ['required', 'string', 'max:255', Password::min(8)],
             'password_confirmation' => ['required', 'string', 'same:password'],
             'identity' => ['required', 'string', 'max:30', 'unique:users,identity'],
             'phone' => ['required', 'string', 'max:20', 'unique:users,phone'],
-        ]);
+        ], $this->messages());
 
         User::create([
             'name' => $validated['name'],
@@ -61,5 +60,17 @@ class RegisterController extends Controller
         return redirect()
             ->route('login')
             ->with('success', 'Registrasi berhasil. Akun Anda menunggu verifikasi admin sebelum dapat digunakan.');
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    public function messages(): array
+    {
+        return [
+            'email.unique' => 'Data registrasi tidak dapat diproses.',
+            'identity.unique' => 'Data registrasi tidak dapat diproses.',
+            'phone.unique' => 'Data registrasi tidak dapat diproses.',
+        ];
     }
 }
