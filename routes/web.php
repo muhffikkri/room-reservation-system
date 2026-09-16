@@ -20,11 +20,19 @@ use App\Http\Controllers\ReportPhotoController;
 use App\Http\Controllers\ReservationController;
 use Illuminate\Support\Facades\Route;
 
-Route::get('/', HomeController::class)->name('home');
+Route::get('/', HomeController::class)
+    ->middleware('throttle:public-browse')
+    ->name('home');
 
-Route::get('/fasilitas', [FacilityController::class, 'index'])->name('fasilitas.index');
-Route::get('/fasilitas/{facility}', [FacilityController::class, 'show'])->name('fasilitas.show');
-Route::get('/fasilitas/{facility}/jadwal', [FacilityController::class, 'jadwal'])->name('fasilitas.jadwal');
+Route::get('/fasilitas', [FacilityController::class, 'index'])
+    ->middleware('throttle:public-browse')
+    ->name('fasilitas.index');
+Route::get('/fasilitas/{facility}', [FacilityController::class, 'show'])
+    ->middleware('throttle:public-browse')
+    ->name('fasilitas.show');
+Route::get('/fasilitas/{facility}/jadwal', [FacilityController::class, 'jadwal'])
+    ->middleware('throttle:public-browse')
+    ->name('fasilitas.jadwal');
 
 Route::middleware('guest')->group(function (): void {
     Route::get('/login', [LoginController::class, 'showLoginForm'])->name('login');

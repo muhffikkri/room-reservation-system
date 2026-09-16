@@ -24,6 +24,12 @@ class FacilityController extends Controller
      */
     public const SLOT_COUNT = 26;
 
+    private const MAX_PUBLIC_FACILITIES = 50;
+
+    private const MAX_SCHEDULE_LOOKBACK_DAYS = 365;
+
+    private const MAX_SCHEDULE_LOOKAHEAD_DAYS = 365;
+
     /**
      * Tipe fasilitas valid beserta label yang ramah pengguna.
      *
@@ -72,12 +78,14 @@ class FacilityController extends Controller
                 minCapacity: isset($validated['kapasitas_min']) ? (int) $validated['kapasitas_min'] : null,
             )
             ->orderBy('name')
+            ->limit(self::MAX_PUBLIC_FACILITIES)
             ->get();
 
         $locations = Facility::query()
             ->select('location')
             ->distinct()
             ->orderBy('location')
+            ->limit(self::MAX_PUBLIC_FACILITIES)
             ->pluck('location');
 
         return view('fasilitas.index', [
@@ -105,10 +113,19 @@ class FacilityController extends Controller
      */
     public function jadwal(Request $request, Facility $facility): View
     {
-        $dateInput = $request->string('date')->trim()->toString();
-        $selectedDate = $dateInput !== '' && strtotime($dateInput) !== false
-            ? Carbon::parse($dateInput)->startOfDay()
-            : now()->startOfDay();
+        $today = Carbon::now(config('app.timezone'))->startOfDay();
+        $validated = $request->validate([
+            'date' => [
+                'nullable',
+                'date_format:Y-m-d',
+                'after_or_equal:'.$today->copy()->subDays(self::MAX_SCHEDULE_LOOKBACK_DAYS)->toDateString(),
+                'before_or_equal:'.$today->copy()->addDays(self::MAX_SCHEDULE_LOOKAHEAD_DAYS)->toDateString(),
+            ],
+        ]);
+
+        $selectedDate = isset($validated['date'])
+            ? Carbon::createFromFormat('!Y-m-d', $validated['date'], config('app.timezone'))
+            : $today;
 
         $slots = $this->buildSlotsForDate($facility, $selectedDate);
 

@@ -27,6 +27,8 @@ class ReservationController extends Controller
      */
     public const SLOT_COUNT = 26;
 
+    private const MAX_BOOKING_LOOKAHEAD_DAYS = 365;
+
     public function __construct(
         protected ReservationService $reservationService
     ) {}
@@ -59,10 +61,19 @@ class ReservationController extends Controller
         $facilityId = $request->integer('facility_id');
         $selectedFacility = $facilities->firstWhere('id', $facilityId) ?? $facilities->first();
 
-        $dateInput = $request->string('date')->trim()->toString();
-        $selectedDate = $dateInput !== '' && strtotime($dateInput) !== false
-            ? Carbon::parse($dateInput)->startOfDay()
-            : now()->startOfDay();
+        $today = Carbon::now(config('app.timezone'))->startOfDay();
+        $validated = $request->validate([
+            'date' => [
+                'nullable',
+                'date_format:Y-m-d',
+                'after_or_equal:'.$today->toDateString(),
+                'before_or_equal:'.$today->copy()->addDays(self::MAX_BOOKING_LOOKAHEAD_DAYS)->toDateString(),
+            ],
+        ]);
+
+        $selectedDate = isset($validated['date'])
+            ? Carbon::createFromFormat('!Y-m-d', $validated['date'], config('app.timezone'))
+            : $today;
 
         $slots = $selectedFacility ? $this->buildSlotsForDate($selectedFacility, $selectedDate) : [];
         $timeOptions = $this->generateTimeOptions();

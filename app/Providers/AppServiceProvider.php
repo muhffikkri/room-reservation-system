@@ -49,5 +49,9 @@ class AppServiceProvider extends ServiceProvider
                 Limit::perDay(30)->by($key),
             ];
         });
+
+        RateLimiter::for('public-browse', function (Request $request): Limit {
+            return Limit::perMinute(60)->by('ip:'.$request->ip());
+        });
     }
 }
