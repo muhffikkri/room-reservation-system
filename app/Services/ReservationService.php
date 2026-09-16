@@ -94,7 +94,7 @@ class ReservationService
             $facility = Facility::whereKey($locked->facility_id)->lockForUpdate()->firstOrFail();
 
             if ($facility->status !== 'aktif') {
-                throw new ConflictHttpException('Fasilitas sedang berstatus ' . $facility->status . ' sehingga reservasi tidak dapat disetujui.');
+                throw new ConflictHttpException('Fasilitas sedang berstatus '.$facility->status.' sehingga reservasi tidak dapat disetujui.');
             }
 
             try {
