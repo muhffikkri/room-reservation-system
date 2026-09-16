@@ -48,6 +48,7 @@ APP_NAME="Sistem Reservasi Fasilitas Kampus"
 APP_ENV=local
 APP_KEY=            # diisi php artisan key:generate
 APP_URL=http://localhost:8000
+APP_DEBUG=false     # true hanya untuk local/testing
 
 DB_CONNECTION=mysql
 DB_HOST=127.0.0.1
@@ -56,8 +57,20 @@ DB_DATABASE=reservasi_kampus
 DB_USERNAME=root
 DB_PASSWORD=
 
-FILESYSTEM_DISK=public    # untuk foto laporan
+FILESYSTEM_DISK=local     # default; foto laporan wajib private
+LOG_STACK=daily
+LOG_DAILY_DAYS=14
 SESSION_LIFETIME=120
+# SESSION_SECURE_COOKIE=true   # wajib pada production/staging HTTPS
+# TRUSTED_PROXIES=127.0.0.1   # isi hanya proxy yang benar-benar dipercaya
+# BOOST_ENABLED=false
+# BOOST_BROWSER_LOGS_WATCHER=false
+
+# Wajib diisi secara lokal hanya saat menjalankan seeder; jangan commit nilainya.
+# SEED_ADMIN_PASSWORD=
+# SEED_OFFICER_PASSWORD=
+# SEED_USER_PASSWORD=
+# SEED_PENDING_PASSWORD=
 ```
 
 ### 2.2 Perintah Setup (juga ditulis di README)
@@ -67,9 +80,13 @@ composer install
 npm install && npm run build   # atau npm run dev saat development
 php artisan key:generate
 php artisan migrate --seed
-php artisan storage:link
+php artisan storage:link       # foto fasilitas publik; foto laporan tetap private
 php artisan serve              # http://localhost:8000
 ```
+
+Jika database/storage berasal dari versi lama, backup terlebih dahulu lalu jalankan
+`php artisan reports:protect-photos --delete-public` untuk memindahkan foto laporan
+ke `storage/app/private/reports` dan menghapus salinan public setelah copy berhasil.
 
 
 ## 3. Konvensi Kode & Struktur Folder
@@ -154,8 +171,9 @@ Indeks: `UNIQUE(email)`, `UNIQUE(identity)`, `UNIQUE(phone)`, `INDEX(role, accou
 | location | VARCHAR(120) | gedung/area, wajib |
 | capacity | INT UNSIGNED | wajib, >= 1 |
 | description | TEXT NULL | |
-| photo | VARCHAR(255) NULL | path di `storage/public/facilities` (opsional) |
+| photo | VARCHAR(255) NULL | path di `storage/app/public/facilities` (opsional) |
 | status | ENUM('aktif','perbaikan','nonaktif') | default `aktif` |
+| repair_report_id | FK → reports NULL | laporan yang menyebabkan status `perbaikan`; `null` saat aktif/nonaktif |
 
 Indeks: `INDEX(type)`, `INDEX(location)`, `INDEX(status)`.
 
@@ -188,7 +206,7 @@ Indeks kunci: `INDEX(facility_id, status, start_time, end_time)` untuk pemeriksa
 | facility_id | FK → facilities | |
 | category | ENUM('kerusakan_alat','listrik','kebersihan','sarana_prasarana','lainnya') | wajib |
 | description | TEXT | min. 15 karakter |
-| photo | VARCHAR(255) NULL | path di `storage/public/reports` |
+| photo | VARCHAR(255) NULL | path di `storage/app/private/reports`, disajikan hanya melalui route terotorisasi |
 | status | ENUM('baru','diproses','selesai','ditolak') | default `baru` |
 | resolution_note | VARCHAR(500) NULL | wajib saat `selesai`/`ditolak` |
 | handled_by | FK → users NULL | petugas penangan |
@@ -226,7 +244,7 @@ erDiagram
 | Model | Relasi | Scope penting |
 |---|---|---|
 | `User` | `reservations()`, `reports()`, `reportUpdates()`, `decidedReservations()` | `scopeRole($q,$r)`, `scopePendingAccount($q)` |
-| `Facility` | `reservations()`, `reports()` | `scopeAktif($q)`, `scopeSearch($q,$f)` (tipe/lokasi/kapasitas min/keyword nama) |
+| `Facility` | `reservations()`, `reports()`, `repairReport()` | `scopeAktif($q)`, `scopeSearch($q,$f)` (tipe/lokasi/kapasitas min/keyword nama) |
 | `Reservation` | `user()`, `facility()`, `decidedBy()` | `scopeApproved($q)`, `scopePending($q)`, `scopeOverlap($q,$facilityId,$start,$end)` — kondisi overlap: `start_time < $end AND end_time > $start` |
 | `Report` | `user()`, `facility()`, `updates()` | `scopeStatus($q,$s)` |
 | `ReportUpdate` | `report()`, `user()` | — |
@@ -245,11 +263,14 @@ Konvensi: semua model pakai `$fillable`, `casts()` untuk enum/datetime, dan TIDA
 
 | Role | Email | Password | Status |
 |---|---|---|---|
-| admin | admin@kampus.test | admin123 | aktif |
-| petugas | petugas@kampus.test | petugas123 | aktif |
-| pengguna | budi@student.kampus.test | user123 | aktif |
-| pengguna | sari@dosen.kampus.test | user123 | aktif |
-| pengguna | pending@kampus.test | user123 | pending (untuk demo verifikasi admin) |
+| admin | admin@kampus.test | `SEED_ADMIN_PASSWORD` | aktif |
+| petugas | petugas@kampus.test | `SEED_OFFICER_PASSWORD` | aktif |
+| pengguna | budi@student.kampus.test | `SEED_USER_PASSWORD` | aktif |
+| pengguna | sari@dosen.kampus.test | `SEED_USER_PASSWORD` | aktif |
+| pengguna | pending@kampus.test | `SEED_PENDING_PASSWORD` | pending (untuk demo verifikasi admin) |
+
+Password seeder wajib diisi dari environment lokal dan tidak pernah ditulis di
+source control atau dokumen publik.
 
 Sistem mendukung lebih dari satu admin. Seeder cukup menyediakan satu admin untuk demo; admin aktif dapat membuat akun admin tambahan.
 
@@ -258,10 +279,10 @@ Sistem mendukung lebih dari satu admin. Seeder cukup menyediakan satu admin untu
 ### Publik (tanpa login)
 | Method | URI | Nama | Controller@method |
 |---|---|---|---|
-| GET | `/` | — | redirect ke `fasilitas.index` |
-| GET | `/fasilitas` | `fasilitas.index` | FacilityController@index (filter: `q`, `tipe`, `lokasi`, `kapasitas_min`) |
+| GET | `/` | `home` | HomeController (landing, dibatasi + throttle publik) |
+| GET | `/fasilitas` | `fasilitas.index` | FacilityController@index (filter: `q`, `tipe`, `lokasi`, `kapasitas_min`, hasil dibatasi) |
 | GET | `/fasilitas/{facility}` | `fasilitas.show` | FacilityController@show (info umum, tanpa data pemohon) |
-| GET | `/fasilitas/{facility}/jadwal?date=` | `fasilitas.jadwal` | FacilityController@jadwal (grid slot tersedia/tidak) |
+| GET | `/fasilitas/{facility}/jadwal?date=` | `fasilitas.jadwal` | FacilityController@jadwal (grid slot tersedia/tidak, tanggal dibatasi) |
 
 ### Auth (custom, session-based)
 | GET/POST | `/register`, `/login`, `/logout`, `/dashboard` | | controller auth buatan sendiri + throttling `RateLimiter` (login) dan `throttle:10,1` pada POST `/login` & `/register` (anti-spam); Registrasi mandiri hanya untuk role `pengguna` |
@@ -279,6 +300,7 @@ Route privat membutuhkan autentikasi. Guest yang membuka route privat diarahkan 
 | GET | `/laporan` | `laporan.index` | daftar laporan milik sendiri |
 | GET | `/laporan/baru` | `laporan.create` | form lapor kerusakan |
 | POST | `/laporan` | `laporan.store` | simpan + upload foto |
+| GET | `/laporan/{report}/foto` | `laporan.photo` | foto dari storage private setelah policy authorize |
 | GET | `/laporan/{report}` | `laporan.show` | detail + status + riwayat |
 
 ### Petugas — `auth` + `EnsureAccountActive` + `role:petugas` (prefix `petugas`)
@@ -294,6 +316,7 @@ Semua route berikut eksklusif untuk `petugas`. `admin` tidak dapat membaca halam
 | POST | `/petugas/reservasi/{id}/reject` | `petugas.reservasi.reject` | wajib `reason` |
 | POST | `/petugas/reservasi/{id}/cancel` | `petugas.reservasi.cancel` | wajib `cancel_reason` (BR-9) |
 | GET | `/petugas/laporan?status=` | `petugas.laporan.index` | antrian laporan |
+| GET | `/petugas/laporan/{report}/foto` | `petugas.laporan.photo` | foto laporan dari storage private |
 | PATCH | `/petugas/laporan/{id}/status` | `petugas.laporan.status` | transisi status + catatan (BR-10) |
 | PATCH | `/petugas/laporan/{report}/fasilitas-status` | `petugas.laporan.fasilitas-status` | set `perbaikan` / kembali `aktif` dari alur laporan (BR-11) |
 
@@ -336,7 +359,7 @@ Route::middleware(['auth', 'active', 'role:admin'])->prefix('admin')->group(/* m
 **`StoreReservationRequest`** (pengguna mengajukan reservasi):
 
 ```php
-'facility_id' => ['required', 'exists:facilities,id'],
+'facility_id' => ['required', Rule::exists('facilities', 'id')->where('status', 'aktif')],
 'date'        => ['required', 'date', 'after_or_equal:today'],
 'start_time'  => ['required', 'date_format:H:i'],
 'end_time'    => ['required', 'date_format:H:i', 'after:start_time'],
@@ -353,15 +376,15 @@ Ditambah custom Rule objects (logika di `App\Rules`, menerima Carbon langsung da
 **`StoreReportRequest`** (laporan kerusakan):
 
 ```php
-'facility_id' => ['required', 'exists:facilities,id'],
+'facility_id' => ['required', Rule::exists('facilities', 'id')->where('status', 'aktif')],
 'category'    => ['required', Rule::in(['kerusakan_alat','listrik','kebersihan','sarana_prasarana','lainnya'])],
 'description' => ['required', 'string', 'min:15', 'max:2000'],
-'photo'       => ['nullable', 'image', 'mimes:jpg,jpeg,png', 'max:2048'],   // KB
+'photo'       => ['nullable', 'image', 'mimes:jpg,jpeg,png', 'max:2048', 'dimensions:max_width=6000,max_height=6000'], // KB
 ```
 
 **Form admin/petugas lainnya:**
 - `CreateAdminRequest` / `CreateOfficerRequest` / `CreateUserByAdminRequest`: `name`, `identity`, dan `phone` wajib; `identity` dan `phone` unique; `email` wajib+unique, di-trim lalu dinormalisasi lowercase; `password` wajib `min:8 confirmed`; input telepon `08...` atau `+62...` dinormalisasi ke `+62...`; langsung set `role` & `account_status = 'aktif'`. Request berbagi aturan dasar akun.
-- `FacilityRequest`: `name`, `type` in enum, `location`, `capacity` integer min 1, `description` nullable, `photo` nullable image.
+- `FacilityRequest`: `name`, `type` in enum, `location`, `capacity` integer min 1, `description` nullable, `photo` nullable image <= 2 MB dan maksimal 6000 x 6000 piksel.
 - `RejectReservationRequest` / `CancelReservationOfficerRequest`: `reason`/`cancel_reason` wajib `min:10`.
 - `UpdateReportStatusRequest`: `status` in enum; `resolution_note` `required_if:status,selesai,ditolak` `min:10`.
 - `UpdateFacilityStatusRequest`: `status` in `aktif,perbaikan,nonaktif`; Service tetap wajib memeriksa kewenangan role dan transisi yang diizinkan pada §4.2.
@@ -374,7 +397,7 @@ Ditambah custom Rule objects (logika di `App\Rules`, menerima Carbon langsung da
   - Form reservasi: slot picker grid hanya mengizinkan kombinasi slot valid; JS mengecek rentang 07.00–20.00, kelipatan 30 menit, end > start, maks 4 jam — tampilkan pesan inline sebelum submit.
   - Form laporan: cek ukuran file foto <= 2MB client-side; pratinjau gambar.
   - Form registrasi/admin: cek kecocokan password & format email sebelum submit.
-  - Nonaktifkan submit ganda (`onsubmit` disable tombol).
+  - Nonaktifkan submit ganda melalui event listener JS eksternal (`resources/js/reservation-form.js`), bukan inline handler.
 - Prinsip: validasi client hanya untuk UX; **server tetap sumber kebenaran** (uji ulang semua aturan di server).
 
 ### 7.3 Daftar Controller & Tanggung Jawab
@@ -383,7 +406,8 @@ Ditambah custom Rule objects (logika di `App\Rules`, menerima Carbon langsung da
 |---|---|---|
 | `FacilityController` | index, jadwal, show | daftar + filter; grid 26 slot/hari (07.00–19.30 mulai); slot `booked` jika overlap dengan `approved` |
 | `ReservationController` | index, create, store, show, destroy | store → `ReservationService::create()`; destroy → cek pemilik + BR-8 |
-| `ReportController` | index, create, store, show | store → simpan foto bila ada (`store('reports','public')`) + status `baru` |
+| `ReportController` | index, create, store, show | store → `ReportService::createReport()`; foto disimpan private + status `baru` |
+| `ReportPhotoController` | `__invoke` | policy authorize lalu stream foto laporan dari disk private |
 | `Officer\DashboardController` | index | hitung antrian: reservasi `pending`, laporan `baru`/`diproses`; hanya untuk petugas |
 | `Officer\ReservationController` | index, approve, reject, cancel | approve/reject/cancel via `ReservationService` (transaksi + lock) |
 | `Officer\ReportController` | index, show, updateStatus, toggleFacilityStatus | transisi via `ReportService` + tulis `report_updates`; status fasilitas mengikuti alur laporan |
@@ -521,16 +545,21 @@ Prinsip UX: semua aksi memakai konfirmasi untuk tindakan destruktif (cancel/reje
 
 ## 12. Keamanan
 
-1. Password bcrypt (`Hash::make`); login di-throttle dengan `RateLimiter` (mis. 5 percobaan/menit per email+IP).
+1. Password bcrypt (`Hash::make`); login dibatasi per kombinasi email+IP dan per akun agar percobaan tidak dapat diputar melalui banyak alamat IP. Input email/password juga memiliki batas panjang.
 2. CSRF token `@csrf` di SEMUA form POST/PUT/PATCH/DELETE.
 3. Mass assignment: `$fillable` di semua model; never use `$guarded = []` tanpa pertimbangan.
 4. SQL injection aman: hanya Eloquent/Query Builder dengan binding — tidak ada raw query dengan input mentah.
 5. XSS: selalu `{{ }}` (Blade auto-escape); tidak pernah `{!! !!}` untuk input user.
 6. Otorisasi: middleware role + Policy; endpoint petugas dan admin terlindungi ganda dengan role yang tidak tumpang tindih. Admin tidak memperoleh akses ke endpoint petugas; dashboard admin hanya memakai query ringkasan read-only.
-7. Upload foto: validasi mimes+size, nama file random (`store()`), simpan di disk `public`, tampil via `Storage::url()`.
+7. Upload foto: validasi mimes+size+dimensi, nama file random (`store()`); foto fasilitas boleh berada di disk public, sedangkan foto laporan berada di `storage/app/private/reports` dan hanya di-stream melalui `ReportPhotoController` setelah policy authorize.
 8. Info pemohon (nama, tujuan) TIDAK pernah dikirim ke endpoint publik jadwal.
 9. Aktivitas penting (approve/reject/cancel, transisi laporan) selalu tercatat (`decided_by`, `report_updates`).
-10. Session & cookie aman bawaan Laravel; `APP_DEBUG=false` saat demo/deliver.
+10. Session & cookie aman: `APP_DEBUG=false` di production/staging, cookie secure pada HTTPS, proxy hanya dipercaya melalui `TRUSTED_PROXIES` yang eksplisit, dan local disk tidak diserve otomatis.
+11. Response memakai `X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy`, `Permissions-Policy`, serta CSP; HSTS aktif pada HTTPS production/staging.
+12. Endpoint submit laporan/reservasi memiliki rate limit; laporan memiliki quota harian; pemeriksaan quota, slot, fasilitas, dan insert reservasi berjalan di transaksi dengan row lock.
+13. Seeder tidak menyimpan credential demo di source code; password wajib diberikan melalui `SEED_*_PASSWORD` lokal minimal 12 karakter. Log production memakai stack harian dengan retensi terbatas dan Boost browser logging nonaktif secara default.
+
+File Docker dan workflow deployment tidak termasuk hardening ini karena dikelola owner lain; audit container harus dilakukan pada perubahan terpisah.
 
 ## 13. Rekap & Ekspor (Admin)
 
@@ -599,7 +628,7 @@ Ketiga format ekspor harus merepresentasikan data rekap yang sama; perbedaannya 
 | Lapangan Futsal | lapangan | Area Timur | 20 | aktif |
 | Proyektor Portable P-01 | alat | Unit AV | 1 | perbaikan (contoh) |
 
-**Akun demo** — lihat §5.3. Password di-hash bcrypt oleh seeder.
+**Akun demo** — lihat §5.3. Password di-hash bcrypt oleh seeder dan dibaca dari environment, bukan dari source code.
 
 **Data uji:** 2–3 reservasi (pending, approved, rejected) tanggal besok; 2 laporan (baru, diproses), minimal satu dengan foto dan satu tanpa foto.
 
@@ -635,5 +664,3 @@ Ketiga format ekspor harus merepresentasikan data rekap yang sama; perbedaannya 
 ---
 
 *Akhir dokumen — versi 1.0. Perubahan apa pun terhadap keputusan teknis di atas wajib diperbarui di dokumen ini dan dikomunikasikan ke tim.*
-
-
