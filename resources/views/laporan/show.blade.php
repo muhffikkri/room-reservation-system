@@ -8,9 +8,9 @@
         <a href="{{ route('laporan.index') }}" class="inline-flex items-center text-sm font-medium text-slate-500 transition hover:text-[#00236f]">
             &larr; Kembali ke daftar laporan
         </a>
-        <div class="mt-2 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+        <div class="mt-2 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <h1 class="text-2xl font-semibold tracking-tight text-[#00236f]">Detail Laporan #{{ $report->id }}</h1>
-            <div>
+            <div class="flex flex-wrap items-center gap-2">
                 @php
                     $badgeClasses = match($report->status) {
                         'baru' => 'bg-sky-50 text-sky-700 ring-sky-600/20',
@@ -23,6 +23,13 @@
                 <span class="inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold capitalize ring-1 ring-inset {{ $badgeClasses }}">
                     Status: {{ $report->status }}
                 </span>
+                <a href="{{ route('laporan.create') }}"
+                   class="inline-flex items-center gap-2 rounded-lg bg-[#0051d5] px-3.5 py-2 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-[#00236f] focus:outline-none focus:ring-2 focus:ring-[#0051d5] focus:ring-offset-2">
+                    <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                    </svg>
+                    Laporkan Kerusakan Lainnya
+                </a>
             </div>
         </div>
         <p class="mt-1 text-xs text-slate-500">Dilaporkan pada {{ $report->created_at->format('d M Y, H:i') }} WIB</p>
