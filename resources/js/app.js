@@ -48,6 +48,28 @@ document.addEventListener('change', (event) => {
     input.form.requestSubmit();
 });
 
+document.querySelectorAll('[data-password-toggle]').forEach((button) => {
+    button.addEventListener('click', () => {
+        const input = document.getElementById(button.dataset.passwordToggle);
+
+        if (!(input instanceof HTMLInputElement)) {
+            return;
+        }
+
+        const willShow = input.type === 'password';
+
+        input.type = willShow ? 'text' : 'password';
+        button.setAttribute('aria-pressed', String(willShow).toLowerCase());
+        button.setAttribute('aria-label', willShow ? 'Sembunyikan password' : 'Tampilkan password');
+
+        button.querySelectorAll('[data-icon-show], [data-icon-hide]').forEach((icon) => {
+            const show = icon.dataset.iconShow !== undefined;
+
+            icon.classList.toggle('hidden', show ? willShow : ! willShow);
+        });
+    });
+});
+
 document.querySelectorAll('[data-reservation-form]').forEach(initializeReservationForm);
 
 document.querySelectorAll('[data-image-preview]').forEach((input) => {
