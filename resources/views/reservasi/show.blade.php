@@ -121,7 +121,7 @@
                     </button>
                 @elseif ($isTooLate)
                     <span class="text-xs text-slate-400 italic">
-                        Pembatalan ditutup (batas maksimal pembatalan adalah 1 jam sebelum jadwal mulai - BR-8).
+                        Pembatalan sudah ditutup karena jadwal mulai kurang dari 1 jam lagi.
                     </span>
                 @endif
             </div>

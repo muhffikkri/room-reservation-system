@@ -118,7 +118,7 @@
 
                 @if(empty($allowedTransitions))
                     <div class="rounded-xl border border-[#E2E7FF] bg-[#F8FAFC] p-4 text-xs text-slate-600">
-                        Laporan ini sudah ditutup dengan status <strong>{{ $report->status }}</strong> dan tidak dapat diubah lagi (BR-10).
+                        Laporan ini sudah ditutup dengan status <strong>{{ $report->status }}</strong> dan tidak dapat diubah lagi.
                     </div>
                 @else
                     <form method="POST" action="{{ route('petugas.laporan.status', $report) }}" class="space-y-4">
@@ -161,7 +161,7 @@
                 <h2 class="border-b border-[#EEF2FF] pb-3 text-base font-semibold text-[#00236f]">Kelola Fasilitas terkait</h2>
 
                 @if($report->status === 'diproses' && $report->facility->status !== 'perbaikan')
-                    <p class="text-xs text-slate-600">Laporan sedang diproses. Anda dapat menandai fasilitas ini sedang dalam perbaikan (BR-11).</p>
+                    <p class="text-xs text-slate-600">Laporan sedang diproses. Anda dapat menandai fasilitas ini sedang dalam perbaikan.</p>
                     <form method="POST" action="{{ route('petugas.laporan.fasilitas-status', $report) }}">
                         @csrf
                         @method('PATCH')
@@ -171,7 +171,7 @@
                         </button>
                     </form>
                 @elseif($report->status === 'selesai' && $report->facility->status === 'perbaikan')
-                    <p class="text-xs text-slate-600">Laporan sudah selesai. Anda dapat mengembalikan fasilitas ini ke status AKTIF (BR-11).</p>
+                    <p class="text-xs text-slate-600">Laporan sudah selesai. Anda dapat mengembalikan fasilitas ini ke status AKTIF.</p>
                     <form method="POST" action="{{ route('petugas.laporan.fasilitas-status', $report) }}">
                         @csrf
                         @method('PATCH')

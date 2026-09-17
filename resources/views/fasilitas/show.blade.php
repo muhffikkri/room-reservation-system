@@ -155,7 +155,7 @@
                                 Sedang Dalam Perbaikan
                             </div>
                             <p class="mt-1 text-amber-700">
-                                Fasilitas ini sedang dalam masa perawatan/perbaikan sehingga tidak dapat dipesan sementara waktu (BR-5, BR-12).
+                                Fasilitas ini sedang dalam masa perawatan/perbaikan sehingga tidak dapat dipesan sementara waktu.
                             </p>
                         </div>
                     @else

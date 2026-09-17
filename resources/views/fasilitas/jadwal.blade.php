@@ -76,7 +76,7 @@
                 Fasilitas Sedang Dalam Perbaikan
             </div>
             <p class="mt-1 text-amber-700">
-                Seluruh slot ditandai sebagai tidak aktif karena fasilitas dalam masa pemeliharaan. Reservasi tidak dapat diajukan (BR-5, BR-12).
+                Seluruh slot ditandai sebagai tidak aktif karena fasilitas dalam masa pemeliharaan. Reservasi tidak dapat diajukan.
             </p>
         </div>
     @elseif ($facility->status === 'nonaktif')

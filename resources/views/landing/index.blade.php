@@ -126,7 +126,7 @@
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="absolute left-3 top-2.5 h-[18px] w-[18px] text-[#94A3B8]" aria-hidden="true">
                             <circle cx="11" cy="11" r="7"/><path stroke-linecap="round" d="M20 20l-3.5-3.5"/>
                         </svg>
-                        <input id="search-input" name="q" value="{{ $filters['q'] ?? '' }}" type="text" placeholder="Search fasilitas..."
+                        <input id="search-input" name="q" value="{{ $filters['q'] ?? '' }}" type="text" placeholder="Cari fasilitas..."
                                class="h-10 w-full rounded-lg bg-[#f2f3ff] pl-9 pr-3 text-sm text-[#0F172A] transition focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#00236f]/40">
                     </div>
                 </div>
