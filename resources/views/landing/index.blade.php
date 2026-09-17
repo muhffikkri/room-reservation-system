@@ -92,6 +92,31 @@
             </div>
         </section>
 
+                {{-- SECTION 5: Panduan --}}
+        <section id="panduan" data-landing-section class="scroll-mt-24 space-y-6 rounded-xl bg-white p-6 shadow-sm md:p-8">
+            <div>
+                <h2 class="text-xl font-semibold text-[#0F172A]">Alur Peminjaman</h2>
+                <p class="text-xs text-[#475569]">Tiga langkah sederhana untuk menggunakan fasilitas kampus.</p>
+            </div>
+            <div class="grid grid-cols-1 gap-6 md:grid-cols-3">
+                <div class="rounded-xl bg-[#f2f3ff] p-5">
+                    <div class="flex h-8 w-8 items-center justify-center rounded-full bg-[#00236f] text-sm font-bold text-white">1</div>
+                    <h3 class="mt-3 text-sm font-semibold text-[#0F172A]">Pilih Fasilitas &amp; Jadwal</h3>
+                    <p class="mt-1 text-xs leading-relaxed text-[#475569]">Cari fasilitas lalu cek slot waktu yang tersedia pada pratinjau jadwal.</p>
+                </div>
+                <div class="rounded-xl bg-[#f2f3ff] p-5">
+                    <div class="flex h-8 w-8 items-center justify-center rounded-full bg-[#00236f] text-sm font-bold text-white">2</div>
+                    <h3 class="mt-3 text-sm font-semibold text-[#0F172A]">Ajukan Reservasi</h3>
+                    <p class="mt-1 text-xs leading-relaxed text-[#475569]">Login dan isi tujuan penggunaan; permohonan masuk antrian persetujuan.</p>
+                </div>
+                <div class="rounded-xl bg-[#f2f3ff] p-5">
+                    <div class="flex h-8 w-8 items-center justify-center rounded-full bg-[#00236f] text-sm font-bold text-white">3</div>
+                    <h3 class="mt-3 text-sm font-semibold text-[#0F172A]">Disetujui Petugas</h3>
+                    <p class="mt-1 text-xs leading-relaxed text-[#475569]">Setelah disetujui petugas, slot terkunci dan fasilitas siap digunakan.</p>
+                </div>
+            </div>
+        </section>
+        
         {{-- SECTION 2: Pencarian --}}
         <section class="rounded-xl bg-white p-6 shadow-sm">
             <form method="GET" action="{{ route('home') }}" class="grid grid-cols-1 items-end gap-4 md:grid-cols-2 lg:grid-cols-5">
@@ -316,30 +341,7 @@
             </div>
         </section>
 
-        {{-- SECTION 5: Panduan --}}
-        <section id="panduan" data-landing-section class="scroll-mt-24 space-y-6 rounded-xl bg-white p-6 shadow-sm md:p-8">
-            <div>
-                <h2 class="text-xl font-semibold text-[#0F172A]">Alur Peminjaman</h2>
-                <p class="text-xs text-[#475569]">Tiga langkah sederhana untuk menggunakan fasilitas kampus.</p>
-            </div>
-            <div class="grid grid-cols-1 gap-6 md:grid-cols-3">
-                <div class="rounded-xl bg-[#f2f3ff] p-5">
-                    <div class="flex h-8 w-8 items-center justify-center rounded-full bg-[#00236f] text-sm font-bold text-white">1</div>
-                    <h3 class="mt-3 text-sm font-semibold text-[#0F172A]">Pilih Fasilitas &amp; Jadwal</h3>
-                    <p class="mt-1 text-xs leading-relaxed text-[#475569]">Cari fasilitas lalu cek slot waktu yang tersedia pada pratinjau jadwal.</p>
-                </div>
-                <div class="rounded-xl bg-[#f2f3ff] p-5">
-                    <div class="flex h-8 w-8 items-center justify-center rounded-full bg-[#00236f] text-sm font-bold text-white">2</div>
-                    <h3 class="mt-3 text-sm font-semibold text-[#0F172A]">Ajukan Reservasi</h3>
-                    <p class="mt-1 text-xs leading-relaxed text-[#475569]">Login dan isi tujuan penggunaan; permohonan masuk antrian persetujuan.</p>
-                </div>
-                <div class="rounded-xl bg-[#f2f3ff] p-5">
-                    <div class="flex h-8 w-8 items-center justify-center rounded-full bg-[#00236f] text-sm font-bold text-white">3</div>
-                    <h3 class="mt-3 text-sm font-semibold text-[#0F172A]">Disetujui Petugas</h3>
-                    <p class="mt-1 text-xs leading-relaxed text-[#475569]">Setelah disetujui petugas, slot terkunci dan fasilitas siap digunakan.</p>
-                </div>
-            </div>
-        </section>
+
     </div>
 </main>
 
