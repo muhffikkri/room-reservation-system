@@ -60,7 +60,7 @@
                     <div class="border-t border-[#EEF2FF] pt-4">
                         <h3 class="mb-2 text-xs font-semibold uppercase tracking-[0.16em] text-[#0051d5]">Foto Bukti Kerusakan</h3>
                         <div class="max-w-lg overflow-hidden rounded-xl border border-[#E2E7FF] bg-[#F8FAFC]">
-                            <img src="{{ route('petugas.laporan.photo', $report) }}" alt="Foto laporan" class="w-full object-cover max-h-80">
+                            <img src="{{ route('petugas.laporan.photo', $report) }}" alt="Foto laporan" loading="lazy" class="img-fade w-full object-cover max-h-80">
                         </div>
                     </div>
                 @endif
@@ -118,7 +118,7 @@
 
                 @if(empty($allowedTransitions))
                     <div class="rounded-xl border border-[#E2E7FF] bg-[#F8FAFC] p-4 text-xs text-slate-600">
-                        Laporan ini sudah ditutup dengan status <strong>{{ $report->status }}</strong> dan tidak dapat diubah lagi (BR-10).
+                        Laporan ini sudah ditutup dengan status <strong>{{ $report->status }}</strong> dan tidak dapat diubah lagi.
                     </div>
                 @else
                     <form method="POST" action="{{ route('petugas.laporan.status', $report) }}" class="space-y-4">
@@ -149,7 +149,7 @@
                             @enderror
                         </div>
 
-                        <button type="submit" class="w-full rounded-lg bg-[#0051d5] px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-[#00236f] focus:outline-none focus:ring-2 focus:ring-[#0051d5]">
+                        <button type="submit" data-submit-loading data-loading-label="Menyimpan..." class="w-full rounded-lg bg-[#0051d5] px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-[#00236f] focus:outline-none focus:ring-2 focus:ring-[#0051d5]">
                             Simpan Perubahan Status
                         </button>
                     </form>
@@ -161,22 +161,22 @@
                 <h2 class="border-b border-[#EEF2FF] pb-3 text-base font-semibold text-[#00236f]">Kelola Fasilitas terkait</h2>
 
                 @if($report->status === 'diproses' && $report->facility->status !== 'perbaikan')
-                    <p class="text-xs text-slate-600">Laporan sedang diproses. Anda dapat menandai fasilitas ini sedang dalam perbaikan (BR-11).</p>
+                    <p class="text-xs text-slate-600">Laporan sedang diproses. Anda dapat menandai fasilitas ini sedang dalam perbaikan.</p>
                     <form method="POST" action="{{ route('petugas.laporan.fasilitas-status', $report) }}">
                         @csrf
                         @method('PATCH')
                         <input type="hidden" name="action" value="perbaikan">
-                        <button type="submit" data-confirm-message="Tandai fasilitas sebagai PERBAIKAN? Fasilitas tidak dapat direservasi selama perbaikan." class="w-full rounded-lg bg-amber-600 px-4 py-2 text-xs font-semibold text-white shadow-sm hover:bg-amber-700">
+                        <button type="submit" data-submit-loading data-loading-label="Menandai..." data-confirm-message="Tandai fasilitas sebagai PERBAIKAN? Fasilitas tidak dapat direservasi selama perbaikan." class="w-full rounded-lg bg-amber-600 px-4 py-2 text-xs font-semibold text-white shadow-sm hover:bg-amber-700">
                             Tandai Fasilitas PERBAIKAN
                         </button>
                     </form>
                 @elseif($report->status === 'selesai' && $report->facility->status === 'perbaikan')
-                    <p class="text-xs text-slate-600">Laporan sudah selesai. Anda dapat mengembalikan fasilitas ini ke status AKTIF (BR-11).</p>
+                    <p class="text-xs text-slate-600">Laporan sudah selesai. Anda dapat mengembalikan fasilitas ini ke status AKTIF.</p>
                     <form method="POST" action="{{ route('petugas.laporan.fasilitas-status', $report) }}">
                         @csrf
                         @method('PATCH')
                         <input type="hidden" name="action" value="aktif">
-                        <button type="submit" data-confirm-message="Kembalikan fasilitas ke status AKTIF?" class="w-full rounded-lg bg-emerald-600 px-4 py-2 text-xs font-semibold text-white shadow-sm hover:bg-emerald-700">
+                        <button type="submit" data-submit-loading data-loading-label="Mengembalikan..." data-confirm-message="Kembalikan fasilitas ke status AKTIF?" class="w-full rounded-lg bg-emerald-600 px-4 py-2 text-xs font-semibold text-white shadow-sm hover:bg-emerald-700">
                             Kembalikan Fasilitas ke AKTIF
                         </button>
                     </form>

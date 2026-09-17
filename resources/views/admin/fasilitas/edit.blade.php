@@ -25,14 +25,14 @@
                     <label for="name" class="mb-1 block text-sm font-medium text-slate-700">Nama fasilitas</label>
                     <input id="name" name="name" type="text" required maxlength="120"
                            value="{{ old('name', $facility->name) }}"
-                           class="w-full rounded-lg border border-slate-300 bg-white px-3 text-sm text-slate-900 transition focus:border-[#0051d5] focus:outline-none focus:ring-4 focus:ring-[#E2E7FF]">
+                           class="h-10 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm text-slate-900 transition focus:border-[#0051d5] focus:outline-none focus:ring-4 focus:ring-[#E2E7FF]">
                     @error('name')<p class="mt-1 text-xs text-red-600">{{ $message }}</p>@enderror
                 </div>
 
                 <div>
                     <label for="type" class="mb-1 block text-sm font-medium text-slate-700">Tipe</label>
                     <select id="type" name="type" required
-                            class="w-full rounded-lg border border-slate-300 bg-white px-3 text-sm text-slate-900 transition focus:border-[#0051d5] focus:outline-none focus:ring-4 focus:ring-[#E2E7FF]">
+                            class="h-10 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm text-slate-900 transition focus:border-[#0051d5] focus:outline-none focus:ring-4 focus:ring-[#E2E7FF]">
                         <option value="">Pilih tipe</option>
                         <option value="ruang_kelas" @selected(old('type', $facility->type) === 'ruang_kelas')>Ruang Kelas</option>
                         <option value="aula" @selected(old('type', $facility->type) === 'aula')>Aula</option>
@@ -48,7 +48,7 @@
                     <input id="location" name="location" type="text" required maxlength="120"
                            value="{{ old('location', $facility->location) }}"
                            placeholder="Gedung / area"
-                           class="w-full rounded-lg border border-slate-300 bg-white px-3 text-sm text-slate-900 transition focus:border-[#0051d5] focus:outline-none focus:ring-4 focus:ring-[#E2E7FF]">
+                           class="h-10 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm text-slate-900 transition focus:border-[#0051d5] focus:outline-none focus:ring-4 focus:ring-[#E2E7FF]">
                     @error('location')<p class="mt-1 text-xs text-red-600">{{ $message }}</p>@enderror
                 </div>
 
@@ -56,7 +56,7 @@
                     <label for="capacity" class="mb-1 block text-sm font-medium text-slate-700">Kapasitas</label>
                     <input id="capacity" name="capacity" type="number" required min="1" max="100000"
                            value="{{ old('capacity', $facility->capacity) }}"
-                           class="w-full rounded-lg border border-slate-300 bg-white px-3 text-sm text-slate-900 transition focus:border-[#0051d5] focus:outline-none focus:ring-4 focus:ring-[#E2E7FF]">
+                           class="h-10 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm text-slate-900 transition focus:border-[#0051d5] focus:outline-none focus:ring-4 focus:ring-[#E2E7FF]">
                     @error('capacity')<p class="mt-1 text-xs text-red-600">{{ $message }}</p>@enderror
                 </div>
 
@@ -93,7 +93,7 @@
                    class="inline-flex h-10 items-center justify-center rounded-lg border border-[#D6DDF8] bg-white px-4 text-sm font-semibold text-[#00236f] transition-colors hover:bg-[#F2F3FF]">
                     Batal
                 </a>
-                <button type="submit"
+                <button type="submit" data-submit-loading data-loading-label="Menyimpan..."
                         class="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-[#0051d5] px-4 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-[#00236f] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0051d5] focus-visible:ring-offset-2">
                     Simpan Perubahan
                 </button>

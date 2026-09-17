@@ -33,6 +33,10 @@
 </head>
 <body data-landing class="min-h-screen bg-[#F8FAFC] text-[#0F172A] antialiased">
 
+<a href="#content" class="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-[100] focus:rounded-lg focus:bg-[#00236f] focus:px-4 focus:py-2 focus:text-sm focus:font-semibold focus:text-white">
+    Lewati ke konten utama
+</a>
+
 <header class="fixed inset-x-0 top-0 z-50 bg-white/95 shadow-[0_1px_8px_rgba(0,0,0,0.04)] backdrop-blur-md">
     <div class="mx-auto flex h-16 w-full max-w-7xl items-center justify-between gap-6 px-6">
         <a href="#top" data-landing-nav="top" class="flex shrink-0 items-center gap-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0051d5] focus:ring-offset-2" aria-label="Kembali ke Beranda">
@@ -58,7 +62,7 @@
     </div>
 </header>
 
-<main class="w-full pt-16">
+<main id="content" class="w-full pt-16">
     <div class="mx-auto w-full max-w-7xl space-y-10 px-6 py-8">
 
         {{-- SECTION 1: Hero --}}
@@ -126,7 +130,7 @@
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="absolute left-3 top-2.5 h-[18px] w-[18px] text-[#94A3B8]" aria-hidden="true">
                             <circle cx="11" cy="11" r="7"/><path stroke-linecap="round" d="M20 20l-3.5-3.5"/>
                         </svg>
-                        <input id="search-input" name="q" value="{{ $filters['q'] ?? '' }}" type="text" placeholder="Search fasilitas..."
+                        <input id="search-input" name="q" value="{{ $filters['q'] ?? '' }}" type="text" placeholder="Cari fasilitas..."
                                class="h-10 w-full rounded-lg bg-[#f2f3ff] pl-9 pr-3 text-sm text-[#0F172A] transition focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#00236f]/40">
                     </div>
                 </div>
@@ -197,8 +201,8 @@
                     <div class="group flex flex-col overflow-hidden rounded-xl bg-white shadow-sm transition-all hover:shadow-md">
                         <div class="relative aspect-[16/9] w-full overflow-hidden bg-[#f2f3ff]">
                             @if ($facility->photo)
-                                <img src="{{ Storage::disk('public')->url($facility->photo) }}" alt="{{ $facility->name }}"
-                                     class="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105">
+                                <img src="{{ Storage::disk('public')->url($facility->photo) }}" alt="{{ $facility->name }}" loading="lazy"
+                                     class="img-fade h-full w-full object-cover transition-transform duration-300 group-hover:scale-105">
                             @else
                                 <div class="flex h-full w-full items-center justify-center bg-gradient-to-br from-[#00236f] to-[#0051d5]">
                                     <span class="text-5xl font-bold text-white/90">{{ strtoupper(substr($facility->name, 0, 2)) }}</span>
@@ -265,9 +269,13 @@
             </div>
 
             {{-- Tab fasilitas --}}
-            <div class="flex flex-wrap gap-2 pt-1">
+            <div role="tablist" aria-label="Pilih fasilitas" class="flex flex-wrap gap-2 pt-1">
                 @foreach ($facilities as $facility)
-                    <button type="button" data-landing-tab="{{ $facility->id }}"
+                    <button type="button" role="tab" id="tab-facility-{{ $facility->id }}"
+                            aria-controls="facility-grid-{{ $facility->id }}"
+                            aria-selected="{{ $loop->first ? 'true' : 'false' }}"
+                            tabindex="{{ $loop->first ? '0' : '-1' }}"
+                            data-landing-tab="{{ $facility->id }}"
                             data-tab-active="{{ $tabActiveClass }}"
                             data-tab-inactive="{{ $tabInactiveClass }}"
                             class="{{ $loop->first ? $tabActiveClass : $tabInactiveClass }}">
@@ -293,7 +301,8 @@
             @endif
 
             @foreach ($facilities as $facility)
-                <div data-facility-grid="{{ $facility->id }}" data-facility-name="{{ $facility->name }}"
+                <div role="tabpanel" aria-labelledby="tab-facility-{{ $facility->id }}" id="facility-grid-{{ $facility->id }}"
+                     data-facility-grid="{{ $facility->id }}" data-facility-name="{{ $facility->name }}"
                      class="{{ $loop->first ? '' : 'hidden' }} space-y-3">
                     <div class="flex items-center justify-between">
                         <span class="text-xs font-medium uppercase tracking-wider text-[#475569]">Slot Waktu Pemakaian (Interval 30 Menit)</span>

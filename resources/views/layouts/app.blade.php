@@ -9,6 +9,9 @@
 </head>
 
 <body class="min-h-screen bg-[#F8FAFC] text-[#0F172A] antialiased">
+    <a href="#content" class="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-[100] focus:rounded-lg focus:bg-[#00236f] focus:px-4 focus:py-2 focus:text-sm focus:font-semibold focus:text-white">
+        Lewati ke konten utama
+    </a>
     <nav class="border-b border-[#E2E7FF] bg-white/95 backdrop-blur" aria-label="Navigasi utama">
         <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
             <div class="flex min-h-18 items-center justify-between gap-4">
@@ -82,7 +85,7 @@
             @endauth
         </div>
     </nav>
-    <main class="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+    <main id="content" class="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
         @if (session('success'))
             <div class="mb-5 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm leading-relaxed text-emerald-800" role="status">
                 {{ session('success') }}

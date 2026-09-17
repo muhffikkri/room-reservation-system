@@ -74,7 +74,8 @@
                 <a href="{{ route('laporan.index') }}" class="rounded-lg border border-[#D6DDF8] bg-white px-4 py-2 text-sm font-medium text-[#00236f] shadow-sm transition hover:bg-[#F2F3FF] focus:outline-none focus:ring-2 focus:ring-[#0051d5] focus:ring-offset-2">
                     Batal
                 </a>
-                <button type="submit" class="rounded-lg bg-[#0051d5] px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-[#00236f] focus:outline-none focus:ring-2 focus:ring-[#0051d5] focus:ring-offset-2">
+                <button type="submit" data-submit-loading data-loading-label="Mengirim..."
+                    class="rounded-lg bg-[#0051d5] px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-[#00236f] focus:outline-none focus:ring-2 focus:ring-[#0051d5] focus:ring-offset-2">
                     Kirim Laporan
                 </button>
             </div>

@@ -121,7 +121,7 @@
                     </button>
                 @elseif ($isTooLate)
                     <span class="text-xs text-slate-400 italic">
-                        Pembatalan ditutup (batas maksimal pembatalan adalah 1 jam sebelum jadwal mulai - BR-8).
+                        Pembatalan sudah ditutup karena jadwal mulai kurang dari 1 jam lagi.
                     </span>
                 @endif
             </div>
@@ -130,8 +130,8 @@
 
     {{-- Dialog Modal Pembatalan Reservasi --}}
     @if ($canCancel)
-        <dialog id="cancel-modal" class="w-full max-w-md rounded-2xl border border-[#E2E7FF] bg-white p-6 shadow-xl backdrop:bg-slate-950/40">
-            <h3 class="text-lg font-semibold text-[#00236f]">Batalkan Reservasi?</h3>
+        <dialog id="cancel-modal" aria-labelledby="cancel-modal-title" class="w-full max-w-md rounded-2xl border border-[#E2E7FF] bg-white p-6 shadow-xl backdrop:bg-slate-950/40">
+            <h3 id="cancel-modal-title" class="text-lg font-semibold text-[#00236f]">Batalkan Reservasi?</h3>
             <p class="mt-1 text-sm text-slate-500">
                 {{ $reservation->facility->name }} &bull; {{ $reservation->start_time->translatedFormat('d M Y') }},
                 {{ $reservation->start_time->format('H:i') }} – {{ $reservation->end_time->format('H:i') }} WIB
@@ -145,7 +145,7 @@
                     <label for="cancel_reason" class="block text-sm font-medium text-slate-700">
                         Alasan Pembatalan <span class="text-rose-500">*</span>
                     </label>
-                    <textarea id="cancel_reason" name="cancel_reason" rows="3" required minlength="5" maxlength="255"
+                    <textarea id="cancel_reason" name="cancel_reason" rows="3" required minlength="5" maxlength="255" autofocus
                         placeholder="Contoh: Kegiatan dibatalkan karena ada perubahan jadwal mendadak..."
                         class="mt-1 block w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-rose-500 focus:outline-none focus:ring-1 focus:ring-rose-500"></textarea>
                     <p class="mt-1 text-xs text-slate-400">Minimal 5 karakter.</p>
@@ -159,7 +159,7 @@
                         class="rounded-lg border border-[#D6DDF8] bg-white px-4 py-2 text-sm font-medium text-[#00236f] transition hover:bg-[#F2F3FF]">
                         Kembali
                     </button>
-                    <button type="submit"
+                    <button type="submit" data-submit-loading data-loading-label="Membatalkan..."
                         class="rounded-lg bg-rose-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-rose-700 focus:outline-none focus:ring-2 focus:ring-rose-500 focus:ring-offset-2">
                         Konfirmasi Pembatalan
                     </button>

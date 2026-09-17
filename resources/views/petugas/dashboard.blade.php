@@ -78,17 +78,24 @@
                 @forelse ($newReports as $report)
                     <div class="flex items-center justify-between gap-4 border-b border-[#EEF2FF] py-3 last:border-b-0">
                         <div class="min-w-0">
-                            <p class="truncate text-sm font-semibold text-[#00236f]">
+                            <a href="{{ route('petugas.laporan.show', $report) }}"
+                               class="truncate text-sm font-semibold text-[#00236f] transition-colors hover:text-[#0051d5] hover:underline">
                                 {{ $report->facility->name }}
-                            </p>
+                            </a>
                             <p class="truncate text-xs text-slate-600">
                                 {{ $report->user->name }} ·
                                 {{ $report->created_at->format('d M Y H.i') }}
                             </p>
                         </div>
-                        <span class="inline-flex shrink-0 items-center rounded-full bg-cyan-50 px-2.5 py-1 text-xs font-semibold text-cyan-700 ring-1 ring-inset ring-cyan-200">
-                            Baru
-                        </span>
+                        <div class="flex shrink-0 items-center gap-2">
+                            <span class="inline-flex items-center rounded-full bg-cyan-50 px-2.5 py-1 text-xs font-semibold text-cyan-700 ring-1 ring-inset ring-cyan-200">
+                                Baru
+                            </span>
+                            <a href="{{ route('petugas.laporan.show', $report) }}"
+                               class="inline-flex h-9 items-center rounded-lg border border-[#D6DDF8] bg-white px-3 text-xs font-semibold text-[#00236f] transition-colors hover:bg-[#F2F3FF]">
+                                Tinjau
+                            </a>
+                        </div>
                     </div>
                 @empty
                     <p class="py-6 text-center text-sm text-slate-500">Tidak ada laporan baru.</p>
