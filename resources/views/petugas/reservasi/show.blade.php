@@ -142,8 +142,9 @@
     </div>
 
     <dialog id="reject-detail"
+            aria-labelledby="reject-dialog-title"
             class="w-full max-w-md rounded-2xl border border-[#E2E7FF] bg-white p-6 shadow-xl backdrop:bg-slate-950/40">
-        <h3 class="text-lg font-semibold text-[#00236f]">Tolak reservasi?</h3>
+        <h3 id="reject-dialog-title" class="text-lg font-semibold text-[#00236f]">Tolak reservasi?</h3>
         <p class="mt-1 text-sm text-slate-600">
             {{ $reservation->facility->name }} ·
             {{ $reservation->start_time->format('d M Y H.i') }} – {{ $reservation->end_time->format('H.i') }}
@@ -152,7 +153,7 @@
             @csrf
             <div>
                 <label for="reject-reason-detail" class="mb-1 block text-sm font-medium text-slate-700">Alasan penolakan</label>
-                <textarea id="reject-reason-detail" name="reason" rows="3" required minlength="10" maxlength="255"
+                <textarea id="reject-reason-detail" name="reason" rows="3" required minlength="10" maxlength="255" autofocus
                           class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 transition focus:border-[#0051d5] focus:outline-none focus:ring-4 focus:ring-[#E2E7FF]"
                           placeholder="Jelaskan alasan penolakan (min. 10 karakter)"></textarea>
                 @error('reason')<p class="mt-1 text-xs text-red-600">{{ $message }}</p>@enderror
@@ -171,8 +172,9 @@
     </dialog>
 
     <dialog id="cancel-detail"
+            aria-labelledby="cancel-dialog-title"
             class="w-full max-w-md rounded-2xl border border-[#E2E7FF] bg-white p-6 shadow-xl backdrop:bg-slate-950/40">
-        <h3 class="text-lg font-semibold text-[#00236f]">Batalkan reservasi?</h3>
+        <h3 id="cancel-dialog-title" class="text-lg font-semibold text-[#00236f]">Batalkan reservasi?</h3>
         <p class="mt-1 text-sm text-slate-600">
             {{ $reservation->facility->name }} ·
             {{ $reservation->start_time->format('d M Y H.i') }} – {{ $reservation->end_time->format('H.i') }}
@@ -181,7 +183,7 @@
             @csrf
             <div>
                 <label for="cancel-reason-detail" class="mb-1 block text-sm font-medium text-slate-700">Alasan pembatalan</label>
-                <textarea id="cancel-reason-detail" name="cancel_reason" rows="3" required minlength="10" maxlength="255"
+                <textarea id="cancel-reason-detail" name="cancel_reason" rows="3" required minlength="10" maxlength="255" autofocus
                           class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 transition focus:border-[#0051d5] focus:outline-none focus:ring-4 focus:ring-[#E2E7FF]"
                           placeholder="Jelaskan alasan pembatalan (min. 10 karakter)"></textarea>
                 @error('cancel_reason')<p class="mt-1 text-xs text-red-600">{{ $message }}</p>@enderror
