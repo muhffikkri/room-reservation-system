@@ -38,7 +38,7 @@
                                     </button>
                                 </form>
                                 <form method="POST" action="{{ route('admin.pengguna.reject', $pendingUser) }}"
-                                      onsubmit="return confirm('Tolak akun ini?')">
+                                      data-confirm-message="Tolak akun ini?">
                                     @csrf
                                     @method('PATCH')
                                     <button type="submit"

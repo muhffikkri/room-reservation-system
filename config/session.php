@@ -169,7 +169,10 @@ return [
     |
     */
 
-    'secure' => env('SESSION_SECURE_COOKIE'),
+    'secure' => env(
+        'SESSION_SECURE_COOKIE',
+        in_array((string) env('APP_ENV', 'production'), ['production', 'staging'], true),
+    ),
 
     /*
     |--------------------------------------------------------------------------

@@ -6,6 +6,7 @@ use App\Models\Facility;
 use App\Models\Reservation;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Collection;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
@@ -36,6 +37,8 @@ class HomeController extends Controller
 
     private const SLOT_COUNT = 26;
 
+    private const MAX_PUBLIC_FACILITIES = 50;
+
     public function __invoke(Request $request): View
     {
         $filters = $request->validate([
@@ -56,14 +59,30 @@ class HomeController extends Controller
             ->when($maxCapacity !== null, fn ($query) => $query->where('capacity', '<=', $maxCapacity))
             ->orderByRaw('CASE status WHEN "aktif" THEN 0 ELSE 1 END')
             ->orderBy('name')
+            ->limit(self::MAX_PUBLIC_FACILITIES)
             ->get();
+
+        $dayStart = now()->copy()->startOfDay()->setTime(self::OPERATIONAL_START_HOUR, 0);
+        $dayEnd = $dayStart->copy()->addMinutes(self::SLOT_COUNT * 30);
+        $approvedByFacility = collect();
+
+        if ($facilities->isNotEmpty()) {
+            $approvedByFacility = Reservation::approved()
+                ->whereIn('facility_id', $facilities->modelKeys())
+                ->where('start_time', '<', $dayEnd)
+                ->where('end_time', '>', $dayStart)
+                ->get(['facility_id', 'start_time', 'end_time'])
+                ->groupBy('facility_id');
+        }
 
         return view('landing.index', [
             'facilities' => $facilities,
-            'grids' => $facilities->mapWithKeys(fn (Facility $facility) => [$facility->id => $this->todaySlots($facility)]),
+            'grids' => $facilities->mapWithKeys(fn (Facility $facility) => [
+                $facility->id => $this->todaySlots($facility, $approvedByFacility->get($facility->id, collect())),
+            ]),
             'filters' => $filters,
             'typeLabels' => self::TYPE_LABELS,
-            'locationOptions' => Facility::query()->orderBy('location')->distinct()->pluck('location'),
+            'locationOptions' => Facility::query()->orderBy('location')->distinct()->limit(self::MAX_PUBLIC_FACILITIES)->pluck('location'),
             'totalFacilities' => Facility::aktif()->count(),
             'today' => now(),
         ]);
@@ -74,14 +93,9 @@ class HomeController extends Controller
      * past (mulai sudah lewat), booked (ada reservasi approved yang overlap),
      * available, atau inactive (fasilitas tidak aktif — BR-12).
      */
-    private function todaySlots(Facility $facility): array
+    private function todaySlots(Facility $facility, Collection $approved): array
     {
         $dayStart = now()->copy()->startOfDay()->setTime(self::OPERATIONAL_START_HOUR, 0);
-        $dayEnd = $dayStart->copy()->addMinutes(self::SLOT_COUNT * 30);
-
-        $approved = Reservation::approved()
-            ->overlap($facility->id, $dayStart, $dayEnd)
-            ->get(['start_time', 'end_time']);
 
         $slots = [];
 

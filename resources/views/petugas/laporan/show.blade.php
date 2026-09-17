@@ -60,7 +60,7 @@
                     <div class="border-t border-[#EEF2FF] pt-4">
                         <h3 class="mb-2 text-xs font-semibold uppercase tracking-[0.16em] text-[#0051d5]">Foto Bukti Kerusakan</h3>
                         <div class="max-w-lg overflow-hidden rounded-xl border border-[#E2E7FF] bg-[#F8FAFC]">
-                            <img src="{{ asset('storage/' . $report->photo) }}" alt="Foto laporan" class="w-full object-cover max-h-80">
+                            <img src="{{ route('petugas.laporan.photo', $report) }}" alt="Foto laporan" class="w-full object-cover max-h-80">
                         </div>
                     </div>
                 @endif
@@ -166,7 +166,7 @@
                         @csrf
                         @method('PATCH')
                         <input type="hidden" name="action" value="perbaikan">
-                        <button type="submit" onclick="return confirm('Tandai fasilitas sebagai PERBAIKAN? Fasilitas tidak dapat direservasi selama perbaikan.')" class="w-full rounded-lg bg-amber-600 px-4 py-2 text-xs font-semibold text-white shadow-sm hover:bg-amber-700">
+                        <button type="submit" data-confirm-message="Tandai fasilitas sebagai PERBAIKAN? Fasilitas tidak dapat direservasi selama perbaikan." class="w-full rounded-lg bg-amber-600 px-4 py-2 text-xs font-semibold text-white shadow-sm hover:bg-amber-700">
                             Tandai Fasilitas PERBAIKAN
                         </button>
                     </form>
@@ -176,7 +176,7 @@
                         @csrf
                         @method('PATCH')
                         <input type="hidden" name="action" value="aktif">
-                        <button type="submit" onclick="return confirm('Kembalikan fasilitas ke status AKTIF?')" class="w-full rounded-lg bg-emerald-600 px-4 py-2 text-xs font-semibold text-white shadow-sm hover:bg-emerald-700">
+                        <button type="submit" data-confirm-message="Kembalikan fasilitas ke status AKTIF?" class="w-full rounded-lg bg-emerald-600 px-4 py-2 text-xs font-semibold text-white shadow-sm hover:bg-emerald-700">
                             Kembalikan Fasilitas ke AKTIF
                         </button>
                     </form>

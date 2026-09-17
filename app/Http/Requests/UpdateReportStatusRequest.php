@@ -13,7 +13,8 @@ class UpdateReportStatusRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return $this->user() !== null;
+        return $this->user()?->isPetugas() === true
+            && $this->user()?->isActive() === true;
     }
 
     /**

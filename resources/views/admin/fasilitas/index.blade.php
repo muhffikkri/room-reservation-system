@@ -108,7 +108,7 @@
                                     @else
                                         <form method="POST"
                                               action="{{ route('admin.fasilitas.deactivate', $facility) }}"
-                                              onsubmit="return confirm('Fasilitas {{ $facility->name }} akan dinonaktifkan dan tidak dapat direservasi. Lanjutkan?')">
+                                              data-confirm-message="Fasilitas {{ $facility->name }} akan dinonaktifkan dan tidak dapat direservasi. Lanjutkan?">
                                             @csrf
                                             @method('PATCH')
                                             <button type="submit"

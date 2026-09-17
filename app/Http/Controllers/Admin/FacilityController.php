@@ -7,6 +7,7 @@ use App\Http\Requests\FacilityRequest;
 use App\Models\Facility;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\View\View;
 
@@ -96,13 +97,19 @@ class FacilityController extends Controller
      */
     public function deactivate(Facility $facility): RedirectResponse
     {
-        if ($facility->status === 'perbaikan') {
-            return back()->with('error', "Fasilitas {$facility->name} sedang dalam perbaikan dan tidak dapat dinonaktifkan sampai penanganannya selesai.");
-        }
+        $result = DB::transaction(function () use ($facility): array {
+            $locked = Facility::whereKey($facility->id)->lockForUpdate()->firstOrFail();
 
-        $facility->update(['status' => 'nonaktif']);
+            if ($locked->status === 'perbaikan') {
+                return ['error', "Fasilitas {$locked->name} sedang dalam perbaikan dan tidak dapat dinonaktifkan sampai penanganannya selesai."];
+            }
 
-        return back()->with('success', "Fasilitas {$facility->name} dinonaktifkan.");
+            $locked->update(['status' => 'nonaktif']);
+
+            return ['success', "Fasilitas {$locked->name} dinonaktifkan."];
+        });
+
+        return back()->with($result[0], $result[1]);
     }
 
     /**
@@ -113,13 +120,19 @@ class FacilityController extends Controller
      */
     public function activate(Facility $facility): RedirectResponse
     {
-        if ($facility->status === 'perbaikan') {
-            return back()->with('error', "Fasilitas {$facility->name} sedang dalam perbaikan; pengembaliannya ke aktif dilakukan petugas melalui alur laporan.");
-        }
+        $result = DB::transaction(function () use ($facility): array {
+            $locked = Facility::whereKey($facility->id)->lockForUpdate()->firstOrFail();
 
-        $facility->update(['status' => 'aktif']);
+            if ($locked->status === 'perbaikan') {
+                return ['error', "Fasilitas {$locked->name} sedang dalam perbaikan; pengembaliannya ke aktif dilakukan petugas melalui alur laporan."];
+            }
 
-        return back()->with('success', "Fasilitas {$facility->name} diaktifkan kembali.");
+            $locked->update(['status' => 'aktif']);
+
+            return ['success', "Fasilitas {$locked->name} diaktifkan kembali."];
+        });
+
+        return back()->with($result[0], $result[1]);
     }
 
     private function storePhoto(FacilityRequest $request): ?string

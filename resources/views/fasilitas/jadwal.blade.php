@@ -103,7 +103,7 @@
                     id="date"
                     value="{{ $selectedDate->toDateString() }}"
                     class="h-10 rounded-lg border border-slate-300 bg-white px-3 text-sm text-slate-900 shadow-sm transition focus:border-[#0051d5] focus:outline-none focus:ring-4 focus:ring-[#E2E7FF]"
-                    onchange="this.form.submit()"
+                    data-submit-on-change
                 >
                 <button type="submit" class="rounded-lg bg-[#0051d5] px-4 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-[#00236f]">
                     Lihat Jadwal

@@ -16,14 +16,23 @@ use App\Http\Controllers\Officer\DashboardController as OfficerDashboardControll
 use App\Http\Controllers\Officer\ReportController as OfficerReportController;
 use App\Http\Controllers\Officer\ReservationController as OfficerReservationController;
 use App\Http\Controllers\ReportController;
+use App\Http\Controllers\ReportPhotoController;
 use App\Http\Controllers\ReservationController;
 use Illuminate\Support\Facades\Route;
 
-Route::get('/', HomeController::class)->name('home');
+Route::get('/', HomeController::class)
+    ->middleware('throttle:public-browse')
+    ->name('home');
 
-Route::get('/fasilitas', [FacilityController::class, 'index'])->name('fasilitas.index');
-Route::get('/fasilitas/{facility}', [FacilityController::class, 'show'])->name('fasilitas.show');
-Route::get('/fasilitas/{facility}/jadwal', [FacilityController::class, 'jadwal'])->name('fasilitas.jadwal');
+Route::get('/fasilitas', [FacilityController::class, 'index'])
+    ->middleware('throttle:public-browse')
+    ->name('fasilitas.index');
+Route::get('/fasilitas/{facility}', [FacilityController::class, 'show'])
+    ->middleware('throttle:public-browse')
+    ->name('fasilitas.show');
+Route::get('/fasilitas/{facility}/jadwal', [FacilityController::class, 'jadwal'])
+    ->middleware('throttle:public-browse')
+    ->name('fasilitas.jadwal');
 
 Route::middleware('guest')->group(function (): void {
     Route::get('/login', [LoginController::class, 'showLoginForm'])->name('login');
@@ -38,19 +47,25 @@ Route::middleware(['auth', 'active', 'role:pengguna'])->group(function (): void 
 
     Route::get('/reservasi', [ReservationController::class, 'index'])->name('reservasi.index');
     Route::get('/reservasi/baru', [ReservationController::class, 'create'])->name('reservasi.create');
-    Route::post('/reservasi', [ReservationController::class, 'store'])->name('reservasi.store');
+    Route::post('/reservasi', [ReservationController::class, 'store'])
+        ->middleware('throttle:reservation-submissions')
+        ->name('reservasi.store');
     Route::get('/reservasi/{reservation}', [ReservationController::class, 'show'])->name('reservasi.show');
     Route::delete('/reservasi/{reservation}', [ReservationController::class, 'destroy'])->name('reservasi.destroy');
 
     Route::get('/laporan', [ReportController::class, 'index'])->name('laporan.index');
     Route::get('/laporan/baru', [ReportController::class, 'create'])->name('laporan.create');
-    Route::post('/laporan', [ReportController::class, 'store'])->name('laporan.store');
+    Route::post('/laporan', [ReportController::class, 'store'])
+        ->middleware('throttle:report-submissions')
+        ->name('laporan.store');
+    Route::get('/laporan/{report}/foto', ReportPhotoController::class)->name('laporan.photo');
     Route::get('/laporan/{report}', [ReportController::class, 'show'])->name('laporan.show');
 });
 
 Route::middleware(['auth', 'active', 'role:petugas'])->prefix('petugas')->group(function (): void {
     Route::get('/', OfficerDashboardController::class)->name('petugas.dashboard');
     Route::get('/laporan', [OfficerReportController::class, 'index'])->name('petugas.laporan.index');
+    Route::get('/laporan/{report}/foto', ReportPhotoController::class)->name('petugas.laporan.photo');
     Route::get('/laporan/{report}', [OfficerReportController::class, 'show'])->name('petugas.laporan.show');
     Route::patch('/laporan/{report}/status', [OfficerReportController::class, 'updateStatus'])->name('petugas.laporan.status');
     Route::patch('/laporan/{report}/fasilitas-status', [OfficerReportController::class, 'toggleFacilityStatus'])->name('petugas.laporan.fasilitas-status');
