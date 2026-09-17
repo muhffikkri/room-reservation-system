@@ -147,6 +147,7 @@
                             <img
                                 src="{{ asset('storage/' . $facility->photo) }}"
                                 alt="{{ $facility->name }}"
+                                loading="lazy"
                                 class="h-full w-full object-cover"
                             >
                         @else
