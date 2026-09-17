@@ -80,7 +80,7 @@
                    class="inline-flex h-10 items-center justify-center rounded-lg border border-[#D6DDF8] bg-white px-4 text-sm font-semibold text-[#00236f] transition-colors hover:bg-[#F2F3FF]">
                     Batal
                 </a>
-                <button type="submit"
+                <button type="submit" data-submit-loading data-loading-label="Menyimpan..."
                         class="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-[#0051d5] px-4 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-[#00236f] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0051d5] focus-visible:ring-offset-2">
                     Simpan Fasilitas
                 </button>

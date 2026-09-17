@@ -60,7 +60,7 @@
                     <div class="border-t border-[#EEF2FF] pt-4">
                         <h3 class="mb-2 text-xs font-semibold uppercase tracking-[0.16em] text-[#0051d5]">Foto Bukti Kerusakan</h3>
                         <div class="max-w-lg overflow-hidden rounded-xl border border-[#E2E7FF] bg-[#F8FAFC]">
-                            <img src="{{ route('petugas.laporan.photo', $report) }}" alt="Foto laporan" loading="lazy" class="w-full object-cover max-h-80">
+                            <img src="{{ route('petugas.laporan.photo', $report) }}" alt="Foto laporan" loading="lazy" class="img-fade w-full object-cover max-h-80">
                         </div>
                     </div>
                 @endif
@@ -149,7 +149,7 @@
                             @enderror
                         </div>
 
-                        <button type="submit" class="w-full rounded-lg bg-[#0051d5] px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-[#00236f] focus:outline-none focus:ring-2 focus:ring-[#0051d5]">
+                        <button type="submit" data-submit-loading data-loading-label="Menyimpan..." class="w-full rounded-lg bg-[#0051d5] px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-[#00236f] focus:outline-none focus:ring-2 focus:ring-[#0051d5]">
                             Simpan Perubahan Status
                         </button>
                     </form>
@@ -166,7 +166,7 @@
                         @csrf
                         @method('PATCH')
                         <input type="hidden" name="action" value="perbaikan">
-                        <button type="submit" data-confirm-message="Tandai fasilitas sebagai PERBAIKAN? Fasilitas tidak dapat direservasi selama perbaikan." class="w-full rounded-lg bg-amber-600 px-4 py-2 text-xs font-semibold text-white shadow-sm hover:bg-amber-700">
+                        <button type="submit" data-submit-loading data-loading-label="Menandai..." data-confirm-message="Tandai fasilitas sebagai PERBAIKAN? Fasilitas tidak dapat direservasi selama perbaikan." class="w-full rounded-lg bg-amber-600 px-4 py-2 text-xs font-semibold text-white shadow-sm hover:bg-amber-700">
                             Tandai Fasilitas PERBAIKAN
                         </button>
                     </form>
@@ -176,7 +176,7 @@
                         @csrf
                         @method('PATCH')
                         <input type="hidden" name="action" value="aktif">
-                        <button type="submit" data-confirm-message="Kembalikan fasilitas ke status AKTIF?" class="w-full rounded-lg bg-emerald-600 px-4 py-2 text-xs font-semibold text-white shadow-sm hover:bg-emerald-700">
+                        <button type="submit" data-submit-loading data-loading-label="Mengembalikan..." data-confirm-message="Kembalikan fasilitas ke status AKTIF?" class="w-full rounded-lg bg-emerald-600 px-4 py-2 text-xs font-semibold text-white shadow-sm hover:bg-emerald-700">
                             Kembalikan Fasilitas ke AKTIF
                         </button>
                     </form>

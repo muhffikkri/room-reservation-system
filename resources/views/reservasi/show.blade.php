@@ -159,7 +159,7 @@
                         class="rounded-lg border border-[#D6DDF8] bg-white px-4 py-2 text-sm font-medium text-[#00236f] transition hover:bg-[#F2F3FF]">
                         Kembali
                     </button>
-                    <button type="submit"
+                    <button type="submit" data-submit-loading data-loading-label="Membatalkan..."
                         class="rounded-lg bg-rose-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-rose-700 focus:outline-none focus:ring-2 focus:ring-rose-500 focus:ring-offset-2">
                         Konfirmasi Pembatalan
                     </button>

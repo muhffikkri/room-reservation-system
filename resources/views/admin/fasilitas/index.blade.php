@@ -57,7 +57,7 @@
                                 <div class="flex items-center gap-3">
                                     @if ($facility->photo !== null)
                                         <img src="{{ Storage::disk('public')->url($facility->photo) }}" alt="Foto {{ $facility->name }}" loading="lazy"
-                                             class="h-11 w-16 shrink-0 rounded-lg border border-slate-200 object-cover">
+                                             class="img-fade h-11 w-16 shrink-0 rounded-lg border border-slate-200 object-cover">
                                     @else
                                         <div class="flex h-11 w-16 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-xs text-slate-400">
                                             Tanpa foto

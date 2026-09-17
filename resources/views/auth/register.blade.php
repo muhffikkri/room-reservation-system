@@ -101,7 +101,7 @@
                     @enderror
                 </div>
 
-                <button type="submit"
+                <button type="submit" data-submit-loading data-loading-label="Mendaftarkan..."
                     class="inline-flex h-11 w-full items-center justify-center rounded-lg bg-[#00236f] px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-[#001a52] focus:outline-none focus:ring-4 focus:ring-[#0051d5]/20 active:translate-y-px">
                     Daftar akun
                 </button>

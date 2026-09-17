@@ -19,6 +19,15 @@ dialog:modal {
     max-height: calc(100vh - 2rem);
 }
 
+img.img-fade {
+    opacity: 0;
+    transition: opacity 240ms ease;
+}
+
+img.img-fade.is-loaded {
+    opacity: 1;
+}
+
 @media (prefers-reduced-motion: reduce) {
     html {
         scroll-behavior: auto;

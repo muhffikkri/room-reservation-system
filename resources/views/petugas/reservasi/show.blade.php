@@ -119,7 +119,7 @@
                     <div class="mt-4 flex flex-col gap-3">
                         <form method="POST" action="{{ route('petugas.reservasi.approve', $reservation) }}">
                             @csrf
-                            <button type="submit"
+                            <button type="submit" data-submit-loading data-loading-label="Menyetujui..."
                                     class="inline-flex h-10 w-full items-center justify-center gap-2 rounded-lg bg-[#0051d5] px-4 text-sm font-semibold text-white transition-colors hover:bg-[#00236f] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0051d5] focus-visible:ring-offset-2">
                                 Setujui Reservasi
                             </button>
@@ -163,7 +163,7 @@
                         class="inline-flex h-10 items-center justify-center rounded-lg border border-[#D6DDF8] bg-white px-4 text-sm font-semibold text-[#00236f] transition-colors hover:bg-[#F2F3FF]">
                     Kembali
                 </button>
-                <button type="submit"
+                <button type="submit" data-submit-loading data-loading-label="Menolak..."
                         class="inline-flex h-10 items-center justify-center rounded-lg bg-red-600 px-4 text-sm font-semibold text-white transition-colors hover:bg-red-700">
                     Tolak Reservasi
                 </button>
@@ -193,7 +193,7 @@
                         class="inline-flex h-10 items-center justify-center rounded-lg border border-[#D6DDF8] bg-white px-4 text-sm font-semibold text-[#00236f] transition-colors hover:bg-[#F2F3FF]">
                     Kembali
                 </button>
-                <button type="submit"
+                <button type="submit" data-submit-loading data-loading-label="Membatalkan..."
                         class="inline-flex h-10 items-center justify-center rounded-lg bg-red-600 px-4 text-sm font-semibold text-white transition-colors hover:bg-red-700">
                     Batalkan Reservasi
                 </button>

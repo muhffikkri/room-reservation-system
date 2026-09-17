@@ -58,7 +58,7 @@
             <div class="border-t border-[#EEF2FF] pt-4">
                 <h3 class="mb-2 text-xs font-semibold uppercase tracking-[0.16em] text-[#0051d5]">Foto Bukti Kerusakan</h3>
                 <div class="max-w-md overflow-hidden rounded-xl border border-[#E2E7FF] bg-[#F8FAFC]">
-                    <img src="{{ route('laporan.photo', $report) }}" alt="Foto laporan" loading="lazy" class="w-full object-cover max-h-80">
+                    <img src="{{ route('laporan.photo', $report) }}" alt="Foto laporan" loading="lazy" class="img-fade w-full object-cover max-h-80">
                 </div>
             </div>
         @endif
