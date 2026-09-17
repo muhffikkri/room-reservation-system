@@ -9,7 +9,10 @@
 </head>
 
 <body class="min-h-screen bg-[#F8FAFC] text-[#0F172A] antialiased">
-    <main class="min-h-screen lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(28rem,0.92fr)]">
+    <a href="#content" class="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-[100] focus:rounded-lg focus:bg-[#00236f] focus:px-4 focus:py-2 focus:text-sm focus:font-semibold focus:text-white">
+        Lewati ke konten utama
+    </a>
+    <main id="content" class="min-h-screen lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(28rem,0.92fr)]">
         <section class="relative hidden overflow-hidden bg-[#EEF2FF] lg:flex lg:min-h-screen lg:flex-col lg:justify-between">
             <div class="pointer-events-none absolute -left-36 -top-32 h-[34rem] w-[34rem] rounded-full bg-[#00236f]/10 blur-3xl"></div>
             <div class="pointer-events-none absolute -bottom-44 -right-24 h-[30rem] w-[30rem] rounded-full bg-[#0051d5]/10 blur-3xl"></div>

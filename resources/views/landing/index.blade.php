@@ -33,6 +33,10 @@
 </head>
 <body data-landing class="min-h-screen bg-[#F8FAFC] text-[#0F172A] antialiased">
 
+<a href="#content" class="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-[100] focus:rounded-lg focus:bg-[#00236f] focus:px-4 focus:py-2 focus:text-sm focus:font-semibold focus:text-white">
+    Lewati ke konten utama
+</a>
+
 <header class="fixed inset-x-0 top-0 z-50 bg-white/95 shadow-[0_1px_8px_rgba(0,0,0,0.04)] backdrop-blur-md">
     <div class="mx-auto flex h-16 w-full max-w-7xl items-center justify-between gap-6 px-6">
         <a href="#top" data-landing-nav="top" class="flex shrink-0 items-center gap-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0051d5] focus:ring-offset-2" aria-label="Kembali ke Beranda">
@@ -58,7 +62,7 @@
     </div>
 </header>
 
-<main class="w-full pt-16">
+<main id="content" class="w-full pt-16">
     <div class="mx-auto w-full max-w-7xl space-y-10 px-6 py-8">
 
         {{-- SECTION 1: Hero --}}
@@ -197,7 +201,7 @@
                     <div class="group flex flex-col overflow-hidden rounded-xl bg-white shadow-sm transition-all hover:shadow-md">
                         <div class="relative aspect-[16/9] w-full overflow-hidden bg-[#f2f3ff]">
                             @if ($facility->photo)
-                                <img src="{{ Storage::disk('public')->url($facility->photo) }}" alt="{{ $facility->name }}"
+                                <img src="{{ Storage::disk('public')->url($facility->photo) }}" alt="{{ $facility->name }}" loading="lazy"
                                      class="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105">
                             @else
                                 <div class="flex h-full w-full items-center justify-center bg-gradient-to-br from-[#00236f] to-[#0051d5]">
