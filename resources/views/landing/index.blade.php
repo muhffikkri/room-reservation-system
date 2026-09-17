@@ -202,7 +202,7 @@
                         <div class="relative aspect-[16/9] w-full overflow-hidden bg-[#f2f3ff]">
                             @if ($facility->photo)
                                 <img src="{{ Storage::disk('public')->url($facility->photo) }}" alt="{{ $facility->name }}" loading="lazy"
-                                     class="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105">
+                                     class="img-fade h-full w-full object-cover transition-transform duration-300 group-hover:scale-105">
                             @else
                                 <div class="flex h-full w-full items-center justify-center bg-gradient-to-br from-[#00236f] to-[#0051d5]">
                                     <span class="text-5xl font-bold text-white/90">{{ strtoupper(substr($facility->name, 0, 2)) }}</span>
@@ -269,9 +269,13 @@
             </div>
 
             {{-- Tab fasilitas --}}
-            <div class="flex flex-wrap gap-2 pt-1">
+            <div role="tablist" aria-label="Pilih fasilitas" class="flex flex-wrap gap-2 pt-1">
                 @foreach ($facilities as $facility)
-                    <button type="button" data-landing-tab="{{ $facility->id }}"
+                    <button type="button" role="tab" id="tab-facility-{{ $facility->id }}"
+                            aria-controls="facility-grid-{{ $facility->id }}"
+                            aria-selected="{{ $loop->first ? 'true' : 'false' }}"
+                            tabindex="{{ $loop->first ? '0' : '-1' }}"
+                            data-landing-tab="{{ $facility->id }}"
                             data-tab-active="{{ $tabActiveClass }}"
                             data-tab-inactive="{{ $tabInactiveClass }}"
                             class="{{ $loop->first ? $tabActiveClass : $tabInactiveClass }}">
@@ -297,7 +301,8 @@
             @endif
 
             @foreach ($facilities as $facility)
-                <div data-facility-grid="{{ $facility->id }}" data-facility-name="{{ $facility->name }}"
+                <div role="tabpanel" aria-labelledby="tab-facility-{{ $facility->id }}" id="facility-grid-{{ $facility->id }}"
+                     data-facility-grid="{{ $facility->id }}" data-facility-name="{{ $facility->name }}"
                      class="{{ $loop->first ? '' : 'hidden' }} space-y-3">
                     <div class="flex items-center justify-between">
                         <span class="text-xs font-medium uppercase tracking-wider text-[#475569]">Slot Waktu Pemakaian (Interval 30 Menit)</span>

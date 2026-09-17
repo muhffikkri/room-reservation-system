@@ -2644,7 +2644,35 @@ Sebelum mulai implementasi UI:
 
 ---
 
-## 84. Recommended First Components to Build
+# 84. Component Accessibility Mandate
+
+Setiap komponen dan halaman WAJIB aksesibel. Aturan ini berlaku untuk semua komponen baru maupun perbaikan UI.
+
+## Aturan Wajib
+
+- **Skip link**: Setiap layout memiliki link "Lewati ke konten utama" (`#content`) yang terlihat saat fokus keyboard. `<main>` harus memiliki `id="content"`.
+- **Focus-visible**: Elemen interaktif (tombol, link, input, select, textarea, tab) WAJIB memiliki `focus-visible:outline` yang jelas dan kontras.
+- **Label**: Setiap input/select/textarea WAJIB memiliki `<label for="">` atau `aria-label`. Input wajib punya placeholder yang instruktif.
+- **Icon-only button**: WAJIB punya `aria-label` atau teks yang dapat dibaca screen reader.
+- **Tabs**: Gunakan `role="tablist"`, `role="tab"`, `aria-selected`, serta navigasi keyboard (Arrow kiri/kanan, Home, End).
+- **Dialog**: Gunakan `<dialog>` native, `aria-labelledby` mengarah ke judul, `<h3>` di dalamnya, fokus otomatis ke elemen pertama, dan tombol tutup yang jelas. Konfirmasi destruktif WAJIB menggunakan `<dialog>`.
+- **Heading order**: Halaman dimulai dari satu `<h1>`, hierarki berurutan tanpa melompati level.
+- **Status**: Status tidak pernah disampaikan hanya melalui warna — selalu ada badge teks dan/atau ikon.
+- **Reduced motion**: Animasi (fade, spin, pulse) dimatikan/di-hormati melalui `@media (prefers-reduced-motion: reduce)`.
+
+## Loading & Error
+
+- **Skeleton**: Gunakan `x-ui.skeleton` untuk data yang dimuat (table/card). Jangan hanya spinner besar.
+- **Button loading**: Gunakan `data-submit-loading` + `data-loading-label` pada tombol submit utama agar tombol menampilkan spinner dan dinonaktifkan saat submit.
+- **Image**: Semua gambar di bawah fold memakai `loading="lazy"` + class `img-fade` (fade-in setelah load) dengan container berwarna sebagai placeholder.
+
+## Pengecualian
+
+Gambar `<img>` selalu wajib `alt`. Ikon dekoratif memakai `aria-hidden="true"`.
+
+---
+
+## 85. Recommended First Components to Build
 
 Urutan implementasi yang disarankan:
 
