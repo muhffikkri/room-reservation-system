@@ -161,7 +161,7 @@ it('rejects approval when the facility is no longer aktif (BR-12)', function () 
     expect($reservation->fresh()->status)->toBe('pending');
 });
 
-it('rejects a start less than 30 minutes from now (BR-3)', function () {
+it('rejects a start less than 60 minutes from now (BR-3)', function () {
     [$facility, $user] = makeActors();
     $service = app(ReservationService::class);
 
@@ -174,6 +174,6 @@ it('rejects a start less than 30 minutes from now (BR-3)', function () {
         $facility,
         $start,
         $end,
-        'Pengajuan mepet yang melanggar batas 30 menit',
+        'Pengajuan mepet yang melanggar batas 1 jam',
     ))->toThrow(ValidationException::class);
 });

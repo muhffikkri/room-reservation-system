@@ -8,9 +8,14 @@ Format mengikuti riwayat commit tim. Tanggal terbaru di atas. Status merge: **De
 
 ## [Unreleased] — Sedang dikerjakan di branch anggota tim
 
-_Bagian ini kosong; semua pekerjaan tim terkini sudah masuk `dev`._
-
-> Tersisa satu deliverable spesifikasi: rekap okupansi & frekuensi kerusakan dengan ekspor CSV/PDF (`Admin\RecapController` + `RecapService`).
+### feat/booking-1hour-lead-time — Minimum 1 Hour Booking Lead Time (BR-3)
+- **Backend validation**: `BookingLeadTime` rule updated from 30 minutes to 60 minutes (1 hour)
+- **Slot grid (create form)**: `ReservationController::determineSlotState()` marks slots < 1 hour as `inactive`
+- **Public landing page**: `HomeController::slotState()` marks slots < 1 hour as `past`
+- **Frontend validation**: Client-side JS in reservation create form disables date/time combinations < 1 hour from now
+- **UI copy updated**: Legend text "Tidak Aktif (< 1 Jam / Lewat)", help text "Waktu mulai minimal: 1 jam dari waktu saat ini"
+- **Public facility pages**: Updated "Batas Pengajuan" from 30 menit to 1 jam in `fasilitas/show.blade.php`
+- **Tests updated**: `ReservationSlotDepthTest`, `ReservationApprovalTest`, `LandingPageTest` expectations adjusted for 60-minute threshold
 
 ---
 
@@ -25,13 +30,6 @@ Rilis minor dari `v1.2.0-dev`: perbaikan UI accessibility (a11y), komponen skele
 - **Admin facility form** (merge `32d0977`): konsistensi tinggi & padding input pada create/edit fasilitas admin.
 - **Fasilitas publik minor** (merge `c4692a3`, `352c217`): perbaikan layout jadwal & show fasilitas publik.
 - **Landing page facility count fix** (merge `dc7e1a4` PR #52): perbaikan hitungan total fasilitas di landing page agar konsisten dengan filter.
-
-### Dev — penambahan fitur & perbaikan (PR #51 + perbaikan terkait)
-- **UI Accessibility (a11y) & Polish** (PR #51 `feat/ui-accessibility` → `1e5097c`): skip-to-content link di layout publik & auth (`4cf42dc`); schedule tabs keyboard-navigable di landing (`1af05e9`); submit-button loading states + lazy image fade-in (`b62ad14`); reusable skeleton loading component (`54bace9`); lazy-load images below the fold (`e9c8af3`); center dialogs, labels, autofocus, reduced motion support (`352c217`); show/hide password toggle di login & register (`a9f40ba`); hapus referensi internal dari teks terlihat (`2144273`).
-- **Petugas UX** (merge `df541a9`): item antrian laporan di dashboard petugas kini terhubung ke detail laporan.
-- **Laporan pengguna** (merge `c4251be`): tambah aksi "Lapor kerusakan lain" di halaman detail laporan.
-- **Admin facility form** (merge `32d0977`): konsistensi tinggi & padding input pada create/edit fasilitas admin.
-- **Fasilitas publik minor** (merge `c4692a3`, `352c217`): perbaikan layout jadwal & show fasilitas publik.
 
 ---
 

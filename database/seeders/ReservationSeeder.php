@@ -13,7 +13,7 @@ use Illuminate\Database\Seeder;
  * Sari memegang satu approved di Aula (besok 08.00-10.00), Budi memegang
  * satu pending di Futsal (besok 16.00-18.00) dan satu rejected di Aula
  * lengkap dengan alasan penolakan. Semua tanggal mulai besok agar lolos
- * batas now+30 menit (BR-3).
+ * batas now+1 jam (BR-3).
  */
 class ReservationSeeder extends Seeder
 {

@@ -2,6 +2,197 @@
 
 @section('title', 'Ajukan Reservasi Fasilitas')
 
+@push('scripts')
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const dateInput = document.getElementById('date');
+            const startTimeSelect = document.getElementById('start_time');
+            const endTimeSelect = document.getElementById('end_time');
+            const slotGridContainer = document.getElementById('slotGridContainer');
+
+            // Get timezone from Laravel config (passed via meta tag or inline)
+            const tz = '{{ config('app.timezone', 'Asia/Jakarta') }}';
+
+            // Helper: get current time in Asia/Jakarta
+            function getNowInTZ() {
+                const now = new Date();
+                // Convert to target timezone
+                const jakartaTime = new Date(now.toLocaleString('en-US', { timeZone: tz }));
+                return jakartaTime;
+            }
+
+            // Helper: format date as Y-m-d
+            function formatDate(date) {
+                return date.toISOString().split('T')[0];
+            }
+
+            // Helper: format time as H:i
+            function formatTime(date) {
+                return date.toTimeString().slice(0, 5);
+            }
+
+            // Generate time options (07:00 - 20:00, 30 min interval)
+            function generateTimeOptions() {
+                const options = [];
+                const base = new Date();
+                base.setHours(7, 0, 0, 0);
+                for (let i = 0; i <= 26; i++) {
+                    const t = new Date(base.getTime() + i * 30 * 60000);
+                    options.push(formatTime(t));
+                }
+                return options;
+            }
+
+            // Filter and populate start_time select based on selected date
+            function updateStartTimeOptions() {
+                const selectedDate = dateInput.value;
+                const now = getNowInTZ();
+                const minBookingTime = new Date(now.getTime() + 60 * 60 * 1000); // +1 hour
+                const allOptions = generateTimeOptions();
+
+                // Clear current options except placeholder
+                startTimeSelect.innerHTML = '<option value="" disabled selected>-- Pilih Waktu Mulai --</option>';
+
+                const selectedDateObj = selectedDate ? new Date(selectedDate + 'T00:00:00') : null;
+                const isToday = selectedDate && formatDate(now) === selectedDate;
+
+                allOptions.forEach(time => {
+                    if (isToday) {
+                        const slotTime = new Date(selectedDate + 'T' + time + ':00');
+                        if (slotTime < minBookingTime) {
+                            return; // Skip slots less than 1 hour from now
+                        }
+                    }
+                    const opt = document.createElement('option');
+                    opt.value = time;
+                    opt.textContent = time;
+                    startTimeSelect.appendChild(opt);
+                });
+
+                // Reset end_time
+                endTimeSelect.innerHTML = '<option value="" disabled selected>-- Pilih Jam Mulai Dulu --</option>';
+                endTimeSelect.disabled = true;
+            }
+
+            // Filter and populate end_time select based on selected start_time
+            function updateEndTimeOptions() {
+                const startTime = startTimeSelect.value;
+                const selectedDate = dateInput.value;
+                const allOptions = generateTimeOptions();
+
+                endTimeSelect.innerHTML = '<option value="" disabled selected>-- Pilih Waktu Selesai --</option>';
+                endTimeSelect.disabled = !startTime;
+
+                if (!startTime || !selectedDate) return;
+
+                const startIdx = allOptions.indexOf(startTime);
+                if (startIdx === -1) return;
+
+                // Max 8 slots (4 hours) from start
+                const maxEndIdx = Math.min(startIdx + 8, allOptions.length - 1);
+
+                for (let i = startIdx + 1; i <= maxEndIdx; i++) {
+                    const opt = document.createElement('option');
+                    opt.value = allOptions[i];
+                    opt.textContent = allOptions[i];
+                    endTimeSelect.appendChild(opt);
+                }
+            }
+
+            // Sync slot grid selection with dropdowns
+            function syncGridWithDropdowns() {
+                if (!slotGridContainer) return;
+                const startVal = startTimeSelect.value;
+                const endVal = endTimeSelect.value;
+
+                document.querySelectorAll('.slot-item').forEach(el => {
+                    const slotStart = el.dataset.start;
+                    const slotEnd = el.dataset.end;
+                    const isSelected = startVal && endVal && slotStart === startVal && slotEnd === endVal;
+                    const isInRange = startVal && endVal && slotStart >= startVal && slotEnd <= endVal;
+
+                    if (isSelected) {
+                        el.classList.add('ring-2', 'ring-[#0051d5]', 'ring-offset-2');
+                    } else {
+                        el.classList.remove('ring-2', 'ring-[#0051d5]', 'ring-offset-2');
+                    }
+
+                    if (isInRange && !isSelected) {
+                        el.classList.add('bg-[#F2F3FF]');
+                    } else if (!isSelected) {
+                        el.classList.remove('bg-[#F2F3FF]');
+                    }
+                });
+            }
+
+            // Initialize date input min to today
+            const today = formatDate(getNowInTZ());
+            dateInput.min = today;
+
+            // If date is already set (old input), ensure it's not before today
+            if (dateInput.value && dateInput.value < today) {
+                dateInput.value = today;
+            }
+
+            // Event listeners
+            dateInput.addEventListener('change', function () {
+                updateStartTimeOptions();
+                // Reload slots via AJAX if needed (or page reload handled by form)
+                if (this.value) {
+                    const facilityId = document.getElementById('facility_id').value;
+                    if (facilityId) {
+                        // Reload page with new date to get updated slots from server
+                        const url = new URL('{{ route('reservasi.create') }}', window.location.origin);
+                        url.searchParams.set('facility_id', facilityId);
+                        url.searchParams.set('date', this.value);
+                        window.location.href = url.toString();
+                    }
+                }
+            });
+
+            startTimeSelect.addEventListener('change', function () {
+                updateEndTimeOptions();
+                syncGridWithDropdowns();
+            });
+
+            endTimeSelect.addEventListener('change', function () {
+                syncGridWithDropdowns();
+            });
+
+            // Slot grid click handling
+            if (slotGridContainer) {
+                slotGridContainer.addEventListener('click', function (e) {
+                    const slotEl = e.target.closest('.slot-item[data-state="available"]');
+                    if (!slotEl) return;
+
+                    const start = slotEl.dataset.start;
+                    const end = slotEl.dataset.end;
+
+                    // Find the range of slots to select (drag selection would be more complex)
+                    // For now, single slot selection on click
+                    startTimeSelect.value = start;
+                    updateEndTimeOptions();
+                    endTimeSelect.value = end;
+                    syncGridWithDropdowns();
+                });
+            }
+
+            // Initialize on load
+            if (dateInput.value) {
+                updateStartTimeOptions();
+                if ('{{ old('start_time') }}') {
+                    startTimeSelect.value = '{{ old('start_time') }}';
+                    updateEndTimeOptions();
+                    if ('{{ old('end_time') }}') {
+                        endTimeSelect.value = '{{ old('end_time') }}';
+                    }
+                }
+                syncGridWithDropdowns();
+            }
+        });
+    </script>
+@endpush
+
 @section('content')
     <div class="mx-auto max-w-4xl space-y-8">
         <div>
@@ -96,10 +287,10 @@
                                 <span class="h-2.5 w-2.5 rounded-full bg-rose-500"></span>
                                 Terisi (Approved)
                             </div>
-                            <div
+<div
                                 class="flex items-center gap-1.5 rounded-lg border border-slate-200 bg-slate-200 px-2.5 py-1 text-slate-600 font-medium shadow-2xs">
                                 <span class="h-2.5 w-2.5 rounded-full bg-slate-400"></span>
-                                Tidak Aktif (&lt; 30 Mnt / Lewat)
+                                Tidak Aktif (< 1 Jam / Lewat)
                             </div>
                         </div>
 
@@ -182,7 +373,7 @@
                 <p class="text-xs text-slate-500">
                     &bull; Durasi minimal: 1 slot (30 menit).<br>
                     &bull; Durasi maksimal: 8 slot (4 jam) per reservasi.<br>
-                    &bull; Waktu mulai minimal: 30 menit dari waktu saat ini.
+                    &bull; Waktu mulai minimal: 1 jam dari waktu saat ini.
                 </p>
 
                 {{-- Tujuan Peminjaman --}}
