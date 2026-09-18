@@ -226,7 +226,7 @@
                             <strong class="text-slate-800">Jam Operasional:</strong> Pukul 07.00 – 20.00 WIB (26 slot/hari, 30 menit per slot).
                         </li>
                         <li>
-                            <strong class="text-slate-800">Batas Pengajuan:</strong> Reservasi diajukan minimal 30 menit sebelum waktu mulai.
+                            <strong class="text-slate-800">Batas Pengajuan:</strong> Reservasi diajukan minimal 1 jam sebelum waktu mulai.
                         </li>
                         <li>
                             <strong class="text-slate-800">Privasi Publik:</strong> Jadwal dan ketersediaan dapat dilihat secara transparan tanpa menampilkan identitas pemohon.

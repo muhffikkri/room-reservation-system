@@ -99,13 +99,13 @@ it('fails closed when the facility is missing or not aktif', function () {
     expect(collectFailures(new FacilityBookable($facility->id)))->toBeEmpty();
 });
 
-it('rejects a start less than 30 minutes from now', function () {
+it('rejects a start less than 60 minutes from now', function () {
     $timezone = config('app.timezone');
     $start = Carbon::now($timezone)->addMinutes(10)->second(0);
     $start->minute((int) floor($start->minute / 30) * 30);
 
     expect(collectFailures(new BookingLeadTime($start)))
-        ->toBe(['Waktu mulai minimal 30 menit dari sekarang.']);
+        ->toBe(['Waktu mulai minimal 1 jam dari sekarang.']);
 
     expect(collectFailures(new BookingLeadTime(depthCarbon('2030-02-03', '08:00'))))->toBeEmpty();
 });

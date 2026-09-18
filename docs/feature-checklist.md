@@ -3,9 +3,9 @@
 | Meta | Nilai |
 |---|---|
 | Tanggal pembaruan | 2026-09-18 |
-| Referensi commit | `dc7e1a4` (2026-09-18, merge PR #52 — v1.2.1 release) |
+| Referensi commit | `feat/booking-1hour-lead-time` (branch kerja — BR-3: minimal 1 jam lead time) |
 | Dokumen sempai dasar | [spesifikasi-sistem-reservasi.md](spesifikasi-sistem-reservasi.md) |
-| Status publikasi | Checklist mengikuti **§16** dan **§8** dokumen spesifikasi — **v1.2.1 Released** |
+| Status publikasi | Checklist mengikuti **§16** dan **§8** dokumen spesifikasi — **BR-3 Updated** |
 
 > Dokumen ini menandai fitur yang **sudah** dan **belum** tersedia sampai commit tercantum di atas.
 > Status merujuk **`dev`** (commit `e03df57`). Fitur yang selesai di **branch kerja tim** tetapi belum masuk `dev` ditandai **Di Branch** pada kolom Catatan.
@@ -39,7 +39,7 @@
 |---|---|---|---|
 | BR-1 | Jam 07.00–20.00, slot 30 menit (26 slot/hari) | ✔ | `SlotTimeValid` |
 | BR-2 | `end > start`, durasi 1–8 slot | ✔ | `SlotTimeValid` |
-| BR-3 | Mulai min `now+30 mnt` | ✔ | `BookingLeadTime` |
+| BR-3 | Mulai min `now+1 jam` (60 menit) | ✔ | `BookingLeadTime` |
 | BR-4 | Maks 2 reservasi `pending`/hari/pengguna | ✔ | `PendingQuota` |
 | BR-5 | Fasilitas wajib `aktif` | ✔ | `FacilityBookable` |
 | BR-6 | Tanpa overlap dengan `approved` saat pengajuan | ✔ | `NoApprovedOverlap` |

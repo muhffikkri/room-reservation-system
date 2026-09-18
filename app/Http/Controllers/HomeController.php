@@ -124,7 +124,7 @@ class HomeController extends Controller
             return 'inactive';
         }
 
-        if ($start->lte(now())) {
+        if ($start->lt(now()->addMinutes(60))) {
             return 'past';
         }
 

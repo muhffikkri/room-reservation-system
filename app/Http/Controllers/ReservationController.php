@@ -198,8 +198,8 @@ class ReservationController extends Controller
             return 'inactive';
         }
 
-        // BR-3: Waktu mulai minimal now + 30 menit
-        if ($slotStart->isBefore(now()->addMinutes(30))) {
+        // BR-3: Waktu mulai minimal now + 1 jam (60 menit)
+        if ($slotStart->isBefore(now()->addMinutes(60))) {
             return 'inactive';
         }
 
