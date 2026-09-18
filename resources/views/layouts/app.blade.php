@@ -40,6 +40,8 @@
                             <a href="{{ route('admin.dashboard') }}" class="rounded-lg px-3 py-2 text-sm font-medium transition-colors {{ request()->routeIs('admin.dashboard') ? 'bg-[#F2F3FF] text-[#00236f]' : 'text-slate-600 hover:bg-[#F8FAFC] hover:text-[#00236f]' }}">Administrasi</a>
                             <a href="{{ route('admin.pengguna.verifikasi') }}" class="rounded-lg px-3 py-2 text-sm font-medium transition-colors {{ request()->routeIs('admin.pengguna.verifikasi') ? 'bg-[#F2F3FF] text-[#00236f]' : 'text-slate-600 hover:bg-[#F8FAFC] hover:text-[#00236f]' }}">Verifikasi Akun</a>
                             <a href="{{ route('admin.fasilitas.index') }}" class="rounded-lg px-3 py-2 text-sm font-medium transition-colors {{ request()->routeIs('admin.fasilitas.*') ? 'bg-[#F2F3FF] text-[#00236f]' : 'text-slate-600 hover:bg-[#F8FAFC] hover:text-[#00236f]' }}">Fasilitas</a>
+                            <a href="{{ route('admin.rekap.occupancy') }}" class="rounded-lg px-3 py-2 text-sm font-medium transition-colors {{ request()->routeIs('admin.rekap.occupancy*') ? 'bg-[#F2F3FF] text-[#00236f]' : 'text-slate-600 hover:bg-[#F8FAFC] hover:text-[#00236f]' }}">Rekap Okupansi</a>
+                            <a href="{{ route('admin.rekap.damage') }}" class="rounded-lg px-3 py-2 text-sm font-medium transition-colors {{ request()->routeIs('admin.rekap.damage*') ? 'bg-[#F2F3FF] text-[#00236f]' : 'text-slate-600 hover:bg-[#F8FAFC] hover:text-[#00236f]' }}">Rekap Kerusakan</a>
                         @endif
                     </div>
 
@@ -72,6 +74,8 @@
                             <a href="{{ route('admin.dashboard') }}" class="rounded-lg px-3 py-2.5 {{ request()->routeIs('admin.dashboard') ? 'bg-[#F2F3FF] text-[#00236f]' : 'text-slate-600 hover:bg-[#F8FAFC] hover:text-[#00236f]' }}">Administrasi</a>
                             <a href="{{ route('admin.pengguna.verifikasi') }}" class="rounded-lg px-3 py-2.5 {{ request()->routeIs('admin.pengguna.verifikasi') ? 'bg-[#F2F3FF] text-[#00236f]' : 'text-slate-600 hover:bg-[#F8FAFC] hover:text-[#00236f]' }}">Verifikasi Akun</a>
                             <a href="{{ route('admin.fasilitas.index') }}" class="rounded-lg px-3 py-2.5 {{ request()->routeIs('admin.fasilitas.*') ? 'bg-[#F2F3FF] text-[#00236f]' : 'text-slate-600 hover:bg-[#F8FAFC] hover:text-[#00236f]' }}">Fasilitas</a>
+                            <a href="{{ route('admin.rekap.occupancy') }}" class="rounded-lg px-3 py-2.5 {{ request()->routeIs('admin.rekap.occupancy*') ? 'bg-[#F2F3FF] text-[#00236f]' : 'text-slate-600 hover:bg-[#F8FAFC] hover:text-[#00236f]' }}">Rekap Okupansi</a>
+                            <a href="{{ route('admin.rekap.damage') }}" class="rounded-lg px-3 py-2.5 {{ request()->routeIs('admin.rekap.damage*') ? 'bg-[#F2F3FF] text-[#00236f]' : 'text-slate-600 hover:bg-[#F8FAFC] hover:text-[#00236f]' }}">Rekap Kerusakan</a>
                         @endif
                     </div>
                     <div class="mt-3 flex items-center justify-between border-t border-[#EEF2FF] px-3 pt-3 text-sm">
