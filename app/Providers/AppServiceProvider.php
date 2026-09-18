@@ -2,7 +2,10 @@
 
 namespace App\Providers;
 
+use App\Models\Report;
+use App\Models\Reservation;
 use App\Models\User;
+use App\Observers\RecapObserver;
 use App\Observers\UserObserver;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
@@ -25,6 +28,8 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         User::observe(UserObserver::class);
+        Reservation::observe(RecapObserver::class);
+        Report::observe(RecapObserver::class);
 
         RateLimiter::for('report-submissions', function (Request $request): array {
             $user = $request->user();

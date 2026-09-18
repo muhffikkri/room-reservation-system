@@ -3,10 +3,13 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Admin\RecapDateRangeRequest;
 use App\Services\RecapService;
-use Illuminate\Http\Request;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Log;
 use Illuminate\View\View;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class RecapController extends Controller
@@ -16,76 +19,73 @@ class RecapController extends Controller
     /**
      * Menampilkan halaman rekap okupansi.
      */
-    public function occupancy(Request $request): View
+    public function occupancy(RecapDateRangeRequest $request): View
     {
-        $validated = $request->validate([
-            'start_date' => ['nullable', 'date'],
-            'end_date' => ['nullable', 'date', 'after_or_equal:start_date'],
-        ]);
-
-        $startDate = isset($validated['start_date'])
-            ? Carbon::parse($validated['start_date'])->startOfDay()
-            : null;
-        $endDate = isset($validated['end_date'])
-            ? Carbon::parse($validated['end_date'])->endOfDay()
-            : null;
+        $start = microtime(true);
+        [$startDate, $endDate] = $request->getValidatedDates();
+        $dateStrings = $request->getDateStrings();
 
         $recap = $this->recapService->getOccupancyRecap($startDate, $endDate);
 
+        Log::info('RecapController: Occupancy page loaded', [
+            'user_id' => auth()->id(),
+            'date_range' => $recap['date_range'],
+            'facilities_count' => count($recap['data']),
+            'duration_ms' => round((microtime(true) - $start) * 1000, 2),
+        ]);
+
         return view('admin.rekap.occupancy', [
             'recap' => $recap,
-            'startDate' => $startDate?->toDateString() ?? Carbon::now()->subDays(30)->toDateString(),
-            'endDate' => $endDate?->toDateString() ?? Carbon::now()->toDateString(),
+            'startDate' => $dateStrings['startDate'],
+            'endDate' => $dateStrings['endDate'],
         ]);
     }
 
     /**
      * Menampilkan halaman rekap kerusakan.
      */
-    public function damage(Request $request): View
+    public function damage(RecapDateRangeRequest $request): View
     {
-        $validated = $request->validate([
-            'start_date' => ['nullable', 'date'],
-            'end_date' => ['nullable', 'date', 'after_or_equal:start_date'],
-        ]);
-
-        $startDate = isset($validated['start_date'])
-            ? Carbon::parse($validated['start_date'])->startOfDay()
-            : null;
-        $endDate = isset($validated['end_date'])
-            ? Carbon::parse($validated['end_date'])->endOfDay()
-            : null;
+        $start = microtime(true);
+        [$startDate, $endDate] = $request->getValidatedDates();
+        $dateStrings = $request->getDateStrings();
 
         $recap = $this->recapService->getDamageRecap($startDate, $endDate);
 
+        Log::info('RecapController: Damage page loaded', [
+            'user_id' => auth()->id(),
+            'date_range' => $recap['date_range'],
+            'facilities_count' => count($recap['data']),
+            'duration_ms' => round((microtime(true) - $start) * 1000, 2),
+        ]);
+
         return view('admin.rekap.damage', [
             'recap' => $recap,
-            'startDate' => $startDate?->toDateString() ?? Carbon::now()->subDays(30)->toDateString(),
-            'endDate' => $endDate?->toDateString() ?? Carbon::now()->toDateString(),
+            'startDate' => $dateStrings['startDate'],
+            'endDate' => $dateStrings['endDate'],
         ]);
     }
 
     /**
      * Ekspor rekap okupansi ke CSV.
      */
-    public function exportOccupancyCsv(Request $request): StreamedResponse
+    public function exportOccupancyCsv(RecapDateRangeRequest $request): StreamedResponse
     {
-        $validated = $request->validate([
-            'start_date' => ['nullable', 'date'],
-            'end_date' => ['nullable', 'date', 'after_or_equal:start_date'],
-        ]);
-
-        $startDate = isset($validated['start_date'])
-            ? Carbon::parse($validated['start_date'])->startOfDay()
-            : null;
-        $endDate = isset($validated['end_date'])
-            ? Carbon::parse($validated['end_date'])->endOfDay()
-            : null;
+        $start = microtime(true);
+        [$startDate, $endDate] = $request->getValidatedDates();
 
         $recap = $this->recapService->getOccupancyRecap($startDate, $endDate);
         $csv = $this->recapService->exportOccupancyCsv($recap);
 
         $filename = 'rekap-okupansi-'.Carbon::now()->format('Y-m-d').'.csv';
+
+        Log::info('RecapController: Occupancy CSV downloaded', [
+            'user_id' => auth()->id(),
+            'date_range' => $recap['date_range'],
+            'facilities_count' => count($recap['data']),
+            'duration_ms' => round((microtime(true) - $start) * 1000, 2),
+            'bytes' => strlen($csv),
+        ]);
 
         return response()->streamDownload(
             fn () => print ($csv),
@@ -97,24 +97,23 @@ class RecapController extends Controller
     /**
      * Ekspor rekap kerusakan ke CSV.
      */
-    public function exportDamageCsv(Request $request): StreamedResponse
+    public function exportDamageCsv(RecapDateRangeRequest $request): StreamedResponse
     {
-        $validated = $request->validate([
-            'start_date' => ['nullable', 'date'],
-            'end_date' => ['nullable', 'date', 'after_or_equal:start_date'],
-        ]);
-
-        $startDate = isset($validated['start_date'])
-            ? Carbon::parse($validated['start_date'])->startOfDay()
-            : null;
-        $endDate = isset($validated['end_date'])
-            ? Carbon::parse($validated['end_date'])->endOfDay()
-            : null;
+        $start = microtime(true);
+        [$startDate, $endDate] = $request->getValidatedDates();
 
         $recap = $this->recapService->getDamageRecap($startDate, $endDate);
         $csv = $this->recapService->exportDamageCsv($recap);
 
         $filename = 'rekap-kerusakan-'.Carbon::now()->format('Y-m-d').'.csv';
+
+        Log::info('RecapController: Damage CSV downloaded', [
+            'user_id' => auth()->id(),
+            'date_range' => $recap['date_range'],
+            'facilities_count' => count($recap['data']),
+            'duration_ms' => round((microtime(true) - $start) * 1000, 2),
+            'bytes' => strlen($csv),
+        ]);
 
         return response()->streamDownload(
             fn () => print ($csv),
@@ -124,60 +123,92 @@ class RecapController extends Controller
     }
 
     /**
-     * Ekspor rekap okupansi ke PDF (via HTML).
+     * Ekspor rekap okupansi ke PDF (using dompdf).
      */
-    public function exportOccupancyPdf(Request $request): StreamedResponse
+    public function exportOccupancyPdf(RecapDateRangeRequest $request): BinaryFileResponse|StreamedResponse
     {
-        $validated = $request->validate([
-            'start_date' => ['nullable', 'date'],
-            'end_date' => ['nullable', 'date', 'after_or_equal:start_date'],
-        ]);
-
-        $startDate = isset($validated['start_date'])
-            ? Carbon::parse($validated['start_date'])->startOfDay()
-            : null;
-        $endDate = isset($validated['end_date'])
-            ? Carbon::parse($validated['end_date'])->endOfDay()
-            : null;
+        $start = microtime(true);
+        [$startDate, $endDate] = $request->getValidatedDates();
 
         $recap = $this->recapService->getOccupancyRecap($startDate, $endDate);
         $html = $this->recapService->exportOccupancyHtml($recap);
 
         $filename = 'rekap-okupansi-'.Carbon::now()->format('Y-m-d').'.pdf';
 
-        return response()->streamDownload(
-            fn () => print ($html),
-            $filename,
-            ['Content-Type' => 'application/pdf']
-        );
+        try {
+            $pdf = Pdf::loadHTML($html)
+                ->setPaper('A4', 'landscape')
+                ->setOption('isHtml5ParserEnabled', true)
+                ->setOption('isRemoteEnabled', true);
+
+            Log::info('RecapController: Occupancy PDF generated', [
+                'user_id' => auth()->id(),
+                'date_range' => $recap['date_range'],
+                'facilities_count' => count($recap['data']),
+                'duration_ms' => round((microtime(true) - $start) * 1000, 2),
+            ]);
+
+            return $pdf->download($filename);
+        } catch (\Throwable $e) {
+            Log::error('RecapController: Occupancy PDF generation failed, falling back to HTML', [
+                'user_id' => auth()->id(),
+                'error' => $e->getMessage(),
+                'date_range' => $recap['date_range'],
+            ]);
+
+            // Fallback to HTML download
+            $htmlFilename = 'rekap-okupansi-'.Carbon::now()->format('Y-m-d').'.html';
+
+            return response()->streamDownload(
+                fn () => print ($html),
+                $htmlFilename,
+                ['Content-Type' => 'text/html; charset=UTF-8']
+            );
+        }
     }
 
     /**
-     * Ekspor rekap kerusakan ke PDF (via HTML).
+     * Ekspor rekap kerusakan ke PDF (using dompdf).
      */
-    public function exportDamagePdf(Request $request): StreamedResponse
+    public function exportDamagePdf(RecapDateRangeRequest $request): BinaryFileResponse|StreamedResponse
     {
-        $validated = $request->validate([
-            'start_date' => ['nullable', 'date'],
-            'end_date' => ['nullable', 'date', 'after_or_equal:start_date'],
-        ]);
-
-        $startDate = isset($validated['start_date'])
-            ? Carbon::parse($validated['start_date'])->startOfDay()
-            : null;
-        $endDate = isset($validated['end_date'])
-            ? Carbon::parse($validated['end_date'])->endOfDay()
-            : null;
+        $start = microtime(true);
+        [$startDate, $endDate] = $request->getValidatedDates();
 
         $recap = $this->recapService->getDamageRecap($startDate, $endDate);
         $html = $this->recapService->exportDamageHtml($recap);
 
         $filename = 'rekap-kerusakan-'.Carbon::now()->format('Y-m-d').'.pdf';
 
-        return response()->streamDownload(
-            fn () => print ($html),
-            $filename,
-            ['Content-Type' => 'application/pdf']
-        );
+        try {
+            $pdf = Pdf::loadHTML($html)
+                ->setPaper('A4', 'landscape')
+                ->setOption('isHtml5ParserEnabled', true)
+                ->setOption('isRemoteEnabled', true);
+
+            Log::info('RecapController: Damage PDF generated', [
+                'user_id' => auth()->id(),
+                'date_range' => $recap['date_range'],
+                'facilities_count' => count($recap['data']),
+                'duration_ms' => round((microtime(true) - $start) * 1000, 2),
+            ]);
+
+            return $pdf->download($filename);
+        } catch (\Throwable $e) {
+            Log::error('RecapController: Damage PDF generation failed, falling back to HTML', [
+                'user_id' => auth()->id(),
+                'error' => $e->getMessage(),
+                'date_range' => $recap['date_range'],
+            ]);
+
+            // Fallback to HTML download
+            $htmlFilename = 'rekap-kerusakan-'.Carbon::now()->format('Y-m-d').'.html';
+
+            return response()->streamDownload(
+                fn () => print ($html),
+                $htmlFilename,
+                ['Content-Type' => 'text/html; charset=UTF-8']
+            );
+        }
     }
 }
