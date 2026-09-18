@@ -2,7 +2,7 @@
 
 Format mengikuti riwayat commit tim. Tanggal terbaru di atas. Status merge: **Dev** = sudah masuk `dev`; **Branch** = masih di branch kerja anggota tim (belum di-merge ke `dev`).
 
-> Patokan status terakhir: `dev` = `1e5097c` (2026-09-17, merge PR #51 — UI accessibility & polish; baseline sebelumnya `e03df57`).
+> Patokan status terakhir: `v1.2.1` = `dc7e1a4` (2026-09-18, merge PR #52 — v1.2.1 release; baseline sebelumnya `1e5097c`).
 
 ---
 
@@ -14,9 +14,17 @@ _Bagian ini kosong; semua pekerjaan tim terkini sudah masuk `dev`._
 
 ---
 
-## [v1.2.1-dev] — Perkembangan `dev` sejak v1.2.0-dev (`e03df57` → `1e5097c`, 2026-09-17)
+## v1.2.1 — 2026-09-18 (Minor)
 
-Fitur berikut sudah masuk `dev` tetapi belum dipromosikan ke `staging`/`prod`. Release notes: [releases/v1.2.1.md](releases/v1.2.1.md) · snapshot 2026-09-17 · suite terverifikasi **180 tes / 664 assertions hijau** (MySQL, 2026-09-18).
+Rilis minor dari `v1.2.0-dev`: perbaikan UI accessibility (a11y), komponen skeleton loading, lazy-load images, password toggle, perbaikan dialog & navigasi keyboard, serta perbaikan minor UX petugas & laporan. Detail lengkap: [releases/v1.2.1.md](releases/v1.2.1.md).
+
+### Dev — penambahan fitur & perbaikan (PR #51 + perbaikan terkait)
+- **UI Accessibility (a11y) & Polish** (PR #51 `feat/ui-accessibility` → `1e5097c`): skip-to-content link di layout publik & auth (`4cf42dc`); schedule tabs keyboard-navigable di landing (`1af05e9`); submit-button loading states + lazy image fade-in (`b62ad14`); reusable skeleton loading component (`54bace9`); lazy-load images below the fold (`e9c8af3`); center dialogs, labels, autofocus, reduced motion support (`352c217`); show/hide password toggle di login & register (`a9f40ba`); hapus referensi internal dari teks terlihat (`2144273`).
+- **Petugas UX** (merge `df541a9`): item antrian laporan di dashboard petugas kini terhubung ke detail laporan.
+- **Laporan pengguna** (merge `c4251be`): tambah aksi "Lapor kerusakan lain" di halaman detail laporan.
+- **Admin facility form** (merge `32d0977`): konsistensi tinggi & padding input pada create/edit fasilitas admin.
+- **Fasilitas publik minor** (merge `c4692a3`, `352c217`): perbaikan layout jadwal & show fasilitas publik.
+- **Landing page facility count fix** (merge `dc7e1a4` PR #52): perbaikan hitungan total fasilitas di landing page agar konsisten dengan filter.
 
 ### Dev — penambahan fitur & perbaikan (PR #51 + perbaikan terkait)
 - **UI Accessibility (a11y) & Polish** (PR #51 `feat/ui-accessibility` → `1e5097c`): skip-to-content link di layout publik & auth (`4cf42dc`); schedule tabs keyboard-navigable di landing (`1af05e9`); submit-button loading states + lazy image fade-in (`b62ad14`); reusable skeleton loading component (`54bace9`); lazy-load images below the fold (`e9c8af3`); center dialogs, labels, autofocus, reduced motion support (`352c217`); show/hide password toggle di login & register (`a9f40ba`); hapus referensi internal dari teks terlihat (`2144273`).
@@ -99,6 +107,6 @@ Rilis stabil pertama. Detail lengkap: [releases/v1.0.0.md](releases/v1.0.0.md).
 
 ## Catatan Método
 
-- Rentang dok: `2026-08-30` → `2026-09-17`.
+- Rentang dok: `2026-08-30` → `2026-09-18`.
 - Commit tim di luar dev yang belum terdokumentasi di release: lihat bagian [Unreleased].
 - Snapshot detail per tanggal: `snapshots/`.

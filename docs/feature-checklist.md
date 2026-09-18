@@ -3,9 +3,9 @@
 | Meta | Nilai |
 |---|---|
 | Tanggal pembaruan | 2026-09-18 |
-| Referensi commit | `1e5097c` (2026-09-17, merge PR #51 — UI accessibility & polish) |
+| Referensi commit | `dc7e1a4` (2026-09-18, merge PR #52 — v1.2.1 release) |
 | Dokumen sempai dasar | [spesifikasi-sistem-reservasi.md](spesifikasi-sistem-reservasi.md) |
-| Status publikasi | Checklist mengikuti **§16** dan **§8** dokumen spesifikasi |
+| Status publikasi | Checklist mengikuti **§16** dan **§8** dokumen spesifikasi — **v1.2.1 Released** |
 
 > Dokumen ini menandai fitur yang **sudah** dan **belum** tersedia sampai commit tercantum di atas.
 > Status merujuk **`dev`** (commit `e03df57`). Fitur yang selesai di **branch kerja tim** tetapi belum masuk `dev` ditandai **Di Branch** pada kolom Catatan.
@@ -72,4 +72,4 @@
 
 ---
 
-*Terakhir diperbarui: 2026-09-18 · Komit referensi `1e5097c` (dev) · Status branch: seluruh fitur di atas sudah di-merge ke `dev`; branch `separate-admin-officer-roles`, `revert-30-feature/officer-report`, `test` tidak di-merge (superseded/stale).*
+*Terakhir diperbarui: 2026-09-18 · Komit referensi `dc7e1a4` (v1.2.1 tag) · Status branch: seluruh fitur di atas sudah di-merge ke `dev`; branch `separate-admin-officer-roles`, `revert-30-feature/officer-report`, `test` tidak di-merge (superseded/stale).*
