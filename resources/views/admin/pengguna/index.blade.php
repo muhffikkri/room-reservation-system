@@ -36,7 +36,7 @@
                         <td class="px-6 py-3">
                             @if ($user->account_status === 'ditolak')
                                 <form method="POST" action="{{ route('admin.pengguna.restore', $user) }}"
-                                      onsubmit="return confirm('Kembalikan akun ini ke pending?')">
+                                      data-confirm-message="Kembalikan akun ini ke pending?">
                                     @csrf
                                     @method('PATCH')
                                     <button type="submit"

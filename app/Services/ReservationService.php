@@ -30,28 +30,36 @@ class ReservationService
      */
     public function create(User $user, Facility $facility, Carbon $start, Carbon $end, string $purpose): Reservation
     {
-        // Aturan menerima Carbon langsung: tidak ada bongkar-pasang string,
-        // tidak ada parse ulang, tidak ada lolos diam-diam.
-        Validator::make([
-            'slot' => true,
-            'facility_id' => $facility->id,
-        ], [
-            'slot' => [new SlotTimeValid($start, $end)],
-            'facility_id' => [
-                new FacilityBookable($facility->id),
-                new BookingLeadTime($start),
-                new PendingQuota($user->id, $start),
-                new NoApprovedOverlap($facility->id, $start, $end),
-            ],
-        ])->validate();
+        $this->ensureActivePengguna($user);
 
         return DB::transaction(function () use ($user, $facility, $start, $end, $purpose): Reservation {
-            // Sistem memeriksa ulang bentrok di dalam transaksi karena
-            // reservasi lain dapat lolos validasi di atas lebih dulu.
-            // Bentrok di titik ini berarti kondisi balapan, sehingga
-            // sistem menjawab 409, bukan error validasi (BR-7).
+            $lockedUser = User::whereKey($user->id)->lockForUpdate()->firstOrFail();
+            $this->ensureActivePengguna($lockedUser);
+
+            $lockedFacility = Facility::whereKey($facility->id)->lockForUpdate()->firstOrFail();
+
+            // Semua aturan yang bergantung pada state database berjalan setelah
+            // row user dan fasilitas dikunci, sehingga validasi dan insert tidak
+            // dapat diselipkan request paralel (BR-4, BR-5, BR-6, BR-7).
+            Validator::make([
+                'slot' => true,
+                'purpose' => $purpose,
+                'facility_id' => $lockedFacility->id,
+            ], [
+                'slot' => [new SlotTimeValid($start, $end)],
+                'purpose' => ['required', 'string', 'min:10', 'max:255'],
+                'facility_id' => [
+                    new FacilityBookable($lockedFacility->id),
+                    new BookingLeadTime($start),
+                    new PendingQuota($lockedUser->id, $start),
+                    new NoApprovedOverlap($lockedFacility->id, $start, $end),
+                ],
+            ])->validate();
+
+            // Bentrok yang muncul dari writer di luar service berarti kondisi
+            // balapan; tetap jawab 409 agar caller tidak menganggap booking sukses.
             $conflict = Reservation::approved()
-                ->overlap($facility->id, $start, $end)
+                ->overlap($lockedFacility->id, $start, $end)
                 ->lockForUpdate()
                 ->exists();
 
@@ -60,8 +68,8 @@ class ReservationService
             }
 
             return Reservation::create([
-                'user_id' => $user->id,
-                'facility_id' => $facility->id,
+                'user_id' => $lockedUser->id,
+                'facility_id' => $lockedFacility->id,
                 'purpose' => $purpose,
                 'start_time' => $start,
                 'end_time' => $end,
@@ -80,6 +88,8 @@ class ReservationService
      */
     public function approve(Reservation $reservation, User $officer): Reservation
     {
+        $this->ensureActivePetugas($officer);
+
         return DB::transaction(function () use ($reservation, $officer): Reservation {
             // Sistem mengunci baris ini agar dua petugas yang menekan
             // approve bersamaan tidak meloloskan dua pemenang (BR-7).
@@ -94,7 +104,7 @@ class ReservationService
             $facility = Facility::whereKey($locked->facility_id)->lockForUpdate()->firstOrFail();
 
             if ($facility->status !== 'aktif') {
-                throw new ConflictHttpException('Fasilitas sedang berstatus ' . $facility->status . ' sehingga reservasi tidak dapat disetujui.');
+                throw new ConflictHttpException('Fasilitas sedang berstatus '.$facility->status.' sehingga reservasi tidak dapat disetujui.');
             }
 
             try {
@@ -128,6 +138,8 @@ class ReservationService
      */
     public function reject(Reservation $reservation, User $officer, string $reason): Reservation
     {
+        $this->ensureActivePetugas($officer);
+
         return DB::transaction(function () use ($reservation, $officer, $reason): Reservation {
             $locked = Reservation::whereKey($reservation->id)->lockForUpdate()->firstOrFail();
 
@@ -155,6 +167,8 @@ class ReservationService
      */
     public function cancel(Reservation $reservation, User $officer, string $reason): Reservation
     {
+        $this->ensureActivePetugas($officer);
+
         return DB::transaction(function () use ($reservation, $officer, $reason): Reservation {
             $locked = Reservation::whereKey($reservation->id)->lockForUpdate()->firstOrFail();
 
@@ -181,6 +195,8 @@ class ReservationService
      */
     public function cancelByUser(Reservation $reservation, User $user, ?string $reason = null): Reservation
     {
+        $this->ensureActivePengguna($user);
+
         return DB::transaction(function () use ($reservation, $user, $reason): Reservation {
             $locked = Reservation::whereKey($reservation->id)->lockForUpdate()->firstOrFail();
 
@@ -203,5 +219,19 @@ class ReservationService
 
             return $locked->refresh();
         });
+    }
+
+    private function ensureActivePengguna(User $user): void
+    {
+        if (! $user->isPengguna() || ! $user->isActive()) {
+            throw new AccessDeniedHttpException('Akun tidak memiliki akses ke operasi pengguna.');
+        }
+    }
+
+    private function ensureActivePetugas(User $user): void
+    {
+        if (! $user->isPetugas() || ! $user->isActive()) {
+            throw new AccessDeniedHttpException('Akun tidak memiliki akses ke operasi petugas.');
+        }
     }
 }

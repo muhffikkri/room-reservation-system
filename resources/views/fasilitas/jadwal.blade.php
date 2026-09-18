@@ -76,7 +76,7 @@
                 Fasilitas Sedang Dalam Perbaikan
             </div>
             <p class="mt-1 text-amber-700">
-                Seluruh slot ditandai sebagai tidak aktif karena fasilitas dalam masa pemeliharaan. Reservasi tidak dapat diajukan (BR-5, BR-12).
+                Seluruh slot ditandai sebagai tidak aktif karena fasilitas dalam masa pemeliharaan. Reservasi tidak dapat diajukan.
             </p>
         </div>
     @elseif ($facility->status === 'nonaktif')
@@ -103,7 +103,7 @@
                     id="date"
                     value="{{ $selectedDate->toDateString() }}"
                     class="h-10 rounded-lg border border-slate-300 bg-white px-3 text-sm text-slate-900 shadow-sm transition focus:border-[#0051d5] focus:outline-none focus:ring-4 focus:ring-[#E2E7FF]"
-                    onchange="this.form.submit()"
+                    data-submit-on-change
                 >
                 <button type="submit" class="rounded-lg bg-[#0051d5] px-4 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-[#00236f]">
                     Lihat Jadwal

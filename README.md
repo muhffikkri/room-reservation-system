@@ -27,9 +27,10 @@ Dokumen acuan:
 - Antrian reservasi petugas: daftar + filter status/tanggal, detail, setujui/tolak/batalkan dengan alasan (konfirmasi via dialog)
 - Laporan kerusakan pengguna (`/laporan`): buat laporan (kategori, deskripsi, foto), daftar & detail laporan milik sendiri
 - Antrian laporan petugas (`/petugas/laporan`): filter status, transisi `baru → diproses → selesai/tolak` dengan catatan resolusi, tandai fasilitas `perbaikan` ↔ `aktif` (BR-10, BR-11)
+- **Rekap okupansi & frekuensi kerusakan admin (`/admin/rekap/okupansi`, `/admin/rekap/kerusakan`): filter tanggal, ringkasan metrik, tabel per fasilitas, ekspor CSV & PDF (BR-12)**
 - Mesin aturan reservasi: slot 30 menit (07.00–20.00), kuota pending, lead time, anti-bentrok approved, approve dengan kunci transaksi
-- Seeder akun demo + fasilitas + data uji
-- 168 tes Pest — 627 assertions terverifikasi hijau (`php artisan test`, MySQL; 2026-09-16)
+- Seeder akun demo + fasilitas + data uji (password hanya dari environment lokal)
+- 180 tes Pest — 674 assertions terverifikasi hijau (`php artisan test`, MySQL; 2026-09-16)
 
 Status per fitur & business rules lengkap: [docs/feature-checklist.md](docs/feature-checklist.md).
 
@@ -42,8 +43,8 @@ Status per fitur & business rules lengkap: [docs/feature-checklist.md](docs/feat
 - **Otorisasi role**: grup route peran dipisah tegas — middleware `EnsureRole` (`role:pengguna`, `role:petugas`, `role:admin`) + kebijakan `ReportPolicy`/`ReservationPolicy`; verifikasi akun hanya admin.
 - **Service layer**: `ReservationService` (slot, bentrok, approve transaksi + `lockForUpdate`), `ReportService` (buat laporan + transisi status + audit + toggle status fasilitas), `AccountVerificationService` (audit verifikasi/pulihkan), `AccountStatusGate`, `AccountAttributes`.
 - **Validasi server** via FormRequest + custom Rule objects (`SlotTimeValid`, `NoApprovedOverlap`, `BookingLeadTime`, `PendingQuota`, `FacilityBookable`).
-- **Keamanan**: password bcrypt, CSRF di semua form, Eloquent binding bebas SQLi, output ter-escape (XSS), upload foto diverifikasi mimes+size, register & login di-throttle.
-- **Testing**: Pest (feature + unit) — 168 tes / 627 assertions hijau, termasuk unit test aturan slot/overlap, isolasi role, alur reservasi/pembatalan pengguna, laporan & fasilitas publik.
+- **Keamanan**: password bcrypt, CSRF di semua form, Eloquent binding bebas SQLi, output ter-escape (XSS), header keamanan/CSP, otorisasi berlapis, upload dibatasi mimes+size+dimensi dan laporan disimpan private, rate limit + quota, validasi reservasi atomic.
+- **Testing**: Pest (feature + unit) — 180 tes / 674 assertions hijau, termasuk regression test hardening keamanan.
 - **Deploy**: GitHub Actions (`.github/workflows/deploy.yml`) mendorong ke VPS saat push ke `dev`; aplikasi dikontainerkan (`Dockerfile`, `docker-compose.yml`).
 
 ## Stack
@@ -71,6 +72,7 @@ room-reservation-system/
 │   │   │   ├── Admin/           # dashboard, akun (pengguna/petugas/admin), verifikasi, CRUD fasilitas
 │   │   │   ├── ReservationController # alur reservasi pengguna (riwayat/baru/batal)
 │   │   │   ├── ReportController # laporan kerusakan pengguna (CRUD)
+│   │   │   ├── ReportPhotoController # serve foto laporan setelah policy authorize
 │   │   │   └── FacilityController # halaman publik fasilitas (katalog/detail/jadwal)
 │   │   ├── Middleware/          # EnsureRole, EnsureAccountActive
 │   │   └── Requests/            # Form Request (validasi server)
@@ -84,7 +86,7 @@ room-reservation-system/
 ├── config/                      # database.php, app.php (timezone Asia/Jakarta)
 ├── database/
 │   ├── migrations/
-│   └── seeders/                 # akun demo + fasilitas + data uji
+│   └── seeders/                 # akun demo + fasilitas + data uji (secret dari env)
 ├── docs/
 │   ├── spesifikasi-sistem-reservasi.md
 │   └── feature-checklist.md
@@ -117,12 +119,18 @@ npm install && npm run build      # atau npm run dev saat development
 
 cp .env.example .env              # sesuaikan kredensial DB
 php artisan key:generate
-php artisan migrate --seed
-php artisan storage:link          # agar foto fasilitas/laporan tampil
+php artisan migrate --seed       # isi SEED_*_PASSWORD secara lokal terlebih dahulu
+php artisan storage:link          # hanya untuk foto fasilitas publik; foto laporan via route terotorisasi
 php artisan serve                 # http://localhost:8000
 ```
 
-> **Akun demo tidak bisa login?** Pastikan langkah `php artisan migrate --seed` benar-benar dijalankan. Jika tabel `users` kosong (migrasi jalan tapi seed tidak), login ditolak meski kredensial sesuai — jalankan `php artisan db:seed` lalu coba lagi.
+> **Akun demo tidak bisa dibuat?** Pastikan `SEED_ADMIN_PASSWORD`, `SEED_OFFICER_PASSWORD`, `SEED_USER_PASSWORD`, dan `SEED_PENDING_PASSWORD` diisi secara lokal dengan secret unik minimal 12 karakter. Nilai password tidak disimpan di repository.
+
+Untuk deployment dari versi lama, backup storage terlebih dahulu lalu pindahkan attachment laporan lama ke disk private:
+
+```bash
+php artisan reports:protect-photos --delete-public
+```
 
 ### Dengan Docker
 
@@ -143,19 +151,21 @@ mysql -u root -p -e "CREATE DATABASE IF NOT EXISTS reservasi_kampus_testing CHAR
 vendor/bin/pest                   # atau: php artisan test --compact
 ```
 
-Bundle schema memakai sintaks MySQL (`MODIFY`, `CHARACTER SET`), jadi **sqlite in-memory tidak didukung** — tes memakai MySQL. Status terverifikasi: **168 tes / 627 assertions hijau** (2026-09-16).
+Bundle schema memakai sintaks MySQL (`MODIFY`, `CHARACTER SET`), jadi **sqlite in-memory tidak didukung** — tes memakai MySQL. Status terverifikasi: **180 tes / 674 assertions hijau** (2026-09-16).
 
 ### Akun Demo
 
-Disediakan oleh seeder (`php artisan db:seed`):
+Disediakan oleh seeder (`php artisan db:seed`). Password dibaca dari `SEED_*_PASSWORD` di environment lokal dan tidak dicantumkan di sini:
 
 | Role | Email | Password | Status |
 |---|---|---|---|
-| Admin | admin@kampus.test | admin123 | aktif |
-| Petugas | petugas@kampus.test | petugas123 | aktif |
-| Pengguna | budi@student.kampus.test | user123 | aktif |
-| Pengguna | sari@dosen.kampus.test | user123 | aktif |
-| Pengguna | pending@kampus.test | user123 | pending (demo verifikasi admin) |
+| Admin | admin@kampus.test | `SEED_ADMIN_PASSWORD` | aktif |
+| Petugas | petugas@kampus.test | `SEED_OFFICER_PASSWORD` | aktif |
+| Pengguna | budi@student.kampus.test | `SEED_USER_PASSWORD` | aktif |
+| Pengguna | sari@dosen.kampus.test | `SEED_USER_PASSWORD` | aktif |
+| Pengguna | pending@kampus.test | `SEED_PENDING_PASSWORD` | pending (demo verifikasi admin) |
+
+Catatan branch hardening: file Docker dan workflow deploy sengaja tidak diubah karena berada di luar scope owner branch ini; audit dan hardening Docker perlu dilakukan terpisah.
 
 ---
 

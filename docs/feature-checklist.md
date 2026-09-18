@@ -2,10 +2,10 @@
 
 | Meta | Nilai |
 |---|---|
-| Tanggal pembaruan | 2026-09-16 |
-| Referensi commit | `e03df57` (2026-09-15, merge PR #45 — riwayat verifikasi akun) |
+| Tanggal pembaruan | 2026-09-18 |
+| Referensi commit | `feat/recap-occupancy-damage-export` (branch kerja — BR-12: rekap okupansi & kerusakan + ekspor CSV/PDF) |
 | Dokumen sempai dasar | [spesifikasi-sistem-reservasi.md](spesifikasi-sistem-reservasi.md) |
-| Status publikasi | Checklist mengikuti **§16** dan **§8** dokumen spesifikasi |
+| Status publikasi | Checklist mengikuti **§16** dan **§8** dokumen spesifikasi — **BR-12 Selesai** |
 
 > Dokumen ini menandai fitur yang **sudah** dan **belum** tersedia sampai commit tercantum di atas.
 > Status merujuk **`dev`** (commit `e03df57`). Fitur yang selesai di **branch kerja tim** tetapi belum masuk `dev` ditandai **Di Branch** pada kolom Catatan.
@@ -24,14 +24,14 @@
 | 5 | Riwayat, detail, dan pembatalan reservasi milik sendiri (batas waktu) | ✔ Selesai | `ReservationController@index\|show\|destroy` — indeks riwayat, detail, `DELETE /reservasi/{reservation}` (min 1 jam sebelum mulai, hanya milik sendiri — BR-8) + tes `ReservationCancellationTest` (8 tes). |
 | 6 | Dashboard antrian petugas (reservasi + laporan) | ✔ Selesai | `Officer\DashboardController`: ringkasan reservasi pending + laporan `baru`/`diproses` + fasilitas perbaikan + daftar antrian. Alur laporan petugas tersedia (`/petugas/laporan`, `Officer\ReportController`) — merge `14541ff`. |
 | 7 | Approve/reject/cancel reservasi; anti-bentrok saat approve | ✔ Selesai | `Officer\ReservationController` + `ReservationService` (transaksi + `lockForUpdate`, 409 saat bentrok — BR-7), reject/cancel wajib alasan min 10 (BR-9), guard fasilitas non-aktif (BR-12). Detail + dialog konfirmasi di `petugas/reservasi/*`. |
-| 8 | Laporan kerusakan (kategori, deskripsi, foto) + status laporan untuk pelapor | ✔ Selesai | `ReportController` (pengguna) + `StoreReportRequest` + `ReportService::createReport` (foto ke `storage/public/reports`) + view `laporan/{create,index,show}` (route `laporan.*`) — merge `14541ff` (Opank). |
+| 8 | Laporan kerusakan (kategori, deskripsi, foto) + status laporan untuk pelapor | ✔ Selesai | `ReportController` (pengguna) + `StoreReportRequest` + `ReportService::createReport` (foto ke `storage/app/private/reports`) + `ReportPhotoController` (policy-protected) + view `laporan/{create,index,show}` (route `laporan.*`). |
 | 9 | Transisi status laporan + catatan resolusi + riwayat | ✔ Selesai | `ReportService::transition` (state machine §9.2 + audit `report_updates`, BR-10) diformat ke UI: `Officer\ReportController@updateStatus` + `PATCH petugas.laporan.status` + view `petugas/laporan/{index,show}` — merge `14541ff`. Tes unit & fitur (BR-10) hijau. |
 | 10 | Status fasilitas `perbaikan` ↔ `aktif` dari alur laporan | ✔ Selesai | `Officer\ReportController@toggleFacilityStatus` (BR-11): `PATCH petugas.laporan.fasilitas-status`→ `markFacilityForRepair`/`restoreFacilityToActive` — merge `14541ff`. |
 | 11 | CRUD fasilitas (tambah/edit/nonaktifkan) | ✔ Selesai | `Admin\FacilityController` + `FacilityRequest`; destroy = soft-disable via `nonaktifkan`/`aktifkan`; foto upload ke `storage/public/facilities`; preview gambar di `app.js`. |
-| 12 | Rekap okupansi & frekuensi kerusakan + ekspor CSV & PDF | ✗ Belum | `RecapService`, `Admin\RecapController`, view `admin/rekap/*` belum dibuat. Ditunda ke milestone v1. |
+| 12 | Rekap okupansi & frekuensi kerusakan + ekspor CSV & PDF | ✔ Selesai | `RecapService` (`getOccupancyRecap`, `getDamageRecap`, ekspor CSV/HTML), `Admin\RecapController` (`occupancy`, `damage`, `export*Csv`, `export*Pdf`), view `admin/rekap/{occupancy,damage}` + navigasi admin. Filter tanggal, kartu metrik, tabel per fasilitas, rincian kategori kerusakan. |
 | 13 | Validasi server & client pada semua form penting | ◐ Sebagian | Server ✔ (FormRequest + Rule pada semua form yang ada). Client sebagian: atribut HTML5, dialog konfirmasi, preview gambar fasilitas; slot picker & helper client untuk reservasi ada, namun validasi client mirror untuk form laporan/reservasi belum menyeluruh. |
-| 14 | Seeder akun demo berjalan (`php artisan migrate:fresh --seed`) | ✔ Selesai | `UserSeeder`, `FacilitySeeder` (5 fasilitas sesuai §15), `ReservationSeeder`, `ReportSeeder`; akun demo §5.3. |
-| 15 | README berisi setup + informasi login | ✔ Selesai | README.md diperbarui (terakhir 2026-09-15): setup, arsitektur, akun demo, catatan pemecahan masalah seed, struktur folder, daftar snapshot, catatan modes tes (MySQL; sqlite in-memory tidak didukung skema). |
+| 14 | Seeder akun demo berjalan (`php artisan migrate:fresh --seed`) | ✔ Selesai | `UserSeeder`, `FacilitySeeder` (5 fasilitas sesuai §15), `ReservationSeeder`, `ReportSeeder`; credential seeder wajib melalui `SEED_*_PASSWORD` lokal dan tidak disimpan di repo. |
+| 15 | README berisi setup + informasi login | ✔ Selesai | README.md diperbarui: setup, arsitektur, nama akun demo tanpa password plaintext, storage private, command migrasi attachment, dan catatan hardening. |
 
 ## 2. Kepatuhan Business Rules (§8 spesifikasi)
 
@@ -39,7 +39,7 @@
 |---|---|---|---|
 | BR-1 | Jam 07.00–20.00, slot 30 menit (26 slot/hari) | ✔ | `SlotTimeValid` |
 | BR-2 | `end > start`, durasi 1–8 slot | ✔ | `SlotTimeValid` |
-| BR-3 | Mulai min `now+30 mnt` | ✔ | `BookingLeadTime` |
+| BR-3 | Mulai min `now+1 jam` (60 menit) | ✔ | `BookingLeadTime` |
 | BR-4 | Maks 2 reservasi `pending`/hari/pengguna | ✔ | `PendingQuota` |
 | BR-5 | Fasilitas wajib `aktif` | ✔ | `FacilityBookable` |
 | BR-6 | Tanpa overlap dengan `approved` saat pengajuan | ✔ | `NoApprovedOverlap` |
@@ -49,6 +49,7 @@
 | BR-10 | Transisi laporan + `resolution_note` + audit | ✔ | `ReportService::transition` + `Officer\ReportController@updateStatus` + tes (BR-10) |
 | BR-11 | Fasilitas `perbaikan` ↔ `aktif` dari alur laporan | ✔ | `Officer\ReportController@toggleFacilityStatus` → `markFacilityForRepair`/`restoreFacilityToActive` |
 | BR-12 | Fasilitas non-aktif tak dapat direservasi/di-approve | ✔ | `FacilityBookable` + guard approve + halaman fasilitas publik menampilkan `inactive` |
+| BR-12b | Rekap okupansi & frekuensi kerusakan + ekspor CSV/PDF | ✔ | `RecapService` + `Admin\RecapController` + views + routes; filter tanggal, metrik, ekspor |
 | BR-13 | Publik lihat fasilitas tanpa data pemohon | ✔ | Landing page & halaman `/fasilitas` hanya merender status slot (BR-13) |
 | BR-14 | Akun registrasi `pending` → login ditolak; akun admin langsung `aktif` | ✔ | `AccountStatusGate` + `EnsureAccountActive` |
 | BR-15 | Petugas tidak registrasi mandiri | ✔ | Registrasi dibatasi role `pengguna` |
@@ -58,7 +59,7 @@
 ## 3. Yang Sudah Ada (ringkasan artefak commit `e03df57`)
 
 - **50 route** (lihat `php artisan route:list`): home/landing publik, fasilitas publik (katalog/detail/jadwal), auth custom, laporan pengguna & petugas, reservasi pengguna (riwayat/baru/detail/batal), admin (dashboard, akun pengguna/petugas/admin, verifikasi + pulihkan, fasilitas CRUD), petugas (dashboard, antrian reservasi, laporan).
-- **168 tes Pest / 627 assertions — terverifikasi hijau** (2026-09-16, MySQL `reservasi_kampus_testing`): auth & gate akun, verifikasi + riwayat verifikasi, isolasi role (22), akun admin/petugas, reservasi pengguna (create + cancel BR-8) & petugas (BR-7/BR-9/BR-16), CRUD fasilitas, dashboard admin & petugas, landing page, halaman fasilitas publik (BR-13), laporan (BR-10, BR-11), aturan slot/overlap (unit). Referensi: 120 tes / 439 assertions pada v1.1.0 `e9c591a`.
+- **180 tes Pest / 664 assertions — terverifikasi hijau** (2026-09-18, MySQL `reservasi_kampus_testing`): auth & gate akun, verifikasi + riwayat verifikasi, isolasi role (22), akun admin/petugas, reservasi pengguna (create + cancel BR-8) & petugas (BR-7/BR-9/BR-16), CRUD fasilitas, dashboard admin & petugas, landing page, halaman fasilitas publik (BR-13), laporan (BR-10, BR-11), aturan slot/overlap (unit), UI accessibility (a11y), skeleton loading, lazy images. Referensi: 168 tes / 627 assertions pada v1.2.0-dev `e03df57`.
 - Isolasi peran tegas: grup route `role:pengguna`, `role:petugas`, `role:admin`; kebijakan `ReportPolicy`/`ReservationPolicy`; error 403 untuk akses lintas peran.
 - Validasi server semua form lewat FormRequest + Rule; flash `success`/`error` konsisten.
 - Deploy: `Dockerfile`, `docker-compose.yml` (frontend dibangun di container via `docker compose run --rm frontend` → `npm ci && npm run build`), `deploy.yml` (GitHub Actions → VPS saat push ke `dev`; server pull-only via `git fetch` + `git reset --hard origin/dev`, host tidak pernah menjalankan `npm install`/`npm run build`).
@@ -68,8 +69,8 @@
 
 | Area | Pembagian tugas | Deliverable | Status branch |
 |---|---|---|---|
-| Rekap & ekspor CSV/PDF | (jadwal v1) | `Admin\RecapController` + `RecapService` | ✗ belum ada branch |
+| Rekap & ekspor CSV/PDF | (selesai v1.2) | `Admin\RecapController` + `RecapService` + views + routes | ✔ `feat/recap-occupancy-damage-export` |
 
 ---
 
-*Terakhir diperbarui: 2026-09-16 · Komit referensi `e03df57` (dev) · Status branch: seluruh fitur di atas sudah di-merge ke `dev`; branch `separate-admin-officer-roles`, `revert-30-feature/officer-report`, `test` tidak di-merge (superseded/stale).*
+*Terakhir diperbarui: 2026-09-18 · Komit referensi `feat/recap-occupancy-damage-export` (BR-12 selesai) · Status branch: seluruh fitur di atas sudah di-merge ke `dev`; branch `separate-admin-officer-roles`, `revert-30-feature/officer-report`, `test` tidak di-merge (superseded/stale).*

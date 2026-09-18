@@ -29,8 +29,8 @@ composer install
 copy .env.example .env        # lalu isi DB_PASSWORD sesuai MySQL mesin tsb
 php artisan key:generate
 php scripts/create-database.php   # membuat DB reservasi_kampus bila belum ada
-php artisan migrate --seed
-php artisan storage:link
+php artisan migrate --seed       # isi SEED_*_PASSWORD secara lokal terlebih dahulu
+php artisan storage:link          # foto fasilitas publik; foto laporan melalui route terotorisasi
 npm install && npm run build
 php artisan serve             # http://localhost:8000
 ```
@@ -38,7 +38,7 @@ php artisan serve             # http://localhost:8000
 - Jika layanan `MySQL80` berhenti: `net start MySQL80` **dari terminal Administrator**
   (proses biasa akan ditolak aksesnya).
 - `.env` TIDAK di-commit; setiap anggota mengisi `DB_PASSWORD` sendiri.
-- Akun demo hasil seeder ada di spec §5.3 (admin@kampus.test / admin123, dst).
+- Akun demo hasil seeder ada di spec §5.3; password dibaca dari `SEED_*_PASSWORD` dan tidak disimpan di repository.
 
 ## Jebakan Windows/PowerShell yang SUDAH PERNAH TERJADI — jangan ulangi
 

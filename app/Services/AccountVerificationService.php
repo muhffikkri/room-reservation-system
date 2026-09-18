@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\AccountVerificationAction;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
+use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 use Symfony\Component\HttpKernel\Exception\ConflictHttpException;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
@@ -25,6 +26,8 @@ class AccountVerificationService
      */
     public function verify(User $target, User $admin): User
     {
+        $this->ensureActiveAdmin($admin);
+
         return DB::transaction(function () use ($target, $admin): User {
             $locked = User::whereKey($target->id)->lockForUpdate()->firstOrFail();
 
@@ -55,6 +58,8 @@ class AccountVerificationService
      */
     public function reject(User $target, User $admin): User
     {
+        $this->ensureActiveAdmin($admin);
+
         return DB::transaction(function () use ($target, $admin): User {
             $locked = User::whereKey($target->id)->lockForUpdate()->firstOrFail();
 
@@ -88,6 +93,8 @@ class AccountVerificationService
      */
     public function restore(User $target, User $admin): User
     {
+        $this->ensureActiveAdmin($admin);
+
         return DB::transaction(function () use ($target, $admin): User {
             $locked = User::whereKey($target->id)->lockForUpdate()->firstOrFail();
 
@@ -118,5 +125,12 @@ class AccountVerificationService
             'action' => $action,
             'acted_at' => now(),
         ]);
+    }
+
+    private function ensureActiveAdmin(User $admin): void
+    {
+        if (! $admin->isAdmin() || ! $admin->isActive()) {
+            throw new AccessDeniedHttpException('Akun tidak memiliki akses verifikasi akun.');
+        }
     }
 }

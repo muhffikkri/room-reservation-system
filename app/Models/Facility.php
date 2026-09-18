@@ -7,9 +7,10 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
-#[Fillable(['name', 'type', 'location', 'capacity', 'description', 'photo', 'status'])]
+#[Fillable(['name', 'type', 'location', 'capacity', 'description', 'photo', 'status', 'repair_report_id'])]
 class Facility extends Model
 {
     /** @use HasFactory<FacilityFactory> */
@@ -23,6 +24,11 @@ class Facility extends Model
     public function reports(): HasMany
     {
         return $this->hasMany(Report::class);
+    }
+
+    public function repairReport(): BelongsTo
+    {
+        return $this->belongsTo(Report::class, 'repair_report_id');
     }
 
     /**

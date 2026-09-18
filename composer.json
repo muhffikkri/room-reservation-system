@@ -10,6 +10,7 @@
     "license": "MIT",
     "require": {
         "php": "^8.3",
+        "barryvdh/laravel-dompdf": "*",
         "laravel/framework": "^13.17",
         "laravel/tinker": "^3.0"
     },
@@ -48,6 +49,12 @@
         "dev": [
             "Composer\\Config::disableProcessTimeout",
             "@php artisan dev"
+        ],
+        "lint": [
+            "@php vendor/bin/pint --test"
+        ],
+        "format": [
+            "@php vendor/bin/pint"
         ],
         "test": [
             "@php artisan config:clear --ansi @no_additional_args",

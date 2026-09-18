@@ -54,7 +54,7 @@
                            class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm transition focus:border-[#0051d5] focus:outline-none focus:ring-4 focus:ring-[#E2E7FF]">
                 </div>
 
-                <button type="submit"
+                <button type="submit" data-submit-loading data-loading-label="Membuat akun..."
                         class="w-full rounded-lg bg-[#0051d5] px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-[#00236f] focus:outline-none focus:ring-2 focus:ring-[#0051d5] focus:ring-offset-2">
                     Buat Akun Admin
                 </button>

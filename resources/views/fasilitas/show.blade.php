@@ -56,7 +56,8 @@
                         <img
                             src="{{ asset('storage/' . $facility->photo) }}"
                             alt="{{ $facility->name }}"
-                            class="h-full w-full object-cover"
+                            loading="lazy"
+                            class="img-fade h-full w-full object-cover"
                         >
                     @else
                         <div class="flex h-full w-full flex-col items-center justify-center bg-gradient-to-br from-[#F2F3FF] to-[#E2E7FF] text-[#0051d5]/50">
@@ -155,7 +156,7 @@
                                 Sedang Dalam Perbaikan
                             </div>
                             <p class="mt-1 text-amber-700">
-                                Fasilitas ini sedang dalam masa perawatan/perbaikan sehingga tidak dapat dipesan sementara waktu (BR-5, BR-12).
+                                Fasilitas ini sedang dalam masa perawatan/perbaikan sehingga tidak dapat dipesan sementara waktu.
                             </p>
                         </div>
                     @else
@@ -225,7 +226,7 @@
                             <strong class="text-slate-800">Jam Operasional:</strong> Pukul 07.00 – 20.00 WIB (26 slot/hari, 30 menit per slot).
                         </li>
                         <li>
-                            <strong class="text-slate-800">Batas Pengajuan:</strong> Reservasi diajukan minimal 30 menit sebelum waktu mulai.
+                            <strong class="text-slate-800">Batas Pengajuan:</strong> Reservasi diajukan minimal 1 jam sebelum waktu mulai.
                         </li>
                         <li>
                             <strong class="text-slate-800">Privasi Publik:</strong> Jadwal dan ketersediaan dapat dilihat secara transparan tanpa menampilkan identitas pemohon.

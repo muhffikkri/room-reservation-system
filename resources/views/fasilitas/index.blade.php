@@ -147,7 +147,8 @@
                             <img
                                 src="{{ asset('storage/' . $facility->photo) }}"
                                 alt="{{ $facility->name }}"
-                                class="h-full w-full object-cover"
+                                loading="lazy"
+                                class="img-fade h-full w-full object-cover"
                             >
                         @else
                             <div class="flex h-full w-full items-center justify-center bg-gradient-to-br from-[#F2F3FF] to-[#E2E7FF] text-[#0051d5]/50">

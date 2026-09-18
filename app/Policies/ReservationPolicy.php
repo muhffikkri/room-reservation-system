@@ -12,7 +12,7 @@ class ReservationPolicy
      */
     public function viewAny(User $user): bool
     {
-        return $user->account_status === 'aktif';
+        return $user->isActive() && ($user->isPengguna() || $user->isPetugas());
     }
 
     /**
@@ -23,8 +23,9 @@ class ReservationPolicy
      */
     public function view(User $user, Reservation $reservation): bool
     {
-        return $user->id === $reservation->user_id
-            || $user->role === 'petugas';
+        return $user->isActive()
+            && (($user->isPengguna() && $user->id === $reservation->user_id)
+                || $user->isPetugas());
     }
 
     /**
@@ -32,7 +33,7 @@ class ReservationPolicy
      */
     public function create(User $user): bool
     {
-        return $user->account_status === 'aktif';
+        return $user->isActive() && $user->isPengguna();
     }
 
     /**
@@ -42,7 +43,7 @@ class ReservationPolicy
      */
     public function cancel(User $user, Reservation $reservation): bool
     {
-        if ($user->id !== $reservation->user_id) {
+        if (! $user->isActive() || ! $user->isPengguna() || $user->id !== $reservation->user_id) {
             return false;
         }
 

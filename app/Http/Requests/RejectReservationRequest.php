@@ -18,7 +18,8 @@ class RejectReservationRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return $this->user()?->isPetugas() || $this->user()?->isAdmin();
+        return $this->user()?->isPetugas() === true
+            && $this->user()?->isActive() === true;
     }
 
     /**

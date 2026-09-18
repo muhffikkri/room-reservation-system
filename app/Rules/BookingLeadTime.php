@@ -8,7 +8,7 @@ use Illuminate\Support\Carbon;
 use Illuminate\Translation\PotentiallyTranslatedString;
 
 /**
- * Batas mepet pengajuan (BR-5): mulai minimal 30 menit dari sekarang.
+ * Batas mepet pengajuan (BR-3): mulai minimal 60 menit (1 jam) dari sekarang.
  */
 class BookingLeadTime implements ValidationRule
 {
@@ -19,8 +19,8 @@ class BookingLeadTime implements ValidationRule
      */
     public function validate(string $attribute, mixed $value, Closure $fail): void
     {
-        if ($this->start->lt(Carbon::now(config('app.timezone'))->addMinutes(30))) {
-            $fail('Waktu mulai minimal 30 menit dari sekarang.');
+        if ($this->start->lt(Carbon::now(config('app.timezone'))->addMinutes(60))) {
+            $fail('Waktu mulai minimal 1 jam dari sekarang.');
         }
     }
 }
