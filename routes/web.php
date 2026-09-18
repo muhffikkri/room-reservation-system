@@ -5,6 +5,7 @@ use App\Http\Controllers\Admin\AdminAccountController;
 use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
 use App\Http\Controllers\Admin\FacilityController as AdminFacilityController;
 use App\Http\Controllers\Admin\OfficerAccountController;
+use App\Http\Controllers\Admin\RecapController;
 use App\Http\Controllers\Admin\UserAccountController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\LogoutController;
@@ -122,6 +123,20 @@ Route::middleware(['auth', 'active', 'role:admin'])->prefix('admin')->group(func
         ->name('admin.fasilitas.deactivate');
     Route::patch('/fasilitas/{facility}/aktifkan', [AdminFacilityController::class, 'activate'])
         ->name('admin.fasilitas.activate');
+
+    // Rekap okupansi & kerusakan
+    Route::get('/rekap/okupansi', [RecapController::class, 'occupancy'])
+        ->name('admin.rekap.occupancy');
+    Route::get('/rekap/okupansi/export/csv', [RecapController::class, 'exportOccupancyCsv'])
+        ->name('admin.rekap.occupancy.export.csv');
+    Route::get('/rekap/okupansi/export/pdf', [RecapController::class, 'exportOccupancyPdf'])
+        ->name('admin.rekap.occupancy.export.pdf');
+    Route::get('/rekap/kerusakan', [RecapController::class, 'damage'])
+        ->name('admin.rekap.damage');
+    Route::get('/rekap/kerusakan/export/csv', [RecapController::class, 'exportDamageCsv'])
+        ->name('admin.rekap.damage.export.csv');
+    Route::get('/rekap/kerusakan/export/pdf', [RecapController::class, 'exportDamagePdf'])
+        ->name('admin.rekap.damage.export.pdf');
 });
 
 Route::middleware('auth')->group(function (): void {

@@ -27,6 +27,7 @@ Dokumen acuan:
 - Antrian reservasi petugas: daftar + filter status/tanggal, detail, setujui/tolak/batalkan dengan alasan (konfirmasi via dialog)
 - Laporan kerusakan pengguna (`/laporan`): buat laporan (kategori, deskripsi, foto), daftar & detail laporan milik sendiri
 - Antrian laporan petugas (`/petugas/laporan`): filter status, transisi `baru → diproses → selesai/tolak` dengan catatan resolusi, tandai fasilitas `perbaikan` ↔ `aktif` (BR-10, BR-11)
+- **Rekap okupansi & frekuensi kerusakan admin (`/admin/rekap/okupansi`, `/admin/rekap/kerusakan`): filter tanggal, ringkasan metrik, tabel per fasilitas, ekspor CSV & PDF (BR-12)**
 - Mesin aturan reservasi: slot 30 menit (07.00–20.00), kuota pending, lead time, anti-bentrok approved, approve dengan kunci transaksi
 - Seeder akun demo + fasilitas + data uji (password hanya dari environment lokal)
 - 180 tes Pest — 674 assertions terverifikasi hijau (`php artisan test`, MySQL; 2026-09-16)

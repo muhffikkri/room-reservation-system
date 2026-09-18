@@ -8,6 +8,13 @@ Format mengikuti riwayat commit tim. Tanggal terbaru di atas. Status merge: **De
 
 ## [Unreleased] — Sedang dikerjakan di branch anggota tim
 
+### feat/recap-occupancy-damage-export — Rekap Okupansi & Frekuensi Kerusakan + Ekspor CSV/PDF (BR-12)
+- **Service layer**: `RecapService` dengan `getOccupancyRecap()` (per fasilitas: total reservasi, jam disetujui, max jam operasional, tingkat okupansi) dan `getDamageRecap()` (per fasilitas & kategori: baru/diproses/selesai/ditolak)
+- **Controller**: `Admin\RecapController` dengan halaman `occupancy` & `damage` + filter tanggal, ekspor CSV & PDF (via HTML untuk PDF)
+- **Views**: `admin/rekap/occupancy.blade.php` & `admin/rekap/damage.blade.php` — tabel ringkasan, kartu metrik, tombol ekspor, navigasi admin
+- **Routes**: `/admin/rekap/okupansi`, `/admin/rekap/kerusakan` + endpoint ekspor CSV/PDF
+- **Navigation**: Link "Rekap Okupansi" & "Rekap Kerusakan" ditambahkan ke sidebar admin (desktop & mobile)
+
 ### feat/booking-1hour-lead-time — Minimum 1 Hour Booking Lead Time (BR-3)
 - **Backend validation**: `BookingLeadTime` rule updated from 30 minutes to 60 minutes (1 hour)
 - **Slot grid (create form)**: `ReservationController::determineSlotState()` marks slots < 1 hour as `inactive`

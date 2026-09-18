@@ -3,9 +3,9 @@
 | Meta | Nilai |
 |---|---|
 | Tanggal pembaruan | 2026-09-18 |
-| Referensi commit | `feat/booking-1hour-lead-time` (branch kerja — BR-3: minimal 1 jam lead time) |
+| Referensi commit | `feat/recap-occupancy-damage-export` (branch kerja — BR-12: rekap okupansi & kerusakan + ekspor CSV/PDF) |
 | Dokumen sempai dasar | [spesifikasi-sistem-reservasi.md](spesifikasi-sistem-reservasi.md) |
-| Status publikasi | Checklist mengikuti **§16** dan **§8** dokumen spesifikasi — **BR-3 Updated** |
+| Status publikasi | Checklist mengikuti **§16** dan **§8** dokumen spesifikasi — **BR-12 Selesai** |
 
 > Dokumen ini menandai fitur yang **sudah** dan **belum** tersedia sampai commit tercantum di atas.
 > Status merujuk **`dev`** (commit `e03df57`). Fitur yang selesai di **branch kerja tim** tetapi belum masuk `dev` ditandai **Di Branch** pada kolom Catatan.
@@ -28,7 +28,7 @@
 | 9 | Transisi status laporan + catatan resolusi + riwayat | ✔ Selesai | `ReportService::transition` (state machine §9.2 + audit `report_updates`, BR-10) diformat ke UI: `Officer\ReportController@updateStatus` + `PATCH petugas.laporan.status` + view `petugas/laporan/{index,show}` — merge `14541ff`. Tes unit & fitur (BR-10) hijau. |
 | 10 | Status fasilitas `perbaikan` ↔ `aktif` dari alur laporan | ✔ Selesai | `Officer\ReportController@toggleFacilityStatus` (BR-11): `PATCH petugas.laporan.fasilitas-status`→ `markFacilityForRepair`/`restoreFacilityToActive` — merge `14541ff`. |
 | 11 | CRUD fasilitas (tambah/edit/nonaktifkan) | ✔ Selesai | `Admin\FacilityController` + `FacilityRequest`; destroy = soft-disable via `nonaktifkan`/`aktifkan`; foto upload ke `storage/public/facilities`; preview gambar di `app.js`. |
-| 12 | Rekap okupansi & frekuensi kerusakan + ekspor CSV & PDF | ✗ Belum | `RecapService`, `Admin\RecapController`, view `admin/rekap/*` belum dibuat. Ditunda ke milestone v1. |
+| 12 | Rekap okupansi & frekuensi kerusakan + ekspor CSV & PDF | ✔ Selesai | `RecapService` (`getOccupancyRecap`, `getDamageRecap`, ekspor CSV/HTML), `Admin\RecapController` (`occupancy`, `damage`, `export*Csv`, `export*Pdf`), view `admin/rekap/{occupancy,damage}` + navigasi admin. Filter tanggal, kartu metrik, tabel per fasilitas, rincian kategori kerusakan. |
 | 13 | Validasi server & client pada semua form penting | ◐ Sebagian | Server ✔ (FormRequest + Rule pada semua form yang ada). Client sebagian: atribut HTML5, dialog konfirmasi, preview gambar fasilitas; slot picker & helper client untuk reservasi ada, namun validasi client mirror untuk form laporan/reservasi belum menyeluruh. |
 | 14 | Seeder akun demo berjalan (`php artisan migrate:fresh --seed`) | ✔ Selesai | `UserSeeder`, `FacilitySeeder` (5 fasilitas sesuai §15), `ReservationSeeder`, `ReportSeeder`; credential seeder wajib melalui `SEED_*_PASSWORD` lokal dan tidak disimpan di repo. |
 | 15 | README berisi setup + informasi login | ✔ Selesai | README.md diperbarui: setup, arsitektur, nama akun demo tanpa password plaintext, storage private, command migrasi attachment, dan catatan hardening. |
@@ -49,6 +49,7 @@
 | BR-10 | Transisi laporan + `resolution_note` + audit | ✔ | `ReportService::transition` + `Officer\ReportController@updateStatus` + tes (BR-10) |
 | BR-11 | Fasilitas `perbaikan` ↔ `aktif` dari alur laporan | ✔ | `Officer\ReportController@toggleFacilityStatus` → `markFacilityForRepair`/`restoreFacilityToActive` |
 | BR-12 | Fasilitas non-aktif tak dapat direservasi/di-approve | ✔ | `FacilityBookable` + guard approve + halaman fasilitas publik menampilkan `inactive` |
+| BR-12b | Rekap okupansi & frekuensi kerusakan + ekspor CSV/PDF | ✔ | `RecapService` + `Admin\RecapController` + views + routes; filter tanggal, metrik, ekspor |
 | BR-13 | Publik lihat fasilitas tanpa data pemohon | ✔ | Landing page & halaman `/fasilitas` hanya merender status slot (BR-13) |
 | BR-14 | Akun registrasi `pending` → login ditolak; akun admin langsung `aktif` | ✔ | `AccountStatusGate` + `EnsureAccountActive` |
 | BR-15 | Petugas tidak registrasi mandiri | ✔ | Registrasi dibatasi role `pengguna` |
@@ -68,8 +69,8 @@
 
 | Area | Pembagian tugas | Deliverable | Status branch |
 |---|---|---|---|
-| Rekap & ekspor CSV/PDF | (jadwal v1) | `Admin\RecapController` + `RecapService` | ✗ belum ada branch |
+| Rekap & ekspor CSV/PDF | (selesai v1.2) | `Admin\RecapController` + `RecapService` + views + routes | ✔ `feat/recap-occupancy-damage-export` |
 
 ---
 
-*Terakhir diperbarui: 2026-09-18 · Komit referensi `dc7e1a4` (v1.2.1 tag) · Status branch: seluruh fitur di atas sudah di-merge ke `dev`; branch `separate-admin-officer-roles`, `revert-30-feature/officer-report`, `test` tidak di-merge (superseded/stale).*
+*Terakhir diperbarui: 2026-09-18 · Komit referensi `feat/recap-occupancy-damage-export` (BR-12 selesai) · Status branch: seluruh fitur di atas sudah di-merge ke `dev`; branch `separate-admin-officer-roles`, `revert-30-feature/officer-report`, `test` tidak di-merge (superseded/stale).*
