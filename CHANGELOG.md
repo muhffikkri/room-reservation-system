@@ -2,7 +2,7 @@
 
 Format mengikuti riwayat commit tim. Tanggal terbaru di atas. Status merge: **Dev** = sudah masuk `dev`; **Branch** = masih di branch kerja anggota tim (belum di-merge ke `dev`).
 
-> Patokan status terakhir: `dev` = `e03df57` (2026-09-15, merge PR #45 — riwayat verifikasi akun; baseline sebelumnya `e9c591a`).
+> Patokan status terakhir: `dev` = `1e5097c` (2026-09-17, merge PR #51 — UI accessibility & polish; baseline sebelumnya `e03df57`).
 
 ---
 
@@ -11,6 +11,19 @@ Format mengikuti riwayat commit tim. Tanggal terbaru di atas. Status merge: **De
 _Bagian ini kosong; semua pekerjaan tim terkini sudah masuk `dev`._
 
 > Tersisa satu deliverable spesifikasi: rekap okupansi & frekuensi kerusakan dengan ekspor CSV/PDF (`Admin\RecapController` + `RecapService`).
+
+---
+
+## [v1.2.1-dev] — Perkembangan `dev` sejak v1.2.0-dev (`e03df57` → `1e5097c`, 2026-09-17)
+
+Fitur berikut sudah masuk `dev` tetapi belum dipromosikan ke `staging`/`prod`. Release notes: [releases/v1.2.1.md](releases/v1.2.1.md) · snapshot 2026-09-17 · suite terverifikasi **180 tes / 664 assertions hijau** (MySQL, 2026-09-18).
+
+### Dev — penambahan fitur & perbaikan (PR #51 + perbaikan terkait)
+- **UI Accessibility (a11y) & Polish** (PR #51 `feat/ui-accessibility` → `1e5097c`): skip-to-content link di layout publik & auth (`4cf42dc`); schedule tabs keyboard-navigable di landing (`1af05e9`); submit-button loading states + lazy image fade-in (`b62ad14`); reusable skeleton loading component (`54bace9`); lazy-load images below the fold (`e9c8af3`); center dialogs, labels, autofocus, reduced motion support (`352c217`); show/hide password toggle di login & register (`a9f40ba`); hapus referensi internal dari teks terlihat (`2144273`).
+- **Petugas UX** (merge `df541a9`): item antrian laporan di dashboard petugas kini terhubung ke detail laporan.
+- **Laporan pengguna** (merge `c4251be`): tambah aksi "Lapor kerusakan lain" di halaman detail laporan.
+- **Admin facility form** (merge `32d0977`): konsistensi tinggi & padding input pada create/edit fasilitas admin.
+- **Fasilitas publik minor** (merge `c4692a3`, `352c217`): perbaikan layout jadwal & show fasilitas publik.
 
 ---
 
@@ -86,6 +99,6 @@ Rilis stabil pertama. Detail lengkap: [releases/v1.0.0.md](releases/v1.0.0.md).
 
 ## Catatan Método
 
-- Rentang dok: `2026-08-30` → `2026-09-15`.
+- Rentang dok: `2026-08-30` → `2026-09-17`.
 - Commit tim di luar dev yang belum terdokumentasi di release: lihat bagian [Unreleased].
 - Snapshot detail per tanggal: `snapshots/`.

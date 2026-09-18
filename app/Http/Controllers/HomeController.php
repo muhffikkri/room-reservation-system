@@ -50,7 +50,7 @@ class HomeController extends Controller
 
         [$minCapacity, $maxCapacity] = self::CAPACITY_RANGES[$filters['capacity'] ?? ''] ?? [null, null];
 
-        $facilities = Facility::search(
+        $facilitiesQuery = Facility::search(
             $filters['q'] ?? null,
             $filters['type'] ?? null,
             $filters['location'] ?? null,
@@ -58,9 +58,10 @@ class HomeController extends Controller
         )
             ->when($maxCapacity !== null, fn ($query) => $query->where('capacity', '<=', $maxCapacity))
             ->orderByRaw('CASE status WHEN "aktif" THEN 0 ELSE 1 END')
-            ->orderBy('name')
-            ->limit(self::MAX_PUBLIC_FACILITIES)
-            ->get();
+            ->orderBy('name');
+
+        $totalFacilities = $facilitiesQuery->count();
+        $facilities = $facilitiesQuery->limit(self::MAX_PUBLIC_FACILITIES)->get();
 
         $dayStart = now()->copy()->startOfDay()->setTime(self::OPERATIONAL_START_HOUR, 0);
         $dayEnd = $dayStart->copy()->addMinutes(self::SLOT_COUNT * 30);
@@ -83,7 +84,7 @@ class HomeController extends Controller
             'filters' => $filters,
             'typeLabels' => self::TYPE_LABELS,
             'locationOptions' => Facility::query()->orderBy('location')->distinct()->limit(self::MAX_PUBLIC_FACILITIES)->pluck('location'),
-            'totalFacilities' => Facility::aktif()->count(),
+            'totalFacilities' => $totalFacilities,
             'today' => now(),
         ]);
     }
