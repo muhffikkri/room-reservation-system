@@ -110,7 +110,7 @@
                             <div class="flex items-start justify-between gap-3">
                                 <div class="min-w-0">
                                     <p class="truncate text-sm font-semibold text-slate-800">{{ $report->facility?->name ?? 'Fasilitas dihapus' }}</p>
-                                    <p class="mt-1 truncate text-xs text-slate-500">{{ str_replace('_', ' ', ucfirst($report->category)) }} · {{ $report->created_at->format('d M Y') }}</p>
+                                    <p class="mt-1 truncate text-xs text-slate-500">{{ $report->categoryLabel() }} · {{ $report->created_at->format('d M Y') }}</p>
                                 </div>
                                 <span class="shrink-0 rounded-full px-2.5 py-1 text-xs font-semibold {{ $status['class'] }}">{{ $status['label'] }}</span>
                             </div>

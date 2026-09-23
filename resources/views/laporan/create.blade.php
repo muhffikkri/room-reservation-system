@@ -38,11 +38,9 @@
                 <label for="category" class="block text-sm font-medium text-slate-700">Kategori Kerusakan <span class="text-rose-500">*</span></label>
                 <select id="category" name="category" required class="mt-1 block w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-[#0051d5] focus:outline-none focus:ring-1 focus:ring-[#0051d5]">
                     <option value="" disabled {{ old('category') ? '' : 'selected' }}>-- Pilih Kategori --</option>
-                    <option value="kerusakan_alat" {{ old('category') === 'kerusakan_alat' ? 'selected' : '' }}>Kerusakan Alat</option>
-                    <option value="listrik" {{ old('category') === 'listrik' ? 'selected' : '' }}>Kelistrikan / Lampu / AC</option>
-                    <option value="kebersihan" {{ old('category') === 'kebersihan' ? 'selected' : '' }}>Kebersihan</option>
-                    <option value="sarana_prasarana" {{ old('category') === 'sarana_prasarana' ? 'selected' : '' }}>Sarana & Prasarana (Meja, Kursi, Pintu)</option>
-                    <option value="lainnya" {{ old('category') === 'lainnya' ? 'selected' : '' }}>Lainnya</option>
+                    @foreach(\App\Models\Report::CATEGORIES as $value => $label)
+                        <option value="{{ $value }}" {{ old('category') === $value ? 'selected' : '' }}>{{ $label }}</option>
+                    @endforeach
                 </select>
                 @error('category')
                     <p class="mt-1 text-xs text-rose-600">{{ $message }}</p>

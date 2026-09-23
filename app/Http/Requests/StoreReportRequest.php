@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Models\Report;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -29,7 +30,7 @@ class StoreReportRequest extends FormRequest
                 'required',
                 Rule::exists('facilities', 'id')->where('status', 'aktif'),
             ],
-            'category' => ['required', Rule::in(['kerusakan_alat', 'listrik', 'kebersihan', 'sarana_prasarana', 'lainnya'])],
+            'category' => ['required', Rule::in(array_keys(Report::CATEGORIES))],
             'description' => ['required', 'string', 'min:15', 'max:2000'],
             'photo' => [
                 'nullable',

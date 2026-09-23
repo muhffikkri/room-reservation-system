@@ -45,7 +45,7 @@
             </div>
             <div>
                 <h3 class="text-xs font-semibold uppercase tracking-[0.16em] text-[#0051d5]">Kategori Kerusakan</h3>
-                <p class="mt-1 text-base font-medium capitalize text-[#00236f]">{{ str_replace('_', ' ', $report->category) }}</p>
+                <p class="mt-1 text-base font-medium text-[#00236f]">{{ $report->categoryLabel() }}</p>
             </div>
         </div>
 

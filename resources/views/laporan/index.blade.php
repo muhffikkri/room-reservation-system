@@ -53,8 +53,8 @@
                                     <div>{{ $report->facility->name }}</div>
                                     <div class="text-xs text-slate-500 font-normal">{{ $report->facility->location }}</div>
                                 </td>
-                                <td class="px-6 py-4 capitalize">
-                                    {{ str_replace('_', ' ', $report->category) }}
+                                <td class="px-6 py-4">
+                                    {{ $report->categoryLabel() }}
                                 </td>
                                 <td class="px-6 py-4">
                                     @php

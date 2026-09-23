@@ -24,6 +24,21 @@ class Report extends Model
     use HasFactory;
 
     /**
+     * Daftar kategori kerusakan: key adalah nilai yang disimpan di DB,
+     * value adalah label yang ditampilkan ke pengguna. Satu-satunya
+     * sumber kebenaran untuk dropdown form, validasi, dan tampilan.
+     *
+     * @var array<string, string>
+     */
+    public const CATEGORIES = [
+        'kerusakan_alat' => 'Kerusakan Alat',
+        'listrik' => 'Kelistrikan / Lampu / AC',
+        'kebersihan' => 'Kebersihan',
+        'sarana_prasarana' => 'Sarana & Prasarana (Meja, Kursi, Pintu)',
+        'lainnya' => 'Lainnya',
+    ];
+
+    /**
      * Get the attributes that should be cast.
      *
      * @return array<string, string>
@@ -58,5 +73,10 @@ class Report extends Model
     public function scopeStatus(Builder $query, string $status): Builder
     {
         return $query->where('status', $status);
+    }
+
+    public function categoryLabel(): string
+    {
+        return self::CATEGORIES[$this->category] ?? ucfirst(str_replace('_', ' ', (string) $this->category));
     }
 }
