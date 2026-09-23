@@ -3,13 +3,16 @@
 use App\Models\Facility;
 use App\Models\Reservation;
 use App\Models\User;
-use App\Rules\BookingLeadTime;
-use App\Rules\FacilityBookable;
-use App\Rules\PendingQuota;
+use App\Services\ReservationAvailability;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
 
 uses(RefreshDatabase::class);
+
+function depthAvailability(): ReservationAvailability
+{
+    return app(ReservationAvailability::class);
+}
 
 function depthActors(): array
 {
@@ -24,16 +27,6 @@ function depthCarbon(string $date, string $time): Carbon
     return Carbon::parse("{$date} {$time}", config('app.timezone'));
 }
 
-function collectFailures(object $rule): array
-{
-    $failures = [];
-    $rule->validate('slot', true, function (string $message) use (&$failures): void {
-        $failures[] = $message;
-    });
-
-    return $failures;
-}
-
 it('lets the pending queue through but blocks on approved overlap', function () {
     [$facility, $user] = depthActors();
 
@@ -45,11 +38,11 @@ it('lets the pending queue through but blocks on approved overlap', function () 
         'end_time' => depthCarbon('2030-02-01', '09:00'),
     ]);
 
-    expect(Reservation::blockingOverlap(
+    expect(depthAvailability()->hasBlockingOverlap(
         $facility->id,
         depthCarbon('2030-02-01', '08:30'),
         depthCarbon('2030-02-01', '09:00'),
-    )->exists())->toBeFalse();
+    ))->toBeFalse();
 
     Reservation::factory()->create([
         'user_id' => $user->id,
@@ -59,11 +52,11 @@ it('lets the pending queue through but blocks on approved overlap', function () 
         'end_time' => depthCarbon('2030-02-01', '11:00'),
     ]);
 
-    expect(Reservation::blockingOverlap(
+    expect(depthAvailability()->hasBlockingOverlap(
         $facility->id,
         depthCarbon('2030-02-01', '10:30'),
         depthCarbon('2030-02-01', '11:00'),
-    )->exists())->toBeTrue();
+    ))->toBeTrue();
 });
 
 it('excludes the reservation being decided from its own overlap check', function () {
@@ -77,26 +70,34 @@ it('excludes the reservation being decided from its own overlap check', function
         'end_time' => depthCarbon('2030-02-02', '09:00'),
     ]);
 
-    $overlapping = [depthCarbon('2030-02-02', '08:30'), depthCarbon('2030-02-02', '09:00')];
+    expect(depthAvailability()->hasBlockingOverlap(
+        $facility->id,
+        depthCarbon('2030-02-02', '08:30'),
+        depthCarbon('2030-02-02', '09:00'),
+    ))->toBeTrue();
 
-    expect(Reservation::blockingOverlap($facility->id, ...$overlapping)->exists())->toBeTrue();
-    expect(Reservation::blockingOverlap($facility->id, $overlapping[0], $overlapping[1], $reservation->id)->exists())->toBeFalse();
+    expect(depthAvailability()->hasBlockingOverlap(
+        $facility->id,
+        depthCarbon('2030-02-02', '08:30'),
+        depthCarbon('2030-02-02', '09:00'),
+        $reservation->id,
+    ))->toBeFalse();
 });
 
 it('fails closed when the facility is missing or not aktif', function () {
     [$facility] = depthActors();
 
-    expect(collectFailures(new FacilityBookable(999999)))
-        ->toBe(['Fasilitas tidak ditemukan.']);
+    expect(depthAvailability()->facilityUnavailabilityError(Facility::find(999999)))
+        ->toBe('Fasilitas tidak ditemukan.');
 
     $facility->update(['status' => 'perbaikan']);
 
-    expect(collectFailures(new FacilityBookable($facility->id)))
-        ->toBe(['Fasilitas tidak dapat direservasi karena berstatus perbaikan.']);
+    expect(depthAvailability()->facilityUnavailabilityError($facility))
+        ->toBe('Fasilitas tidak dapat direservasi karena berstatus perbaikan.');
 
     $facility->update(['status' => 'aktif']);
 
-    expect(collectFailures(new FacilityBookable($facility->id)))->toBeEmpty();
+    expect(depthAvailability()->facilityUnavailabilityError($facility))->toBeNull();
 });
 
 it('rejects a start less than 60 minutes from now', function () {
@@ -104,10 +105,20 @@ it('rejects a start less than 60 minutes from now', function () {
     $start = Carbon::now($timezone)->addMinutes(10)->second(0);
     $start->minute((int) floor($start->minute / 30) * 30);
 
-    expect(collectFailures(new BookingLeadTime($start)))
-        ->toBe(['Waktu mulai minimal 1 jam dari sekarang.']);
+    expect(depthAvailability()->leadTimeError($start))
+        ->toBe('Waktu mulai minimal 1 jam dari sekarang.');
 
-    expect(collectFailures(new BookingLeadTime(depthCarbon('2030-02-03', '08:00'))))->toBeEmpty();
+    expect(depthAvailability()->leadTimeError(depthCarbon('2030-02-03', '08:00')))->toBeNull();
+});
+
+it('accepts a start exactly 60 minutes from now', function () {
+    Carbon::setTestNow(Carbon::parse('2026-09-09 09:00:00'));
+
+    $cutoff = depthAvailability()->leadTimeCutoff();
+
+    expect(depthAvailability()->leadTimeError($cutoff))->toBeNull();
+
+    Carbon::setTestNow();
 });
 
 it('rejects the third pending reservation on the same day', function () {
@@ -128,10 +139,10 @@ it('rejects the third pending reservation on the same day', function () {
         'end_time' => depthCarbon('2030-02-04', '11:00'),
     ]);
 
-    expect(collectFailures(new PendingQuota($user->id, depthCarbon('2030-02-04', '13:00'))))
-        ->toBe(['Maksimal 2 reservasi pending per hari untuk satu pengguna.']);
+    expect(depthAvailability()->pendingQuotaError($user->id, depthCarbon('2030-02-04', '13:00')))
+        ->toBe('Maksimal 2 reservasi pending per hari untuk satu pengguna.');
 
     $other = User::factory()->create(['role' => 'pengguna', 'account_status' => 'aktif']);
 
-    expect(collectFailures(new PendingQuota($other->id, depthCarbon('2030-02-04', '13:00'))))->toBeEmpty();
+    expect(depthAvailability()->pendingQuotaError($other->id, depthCarbon('2030-02-04', '13:00')))->toBeNull();
 });
