@@ -4,9 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Models\Facility;
 use App\Models\Reservation;
+use App\Services\ReservationAvailability;
 use Illuminate\Http\Request;
-use Illuminate\Support\Carbon;
-use Illuminate\Support\Collection;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
@@ -16,6 +15,8 @@ use Illuminate\View\View;
  * Menampilkan katalog fasilitas dengan filter pencarian dan grid slot 30 menit
  * (BR-1). Hanya reservasi approved yang memblokir slot (BR-6, BR-12), dan
  * identitas pemohon/tujuan tidak pernah dikirim ke halaman publik (BR-13).
+ * Grid pratinjau memakai proyeksi booking dari ReservationAvailability agar
+ * lewatnya lead time (BR-3) konsisten dengan formulir pemesanan.
  */
 class HomeController extends Controller
 {
@@ -33,11 +34,11 @@ class HomeController extends Controller
         'gt_100' => [101, PHP_INT_MAX],
     ];
 
-    private const OPERATIONAL_START_HOUR = 7;
-
-    private const SLOT_COUNT = 26;
-
     private const MAX_PUBLIC_FACILITIES = 50;
+
+    public function __construct(
+        protected ReservationAvailability $availability,
+    ) {}
 
     public function __invoke(Request $request): View
     {
@@ -63,8 +64,8 @@ class HomeController extends Controller
         $totalFacilities = $facilitiesQuery->count();
         $facilities = $facilitiesQuery->limit(self::MAX_PUBLIC_FACILITIES)->get();
 
-        $dayStart = now()->copy()->startOfDay()->setTime(self::OPERATIONAL_START_HOUR, 0);
-        $dayEnd = $dayStart->copy()->addMinutes(self::SLOT_COUNT * 30);
+        $dayStart = $this->availability->dayStart(now());
+        $dayEnd = $this->availability->dayEnd(now());
         $approvedByFacility = collect();
 
         if ($facilities->isNotEmpty()) {
@@ -79,7 +80,11 @@ class HomeController extends Controller
         return view('landing.index', [
             'facilities' => $facilities,
             'grids' => $facilities->mapWithKeys(fn (Facility $facility) => [
-                $facility->id => $this->todaySlots($facility, $approvedByFacility->get($facility->id, collect())),
+                $facility->id => $this->availability->bookingSlots(
+                    $facility,
+                    now(),
+                    $approvedByFacility->get($facility->id, collect()),
+                ),
             ]),
             'filters' => $filters,
             'typeLabels' => self::TYPE_LABELS,
@@ -87,47 +92,5 @@ class HomeController extends Controller
             'totalFacilities' => $totalFacilities,
             'today' => now(),
         ]);
-    }
-
-    /**
-     * Grid 26 slot 07.00–20.00 (BR-1) untuk tanggal hari ini dengan status:
-     * past (mulai sudah lewat), booked (ada reservasi approved yang overlap),
-     * available, atau inactive (fasilitas tidak aktif — BR-12).
-     */
-    private function todaySlots(Facility $facility, Collection $approved): array
-    {
-        $dayStart = now()->copy()->startOfDay()->setTime(self::OPERATIONAL_START_HOUR, 0);
-
-        $slots = [];
-
-        for ($i = 0; $i < self::SLOT_COUNT; $i++) {
-            $start = $dayStart->copy()->addMinutes($i * 30);
-            $end = $start->copy()->addMinutes(30);
-
-            $booked = $approved->contains(
-                fn ($reservation): bool => $reservation->start_time->lt($end) && $reservation->end_time->gt($start),
-            );
-
-            $slots[] = [
-                'start' => $start->format('H.i'),
-                'end' => $end->format('H.i'),
-                'state' => $this->slotState($facility, $start, $booked),
-            ];
-        }
-
-        return $slots;
-    }
-
-    private function slotState(Facility $facility, Carbon $start, bool $booked): string
-    {
-        if ($facility->status !== 'aktif') {
-            return 'inactive';
-        }
-
-        if ($start->lt(now()->addMinutes(60))) {
-            return 'past';
-        }
-
-        return $booked ? 'booked' : 'available';
     }
 }

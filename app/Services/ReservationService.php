@@ -5,11 +5,6 @@ namespace App\Services;
 use App\Models\Facility;
 use App\Models\Reservation;
 use App\Models\User;
-use App\Rules\BookingLeadTime;
-use App\Rules\FacilityBookable;
-use App\Rules\NoApprovedOverlap;
-use App\Rules\PendingQuota;
-use App\Rules\SlotTimeValid;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
@@ -18,13 +13,15 @@ use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 use Symfony\Component\HttpKernel\Exception\ConflictHttpException;
 
 /**
- * Satu-satunya pemilik aturan Slot + Overlap (BR-1..BR-7).
- *
- * FormRequest, grid jadwal, dan aksi petugas semuanya bermuara ke sini,
- * sehingga definisi bentrok dan slot tidak pernah diduplikasi.
+ * Mutasi reservasi + transaksi/lock; keputusan ketersediaan slot dimiliki
+ * ReservationAvailability (BR-1..BR-7, BR-12).
  */
 class ReservationService
 {
+    public function __construct(
+        protected ReservationAvailability $availability,
+    ) {}
+
     /**
      * Ajukan reservasi baru berstatus pending (BR-4, BR-5, BR-6).
      */
@@ -41,19 +38,16 @@ class ReservationService
             // Semua aturan yang bergantung pada state database berjalan setelah
             // row user dan fasilitas dikunci, sehingga validasi dan insert tidak
             // dapat diselipkan request paralel (BR-4, BR-5, BR-6, BR-7).
+            // Bentuk slot (BR-1, BR-2) dan ketersediaan (BR-3..BR-6) dimiliki
+            // ReservationAvailability; service memetakan hasilnya ke pesan
+            // validasi agar alur HTTP tidak berubah.
+            $this->assertSlotShape($start, $end);
+            $this->assertAvailability($lockedFacility, $lockedUser, $start, $end);
+
             Validator::make([
-                'slot' => true,
                 'purpose' => $purpose,
-                'facility_id' => $lockedFacility->id,
             ], [
-                'slot' => [new SlotTimeValid($start, $end)],
                 'purpose' => ['required', 'string', 'min:10', 'max:255'],
-                'facility_id' => [
-                    new FacilityBookable($lockedFacility->id),
-                    new BookingLeadTime($start),
-                    new PendingQuota($lockedUser->id, $start),
-                    new NoApprovedOverlap($lockedFacility->id, $start, $end),
-                ],
             ])->validate();
 
             // Bentrok yang muncul dari writer di luar service berarti kondisi
@@ -107,17 +101,15 @@ class ReservationService
                 throw new ConflictHttpException('Fasilitas sedang berstatus '.$facility->status.' sehingga reservasi tidak dapat disetujui.');
             }
 
-            try {
-                Validator::make(['slot' => true], [
-                    'slot' => [new NoApprovedOverlap(
-                        $locked->facility_id,
-                        $locked->start_time,
-                        $locked->end_time,
-                        $locked->id,
-                    )],
-                ])->validate();
-            } catch (ValidationException $exception) {
-                throw new ConflictHttpException($exception->validator->errors()->first('slot'));
+            // Cek ulang overlap terhadap approved pada fasilitas sama (BR-7). Kondisi
+            // balapan dari writer lain dijawab 409 agar tidak ada dua pemenang.
+            if ($this->availability->hasBlockingOverlap(
+                $locked->facility_id,
+                $locked->start_time,
+                $locked->end_time,
+                $locked->id,
+            )) {
+                throw new ConflictHttpException('Slot waktu tersebut sudah dipesan (bentrok dengan reservasi yang disetujui).');
             }
 
             $locked->update([
@@ -219,6 +211,29 @@ class ReservationService
 
             return $locked->refresh();
         });
+    }
+
+    private function assertSlotShape(Carbon $start, Carbon $end): void
+    {
+        $errors = $this->availability->slotTimeErrors($start, $end);
+
+        if ($errors !== []) {
+            throw ValidationException::withMessages(['slot' => $errors[0]]);
+        }
+    }
+
+    private function assertAvailability(Facility $facility, User $user, Carbon $start, Carbon $end): void
+    {
+        $messages = array_values(array_filter([
+            $this->availability->facilityUnavailabilityError($facility),
+            $this->availability->leadTimeError($start),
+            $this->availability->pendingQuotaError($user->id, $start),
+            $this->availability->overlapError($facility->id, $start, $end),
+        ]));
+
+        if ($messages !== []) {
+            throw ValidationException::withMessages(['facility_id' => $messages]);
+        }
     }
 
     private function ensureActivePengguna(User $user): void

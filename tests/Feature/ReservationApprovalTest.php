@@ -3,7 +3,7 @@
 use App\Models\Facility;
 use App\Models\Reservation;
 use App\Models\User;
-use App\Rules\SlotTimeValid;
+use App\Services\ReservationAvailability;
 use App\Services\ReservationService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
@@ -29,6 +29,7 @@ function makeActors(): array
 
 it('generates factory data that always passes slot validation', function () {
     [$facility, $user] = makeActors();
+    $availability = app(ReservationAvailability::class);
 
     $reservations = Reservation::factory()->count(10)->create([
         'user_id' => $user->id,
@@ -38,13 +39,7 @@ it('generates factory data that always passes slot validation', function () {
     expect($reservations)->not->toBeEmpty();
 
     foreach ($reservations as $reservation) {
-        $failures = [];
-        $rule = new SlotTimeValid($reservation->start_time, $reservation->end_time);
-        $rule->validate('start_time', null, function (string $message) use (&$failures): void {
-            $failures[] = $message;
-        });
-
-        expect($failures)->toBeEmpty();
+        expect($availability->isValidSlot($reservation->start_time, $reservation->end_time))->toBeTrue();
     }
 });
 

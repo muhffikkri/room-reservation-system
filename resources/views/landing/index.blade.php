@@ -291,7 +291,7 @@
                         Fasilitas: {{ $facilities->first()?->name ?? '-' }}
                     </span>
                 </div>
-                <span class="text-xs font-medium text-[#475569]">Zona Operasional: 07.00 - 20.00 WIB</span>
+                <span class="text-xs font-medium text-[#475569]">Zona Operasional: 07:00 - 20:00 WIB</span>
             </div>
 
             @if ($facilities->isEmpty())
