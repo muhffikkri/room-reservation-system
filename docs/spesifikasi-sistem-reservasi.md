@@ -107,11 +107,11 @@ sistem-reservasi/
 │   │   └── Requests/            # Form Request (validasi server)
 │   ├── Models/                  # User, Facility, Reservation, Report, ReportUpdate
 │   ├── Policies/                # ReservationPolicy, ReportPolicy
-│   ├── Rules/                   # SlotTimeValid, NoApprovedOverlap, FacilityBookable, BookingLeadTime, PendingQuota
 │   └── Services/
 │       ├── AccountVerificationService.php # verifikasi/tolak/pulihkan akun (transaksi + audit)
 │       ├── AccountStatusGate.php     # keputusan akses akun berdasarkan status
-│       ├── ReservationService.php   # logika slot, bentrok, approve (transaksi)
+│       ├── ReservationAvailability.php # SATU kepemilikan keputusan ketersediaan slot (BR-1..BR-8, BR-12)
+│       ├── ReservationService.php   # mutasi reservasi + transaksi; cek ketersediaan via ReservationAvailability
 │       ├── ReportService.php        # transisi status laporan + audit
 │       └── RecapService.php         # agregasi okupansi & kerusakan
 ├── config/                      # database.php, app.php (ketentuan tugas)
@@ -366,12 +366,12 @@ Route::middleware(['auth', 'active', 'role:admin'])->prefix('admin')->group(/* m
 'purpose'     => ['required', 'string', 'min:10', 'max:255'],
 ```
 
-Ditambah custom Rule objects (logika di `App\Rules`, menerima Carbon langsung dari Service — tanpa parse ulang string):
-- `SlotTimeValid`: menit harus `00`/`30` (kelipatan slot 30 menit); rentang `07:00–20:00`; `end > start`; durasi maksimal 8 slot (4 jam) — BR-1, BR-2.
-- `FacilityBookable`: fasilitas harus ada dan berstatus `aktif` (BR-3).
-- `BookingLeadTime`: `start >= now + 30 menit` (BR-5).
-- `PendingQuota`: maksimal 2 reservasi `pending` per hari untuk satu pengguna (BR-4).
-- `NoApprovedOverlap`: tanpa overlap dengan reservasi `approved` pada fasilitas sama (BR-6).
+Ditambah validasi slot yang diterapkan **di dalam transaksi `ReservationService::create()`** setelah row user dan fasilitas dikunci; keputusan dimiliki satu modul `App\Services\ReservationAvailability` (bukan Rule objects terpisah agar tidak basi sebelah):
+- Bentuk slot: menit kelipatan 30 menit; rentang `07:00–20:00`; `end > start`; durasi maksimal 8 slot (4 jam) — BR-1, BR-2.
+- `isFacilityBookable`: fasilitas harus ada dan berstatus `aktif` (BR-5, BR-12).
+- Lead time: `start >= now + 60 menit` — BR-3 (perilaku terbaru yang disepakati; BR-3 diperbarui dari 30 menit).
+- `pendingQuota`: maksimal 2 reservasi `pending` per hari untuk satu pengguna (BR-4).
+- `hasBlockingOverlap` / `hasApprovedOverlap`: tanpa overlap dengan reservasi `approved` pada fasilitas sama (BR-6).
 
 **`StoreReportRequest`** (laporan kerusakan):
 
@@ -404,8 +404,8 @@ Ditambah custom Rule objects (logika di `App\Rules`, menerima Carbon langsung da
 
 | Controller | Method | Logika |
 |---|---|---|
-| `FacilityController` | index, jadwal, show | daftar + filter; grid 26 slot/hari (07.00–19.30 mulai); slot `booked` jika overlap dengan `approved` |
-| `ReservationController` | index, create, store, show, destroy | store → `ReservationService::create()`; destroy → cek pemilik + BR-8 |
+| `FacilityController` | index, jadwal, show | daftar + filter; grid 26 slot/hari (07:00–19:30 mulai) via proyeksi publik `ReservationAvailability::publicScheduleSlots`; slot `booked` jika overlap dengan `approved` |
+| `ReservationController` | index, create, store, show, destroy | store → `ReservationService::create()`; grid/opsi waktu via proyeksi booking `ReservationAvailability::bookingSlots`; destroy → cek pemilik + BR-8 |
 | `ReportController` | index, create, store, show | store → `ReportService::createReport()`; foto disimpan private + status `baru` |
 | `ReportPhotoController` | `__invoke` | policy authorize lalu stream foto laporan dari disk private |
 | `Officer\DashboardController` | index | hitung antrian: reservasi `pending`, laporan `baru`/`diproses`; hanya untuk petugas |
@@ -435,7 +435,7 @@ Catatan implementasi: `Admin\AdminAccountController`, `Admin\OfficerAccountContr
 |---|---|
 | BR-1 | Jam operasional **07.00–20.00**; slot tetap **30 menit** (07.00–07.30, 07.30–08.00, …, 19.30–20.00 = 26 slot/hari). `start_time`/`end_time` wajib kelipatan 30 menit dan berada dalam jam operasional. Validasi di SERVER, bukan hanya tampilan kalender. |
 | BR-2 | `end_time > start_time`; durasi minimal 1 slot (30 mnt); maksimal 8 slot (4 jam) per reservasi. *(asumsi)* |
-| BR-3 | Waktu mulai minimal `now + 30 menit`, tanggal tidak boleh di masa lalu. |
+| BR-3 | Waktu mulai minimal `now + 60 menit`, tanggal tidak boleh di masa lalu. |
 | BR-4 | Satu pengguna maks. **2 reservasi `pending` per hari** (anti-spam). |
 | BR-5 | Fasilitas harus berstatus `aktif` untuk dapat direservasi. |
 | BR-6 | Pengajuan ditolak bila overlap dengan reservasi **approved** pada fasilitas sama. Overlap dengan `pending` lain diperbolehkan masuk antrian; petugas yang memutuskan — dan hanya SATU boleh di-approve. |
@@ -580,6 +580,8 @@ Ketiga format ekspor harus merepresentasikan data rekap yang sama; perbedaannya 
 ## 14. Rencana Testing (PHPUnit/Pest)
 
 ### 14.1 Unit — Validasi Slot & Aturan
+
+Test memanggil interface `ReservationAvailability` (`isValidSlot`, `hasBlockingOverlap`, `leadTimeError`, `pendingQuotaError`, `publicScheduleSlots`/`bookingSlots`) — bukan kelas Rule per-kasus.
 
 | Kasus | Input | Hasil diharapkan |
 |---|---|---|

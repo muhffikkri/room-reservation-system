@@ -41,8 +41,8 @@ Status per fitur & business rules lengkap: [docs/feature-checklist.md](docs/feat
 - **MVC murni (Laravel 13)** — Model (Eloquent), View (Blade + Tailwind CSS via Vite), Controller tipis.
 - **Autentikasi custom** tanpa Breeze: `Auth\*Controller` + `RateLimiter`; gate akun `AccountStatusGate` + middleware `active`; sesi di-invalidasi saat role/status akun berubah (`UserObserver`).
 - **Otorisasi role**: grup route peran dipisah tegas — middleware `EnsureRole` (`role:pengguna`, `role:petugas`, `role:admin`) + kebijakan `ReportPolicy`/`ReservationPolicy`; verifikasi akun hanya admin.
-- **Service layer**: `ReservationService` (slot, bentrok, approve transaksi + `lockForUpdate`), `ReportService` (buat laporan + transisi status + audit + toggle status fasilitas), `AccountVerificationService` (audit verifikasi/pulihkan), `AccountStatusGate`, `AccountAttributes`.
-- **Validasi server** via FormRequest + custom Rule objects (`SlotTimeValid`, `NoApprovedOverlap`, `BookingLeadTime`, `PendingQuota`, `FacilityBookable`).
+- **Service layer**: `ReservationService` (mutasi reservasi + approve transaksi + `lockForUpdate`), `ReservationAvailability` (keputusan ketersediaan slot: jam operasional, slot, lead time, kuota, overlap, proyeksi publik/booking), `ReportService` (buat laporan + transisi status + audit + toggle status fasilitas), `AccountVerificationService` (audit verifikasi/pulihkan), `AccountStatusGate`, `AccountAttributes`.
+- **Validasi server** via FormRequest + modul `ReservationAvailability` (slot BR-1/BR-2, lead time BR-3, kuota BR-4, fasilitas BR-5, overlap BR-6, dll.) dieksekusi di dalam transaksi `ReservationService::create`.
 - **Keamanan**: password bcrypt, CSRF di semua form, Eloquent binding bebas SQLi, output ter-escape (XSS), header keamanan/CSP, otorisasi berlapis, upload dibatasi mimes+size+dimensi dan laporan disimpan private, rate limit + quota, validasi reservasi atomic.
 - **Testing**: Pest (feature + unit) — 180 tes / 674 assertions hijau, termasuk regression test hardening keamanan.
 - **Deploy**: GitHub Actions (`.github/workflows/deploy.yml`) mendorong ke VPS saat push ke `dev`; aplikasi dikontainerkan (`Dockerfile`, `docker-compose.yml`).
@@ -79,8 +79,7 @@ room-reservation-system/
 │   ├── Models/                  # User, Facility, Reservation, Report, ReportUpdate, AccountVerificationAction
 │   ├── Observers/               # UserObserver (invalidasi sesi saat role/status berubah)
 │   ├── Policies/                # ReportPolicy, ReservationPolicy (akses lintas peran)
-│   ├── Rules/                   # SlotTimeValid, NoApprovedOverlap, dll.
-│   ├── Services/                # ReservationService, ReportService, AccountVerificationService, AccountStatusGate
+│   ├── Services/                # ReservationService, ReservationAvailability, ReportService, AccountVerificationService, AccountStatusGate
 │   └── Support/                 # AccountAttributes
 ├── bootstrap/                   # konfigurasi app, alias middleware
 ├── config/                      # database.php, app.php (timezone Asia/Jakarta)
