@@ -28,7 +28,7 @@ it('menampilkan landing page publik dengan fasilitas dan grid 26 slot', function
         ->assertOk()
         ->assertSee('Aula Terpadu')
         ->assertSee('Fasilitas Kampus Unggulan')
-        ->assertSee('07.00 - 07.30')
+        ->assertSee('07:00 - 07:30')
         ->assertSee('Total 26 Slot');
 });
 

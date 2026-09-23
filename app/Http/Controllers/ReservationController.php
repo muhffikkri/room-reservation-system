@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Requests\StoreReservationRequest;
 use App\Models\Facility;
 use App\Models\Reservation;
+use App\Services\ReservationAvailability;
 use App\Services\ReservationService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -17,20 +18,11 @@ use Symfony\Component\HttpKernel\Exception\ConflictHttpException;
 
 class ReservationController extends Controller
 {
-    /**
-     * Jam buka operasional kampus (07:00).
-     */
-    public const OPERATIONAL_START_HOUR = 7;
-
-    /**
-     * Jumlah slot 30 menit per hari (07.00 - 20.00 = 26 slot).
-     */
-    public const SLOT_COUNT = 26;
-
     private const MAX_BOOKING_LOOKAHEAD_DAYS = 365;
 
     public function __construct(
-        protected ReservationService $reservationService
+        protected ReservationService $reservationService,
+        protected ReservationAvailability $availability,
     ) {}
 
     /**
@@ -75,15 +67,15 @@ class ReservationController extends Controller
             ? Carbon::createFromFormat('!Y-m-d', $validated['date'], config('app.timezone'))
             : $today;
 
-        $slots = $selectedFacility ? $this->buildSlotsForDate($selectedFacility, $selectedDate) : [];
-        $timeOptions = $this->generateTimeOptions();
+        $slots = $selectedFacility ? $this->bookingSlotsForDate($selectedFacility, $selectedDate) : [];
 
         return view('reservasi.create', [
             'facilities' => $facilities,
             'selectedFacility' => $selectedFacility,
             'selectedDate' => $selectedDate,
             'slots' => $slots,
-            'timeOptions' => $timeOptions,
+            'timeOptions' => $this->availability->timeOptions(),
+            'maxDurationSlots' => $this->availability->maxDurationSlots(),
         ]);
     }
 
@@ -156,71 +148,21 @@ class ReservationController extends Controller
     }
 
     /**
-     * Menghitung status 26 slot 30 menit pada fasilitas dan tanggal yang dipilih.
+     * Proyeksi slot untuk formulir pemesanan (BR-1..BR-3). Keputusan dimiliki
+     * ReservationAvailability; controller hanya menyiapkan konteks tanggal.
      *
      * @return array<int, array{start: string, end: string, state: string}>
      */
-    private function buildSlotsForDate(Facility $facility, Carbon $selectedDate): array
+    private function bookingSlotsForDate(Facility $facility, Carbon $selectedDate): array
     {
-        $dayStart = $selectedDate->copy()->setTime(self::OPERATIONAL_START_HOUR, 0);
-        $dayEnd = $dayStart->copy()->addMinutes(self::SLOT_COUNT * 30);
-
-        $approvedReservations = Reservation::approved()
-            ->overlap($facility->id, $dayStart, $dayEnd)
-            ->get(['start_time', 'end_time']);
-
-        $slots = [];
-
-        for ($i = 0; $i < self::SLOT_COUNT; $i++) {
-            $slotStart = $dayStart->copy()->addMinutes($i * 30);
-            $slotEnd = $slotStart->copy()->addMinutes(30);
-
-            $isBooked = $approvedReservations->contains(
-                fn (Reservation $reservation): bool => $reservation->start_time->lt($slotEnd) && $reservation->end_time->gt($slotStart),
-            );
-
-            $slots[] = [
-                'start' => $slotStart->format('H:i'),
-                'end' => $slotEnd->format('H:i'),
-                'state' => $this->determineSlotState($facility, $slotStart, $isBooked),
-            ];
-        }
-
-        return $slots;
-    }
-
-    /**
-     * Menentukan state slot: inactive, past, booked, atau available.
-     */
-    private function determineSlotState(Facility $facility, Carbon $slotStart, bool $isBooked): string
-    {
-        if ($facility->status !== 'aktif') {
-            return 'inactive';
-        }
-
-        // BR-3: Waktu mulai minimal now + 1 jam (60 menit)
-        if ($slotStart->isBefore(now()->addMinutes(60))) {
-            return 'inactive';
-        }
-
-        return $isBooked ? 'booked' : 'available';
-    }
-
-    /**
-     * Menghasilkan daftar opsi waktu (07:00 - 20:00 dengan interval 30 menit).
-     *
-     * @return array<int, string>
-     */
-    private function generateTimeOptions(): array
-    {
-        $options = [];
-        $time = Carbon::createFromTime(self::OPERATIONAL_START_HOUR, 0);
-
-        for ($i = 0; $i <= self::SLOT_COUNT; $i++) {
-            $options[] = $time->format('H:i');
-            $time->addMinutes(30);
-        }
-
-        return $options;
+        return $this->availability->bookingSlots(
+            $facility,
+            $selectedDate,
+            $this->availability->approvedForDay(
+                $facility->id,
+                $this->availability->dayStart($selectedDate),
+                $this->availability->dayEnd($selectedDate),
+            ),
+        );
     }
 }
