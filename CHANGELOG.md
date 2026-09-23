@@ -2,27 +2,46 @@
 
 Format mengikuti riwayat commit tim. Tanggal terbaru di atas. Status merge: **Dev** = sudah masuk `dev`; **Branch** = masih di branch kerja anggota tim (belum di-merge ke `dev`).
 
-> Patokan status terakhir: `v1.2.1` = `dc7e1a4` (2026-09-18, merge PR #52 — v1.2.1 release; baseline sebelumnya `1e5097c`).
+> Patokan status terakhir: `v1.2.2` = `ebc4967` (2026-09-18, merge PR #56 — v1.2.2 release; baseline sebelumnya `dc7e1a4` v1.2.1). Kandidat terbaru: `v1.2.3` (2026-09-23, branch `refactor/reservation-availability`).
 
 ---
 
 ## [Unreleased] — Sedang dikerjakan di branch anggota tim
 
-### feat/recap-occupancy-damage-export — Rekap Okupansi & Frekuensi Kerusakan + Ekspor CSV/PDF (BR-12)
+### refactor/reservation-availability — Keputusan Ketersediaan Slot di Satu Modul (`60cde7e`, belum di-merge ke `dev`)
+- **Modul baru `ReservationAvailability`** (BR-1..BR-6, BR-12): konstanta 07:00–20:00 / 30 menit / 26 slot / maks 8 slot (240 menit) / lead time 60 menit / format `H:i`; predikat `isFacilityBookable`, `leadTimeCutoff`/`isWithinLeadTime`, `pendingQuotaError`, `hasApprovedOverlap`/`hasBlockingOverlap`; query `approvedForDay`; proyeksi `publicScheduleSlots` (publik, tanpa lead time) & `bookingSlots` (form); `dayStart`/`dayEnd`/`slotsForDay`/`timeOptions`
+- **Adapters**: `HomeController` (landing → `bookingSlots`), `FacilityController` (jadwal publik → `publicScheduleSlots`), `ReservationController` (`timeOptions` + `maxDurationSlots` ke view), `reservation-form.js` memakai `data-max-duration-slots`; konstanta/helper jam operasional duplikat di controller dihapus; format grid `H.i` → `H:i`; inline script di `reservasi/create` dipindah ke file JS
+- **Internalize checks**: `ReservationService::create()` menjalankan cek slot/lead/kuota/overlap/kelayakan di dalam transaksi via modul (`assertSlotShape`, `assertAvailability`); `approve()` → `ConflictHttpException` saat `hasBlockingOverlap`; `App\Rules\*` (5 kelas) dihapus
+- **Tests**: `ReservationSlotTest` (unit, interface modul), `ReservationSlotDepthTest` (fitur), `ReservationAvailabilityProjectionTest` (kesepakatan proyeksi + lead time hanya booking), update `ReservationApprovalTest` (`isValidSlot`) & `LandingPageTest` (`07:00 - 07:30`)
+- **Docs**: spesifikasi §3/§7.1/§7.3/BR-3 (30→60 menit)/§14.1; CONTEXT.md; README; feature-checklist; changelog; snapshot 2026-09-23; release v1.2.3
+- **Verifikasi**: 186 tes / 758 assertions hijau (2026-09-23, MySQL) · `pint --dirty` bersih · `npm run build` sukses
+
+### feat/image-webp-conversion — Media WebP (Dev — merge `b21af99`, PR #60)
+- **Dependencies**: `intervention/image ^4.0`
+- **Media**: foto fasilitas & laporan dikonversi otomatis ke WebP (kualitas 80, maks 1920px) via `Image::fromUpload(...)->toWebp()`
+- **Tests**: upload tersimpan `.webp` < 500KB (`AdminFacilityTest`, `UserReportTest`)
+
+---
+
+## v1.2.2 — 2026-09-18 (Minor)
+
+Rilis minor dari `v1.2.1` (`dc7e1a4`): rekap okupansi & frekuensi kerusakan dengan ekspor CSV/PDF (BR-12) serta lead time pemesanan minimum 1 jam (BR-3). Detail lengkap: [releases/v1.2.2.md](releases/v1.2.2.md).
+
+### Rekap Okupansi & Frekuensi Kerusakan + Ekspor CSV/PDF (BR-12)
 - **Service layer**: `RecapService` dengan `getOccupancyRecap()` (per fasilitas: total reservasi, jam disetujui, max jam operasional, tingkat okupansi) dan `getDamageRecap()` (per fasilitas & kategori: baru/diproses/selesai/ditolak)
 - **Controller**: `Admin\RecapController` dengan halaman `occupancy` & `damage` + filter tanggal, ekspor CSV & PDF (via HTML untuk PDF)
 - **Views**: `admin/rekap/occupancy.blade.php` & `admin/rekap/damage.blade.php` — tabel ringkasan, kartu metrik, tombol ekspor, navigasi admin
 - **Routes**: `/admin/rekap/okupansi`, `/admin/rekap/kerusakan` + endpoint ekspor CSV/PDF
 - **Navigation**: Link "Rekap Okupansi" & "Rekap Kerusakan" ditambahkan ke sidebar admin (desktop & mobile)
 
-### feat/booking-1hour-lead-time — Minimum 1 Hour Booking Lead Time (BR-3)
-- **Backend validation**: `BookingLeadTime` rule updated from 30 minutes to 60 minutes (1 hour)
-- **Slot grid (create form)**: `ReservationController::determineSlotState()` marks slots < 1 hour as `inactive`
-- **Public landing page**: `HomeController::slotState()` marks slots < 1 hour as `past`
-- **Frontend validation**: Client-side JS in reservation create form disables date/time combinations < 1 hour from now
+### Minimum 1 Hour Booking Lead Time (BR-3)
+- **Backend validation**: `BookingLeadTime` rule diperbarui dari 30 menit ke 60 menit (1 jam)
+- **Slot grid (create form)**: `ReservationController::determineSlotState()` menandai slot < 1 jam sebagai `inactive`
+- **Public landing page**: `HomeController::slotState()` menandai slot < 1 jam sebagai `past`
+- **Frontend validation**: Client-side JS di form reservasi create menonaktifkan kombinasi tanggal/waktu < 1 jam dari sekarang
 - **UI copy updated**: Legend text "Tidak Aktif (< 1 Jam / Lewat)", help text "Waktu mulai minimal: 1 jam dari waktu saat ini"
-- **Public facility pages**: Updated "Batas Pengajuan" from 30 menit to 1 jam in `fasilitas/show.blade.php`
-- **Tests updated**: `ReservationSlotDepthTest`, `ReservationApprovalTest`, `LandingPageTest` expectations adjusted for 60-minute threshold
+- **Public facility pages**: "Batas Pengajuan" dari 30 menit → 1 jam di `fasilitas/show.blade.php`
+- **Tests updated**: `ReservationSlotDepthTest`, `ReservationApprovalTest`, `LandingPageTest` expectations untuk ambang 60 menit
 
 ---
 
@@ -112,6 +131,6 @@ Rilis stabil pertama. Detail lengkap: [releases/v1.0.0.md](releases/v1.0.0.md).
 
 ## Catatan Método
 
-- Rentang dok: `2026-08-30` → `2026-09-18`.
+- Rentang dok: `2026-08-30` → `2026-09-23`.
 - Commit tim di luar dev yang belum terdokumentasi di release: lihat bagian [Unreleased].
 - Snapshot detail per tanggal: `snapshots/`.

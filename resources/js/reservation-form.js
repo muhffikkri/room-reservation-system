@@ -1,5 +1,6 @@
 export function initializeReservationForm(form) {
     const rawSlots = parseSlots(form.dataset.slots);
+    const maxDurationSlots = Number.parseInt(form.dataset.maxDurationSlots || '8', 10);
     const oldStartTime = form.dataset.oldStartTime || null;
     const oldEndTime = form.dataset.oldEndTime || null;
     const facilitySelect = form.querySelector('#facility_id');
@@ -75,7 +76,7 @@ export function initializeReservationForm(form) {
 
         let count = 0;
 
-        for (let i = startIndex; i < rawSlots.length && count < 8; i++) {
+        for (let i = startIndex; i < rawSlots.length && count < maxDurationSlots; i++) {
             const currentSlot = rawSlots[i];
 
             if (currentSlot.state !== 'available') {
@@ -169,7 +170,7 @@ export function initializeReservationForm(form) {
         const from = Math.min(firstIndex, secondIndex);
         const to = Math.max(firstIndex, secondIndex);
 
-        if (to - from >= 8) {
+        if (to - from >= maxDurationSlots) {
             return;
         }
 

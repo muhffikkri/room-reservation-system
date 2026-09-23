@@ -57,6 +57,10 @@ it('stores a report with photo upload successfully', function () {
         ->and($report->status)->toBe('baru');
 
     Storage::disk('local')->assertExists($report->photo);
+
+    expect($report->photo)->toStartWith('reports/')
+        ->and($report->photo)->toEndWith('.webp')
+        ->and(Storage::disk('local')->size($report->photo))->toBeLessThan(500 * 1024);
 });
 
 it('prevents user from viewing reports owned by other users', function () {
