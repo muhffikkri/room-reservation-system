@@ -9,6 +9,7 @@ Dokumen acuan:
 
 - Spesifikasi teknis: [docs/spesifikasi-sistem-reservasi.md](docs/spesifikasi-sistem-reservasi.md)
 - Checklist fitur vs spesifikasi: [docs/feature-checklist.md](docs/feature-checklist.md)
+- Ringkasan konteks teknis: [CONTEXT.md](CONTEXT.md)
 - Riwayat perubahan (changelog): [CHANGELOG.md](CHANGELOG.md)
 
 ---
@@ -22,15 +23,15 @@ Dokumen acuan:
 - Siklus akun: registrasi berstatus `pending`, admin memverifikasi/menolak, akun yang dibuat admin langsung `aktif`, akun ditolak bisa dipulihkan admin, riwayat verifikasi tersimpan
 - Kelola akun admin: admin dapat membuat akun petugas, pengguna, dan admin (BR-17)
 - Alur reservasi pengguna (`/reservasi`): ajukan reservasi (form + slot picker), riwayat & detail, batalkan milik sendiri min 1 jam sebelum mulai (BR-8)
-- CRUD fasilitas admin: tambah/edit/nonaktifkan/aktifkan, dengan upload foto
+- CRUD fasilitas admin: tambah/edit/nonaktifkan/aktifkan, dengan upload foto (otomatis dikonversi WebP)
 - Admin dashboard (agregat read-only): ringkasan antrian reservasi, laporan, fasilitas perbaikan, dan akun menunggu verifikasi
 - Antrian reservasi petugas: daftar + filter status/tanggal, detail, setujui/tolak/batalkan dengan alasan (konfirmasi via dialog)
-- Laporan kerusakan pengguna (`/laporan`): buat laporan (kategori, deskripsi, foto), daftar & detail laporan milik sendiri
+- Laporan kerusakan pengguna (`/laporan`): buat laporan (kategori, deskripsi, foto WebP), daftar & detail laporan milik sendiri
 - Antrian laporan petugas (`/petugas/laporan`): filter status, transisi `baru → diproses → selesai/tolak` dengan catatan resolusi, tandai fasilitas `perbaikan` ↔ `aktif` (BR-10, BR-11)
 - **Rekap okupansi & frekuensi kerusakan admin (`/admin/rekap/okupansi`, `/admin/rekap/kerusakan`): filter tanggal, ringkasan metrik, tabel per fasilitas, ekspor CSV & PDF (BR-12)**
-- Mesin aturan reservasi: slot 30 menit (07.00–20.00), kuota pending, lead time, anti-bentrok approved, approve dengan kunci transaksi
+- Mesin ketersediaan reservasi (`App\Services\ReservationAvailability`): slot 30 menit (07:00–20:00, 26 slot), kuota pending, lead time 60 menit, anti-bentrok approved, proyeksi jadwal publik & pemesanan, approve dengan kunci transaksi — format waktu kanonik `H:i`
 - Seeder akun demo + fasilitas + data uji (password hanya dari environment lokal)
-- 180 tes Pest — 674 assertions terverifikasi hijau (`php artisan test`, MySQL; 2026-09-16)
+- 186 tes Pest — 758 assertions terverifikasi hijau (`php artisan test`, MySQL; 2026-09-23)
 
 Status per fitur & business rules lengkap: [docs/feature-checklist.md](docs/feature-checklist.md).
 
@@ -44,7 +45,7 @@ Status per fitur & business rules lengkap: [docs/feature-checklist.md](docs/feat
 - **Service layer**: `ReservationService` (mutasi reservasi + approve transaksi + `lockForUpdate`), `ReservationAvailability` (keputusan ketersediaan slot: jam operasional, slot, lead time, kuota, overlap, proyeksi publik/booking), `ReportService` (buat laporan + transisi status + audit + toggle status fasilitas), `AccountVerificationService` (audit verifikasi/pulihkan), `AccountStatusGate`, `AccountAttributes`.
 - **Validasi server** via FormRequest + modul `ReservationAvailability` (slot BR-1/BR-2, lead time BR-3, kuota BR-4, fasilitas BR-5, overlap BR-6, dll.) dieksekusi di dalam transaksi `ReservationService::create`.
 - **Keamanan**: password bcrypt, CSRF di semua form, Eloquent binding bebas SQLi, output ter-escape (XSS), header keamanan/CSP, otorisasi berlapis, upload dibatasi mimes+size+dimensi dan laporan disimpan private, rate limit + quota, validasi reservasi atomic.
-- **Testing**: Pest (feature + unit) — 180 tes / 674 assertions hijau, termasuk regression test hardening keamanan.
+- **Testing**: Pest (feature + unit) — 186 tes / 758 assertions hijau, termasuk regression test hardening keamanan.
 - **Deploy**: GitHub Actions (`.github/workflows/deploy.yml`) mendorong ke VPS saat push ke `dev`; aplikasi dikontainerkan (`Dockerfile`, `docker-compose.yml`).
 
 ## Stack
@@ -150,7 +151,7 @@ mysql -u root -p -e "CREATE DATABASE IF NOT EXISTS reservasi_kampus_testing CHAR
 vendor/bin/pest                   # atau: php artisan test --compact
 ```
 
-Bundle schema memakai sintaks MySQL (`MODIFY`, `CHARACTER SET`), jadi **sqlite in-memory tidak didukung** — tes memakai MySQL. Status terverifikasi: **180 tes / 674 assertions hijau** (2026-09-16).
+Bundle schema memakai sintaks MySQL (`MODIFY`, `CHARACTER SET`), jadi **sqlite in-memory tidak didukung** — tes memakai MySQL. Status terverifikasi: **186 tes / 758 assertions hijau** (2026-09-23).
 
 ### Akun Demo
 
@@ -170,6 +171,8 @@ Catatan branch hardening: file Docker dan workflow deploy sengaja tidak diubah k
 
 ## Release
 
+- [v1.2.3 — Candidate 2026-09-23](releases/v1.2.3.md)
+- [v1.2.2 — Minor 2026-09-18](releases/v1.2.2.md)
 - [v1.2.0 — Candidate 2026-09-16](releases/v1.2.0.md)
 - [v1.1.0 — Minor 2026-09-12](releases/v1.1.0.md)
 - [v1.0.0 — Stable 2026-09-09](releases/v1.0.0.md)
@@ -180,6 +183,7 @@ Catatan branch hardening: file Docker dan workflow deploy sengaja tidak diubah k
 
 ## Snapshots
 
+- [Snapshot 2026-09-23](snapshots/snapshot-2026-09-23.md)
 - [Snapshot 2026-09-15](snapshots/snapshot-2026-09-15.md)
 - [Snapshot 2026-09-12](snapshots/snapshot-2026-09-12.md)
 - [Snapshot 2026-09-09](snapshots/snapshot-2026-09-09.md)
