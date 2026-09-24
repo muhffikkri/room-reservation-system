@@ -46,10 +46,13 @@ class Facility extends Model
      */
     public function scopeSearch(Builder $query, ?string $keyword, ?string $type, ?string $location, ?int $minCapacity): Builder
     {
+        $keyword = strip_tags($keyword ?? '');
+        $location = strip_tags($location ?? '');
+
         return $query
-            ->when($keyword, fn (Builder $q): Builder => $q->where('name', 'like', "%{$keyword}%"))
+            ->when($keyword, fn (Builder $q): Builder => $q->where('name', 'like', '%'.$keyword.'%'))
             ->when($type, fn (Builder $q): Builder => $q->where('type', $type))
-            ->when($location, fn (Builder $q): Builder => $q->where('location', 'like', "%{$location}%"))
+            ->when($location, fn (Builder $q): Builder => $q->where('location', 'like', '%'.$location.'%'))
             ->when($minCapacity, fn (Builder $q): Builder => $q->where('capacity', '>=', $minCapacity));
     }
 }
