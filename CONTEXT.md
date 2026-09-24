@@ -23,5 +23,5 @@ Server tetap otoritatif: controller, view, dan JavaScript hanyalah adaptor yang 
 - Keputusan ketersediaan dipegang **satu modul** `App\Services\ReservationAvailability`; kelas `App\Rules\*` (`SlotTimeValid`, `BookingLeadTime`, `FacilityBookable`, `PendingQuota`, `NoApprovedOverlap`) dihapus. `ReservationService::create()`/`approve()` menjalankan semua cek ketersediaan di dalam transaksi via modul.
 - Controller (`HomeController`, `FacilityController`, `ReservationController`), view, dan `reservation-form.js` hanya adaptor: meminta `bookingSlots`/`publicScheduleSlots`/`timeOptions` dan menerima `data-max-duration-slots` dari server.
 - Format waktu kanonik **`H:i`** (bukan `H.i`) pada semua grid slot dan opsi waktu.
-- Media: foto fasilitas & laporan disimpan sebagai file asli (tanpa konversi WebP). `intervention/image ^4.0` tetap ada sebagai dependency.
+- Media: foto fasilitas & laporan otomatis dikonversi ke WebP (kualitas 80, maks 1920px) — `intervention/image ^4.0`.
 - Waktu kini: **v1.2.3 (candidate)** — basis v1.2.2 (`ebc4967`). Riwayat & detail: [CHANGELOG.md](CHANGELOG.md) · [docs/feature-checklist.md](docs/feature-checklist.md) · [docs/spesifikasi-sistem-reservasi.md](docs/spesifikasi-sistem-reservasi.md) · [releases/v1.2.3.md](releases/v1.2.3.md).

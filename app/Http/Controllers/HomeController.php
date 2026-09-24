@@ -5,8 +5,8 @@ namespace App\Http\Controllers;
 use App\Models\Facility;
 use App\Models\Reservation;
 use App\Services\ReservationAvailability;
-use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
 /**
@@ -17,12 +17,6 @@ use Illuminate\View\View;
  * identitas pemohon/tujuan tidak pernah dikirim ke halaman publik (BR-13).
  * Grid pratinjau memakai proyeksi booking dari ReservationAvailability agar
  * lewatnya lead time (BR-3) konsisten dengan formulir pemesanan.
- *
- * Fitur baru:
- * - Live search filter via AJAX (tanpa reload halaman)
- * - Grid fasilitas maksimal 9 kartu + tombol View All
- * - Filter kombinasi: query + jenis + lokasi + kapasitas
- * - Pilih tanggal untuk pratinjau jadwal
  */
 class HomeController extends Controller
 {
@@ -42,19 +36,17 @@ class HomeController extends Controller
 
     private const MAX_PUBLIC_FACILITIES = 50;
 
-    private const GRID_MAX_FACILITIES = 9;
-
     public function __construct(
         protected ReservationAvailability $availability,
     ) {}
 
     public function __invoke(Request $request): View
     {
-        $filters = $request->only([
-            'q',
-            'type',
-            'location',
-            'capacity',
+        $filters = $request->validate([
+            'q' => ['nullable', 'string', 'max:120'],
+            'type' => ['nullable', 'string', Rule::in(array_keys(self::TYPE_LABELS))],
+            'location' => ['nullable', 'string', 'max:120'],
+            'capacity' => ['nullable', 'string', Rule::in(array_keys(self::CAPACITY_RANGES))],
         ]);
 
         [$minCapacity, $maxCapacity] = self::CAPACITY_RANGES[$filters['capacity'] ?? ''] ?? [null, null];
@@ -99,34 +91,6 @@ class HomeController extends Controller
             'locationOptions' => Facility::query()->orderBy('location')->distinct()->limit(self::MAX_PUBLIC_FACILITIES)->pluck('location'),
             'totalFacilities' => $totalFacilities,
             'today' => now(),
-            'maxGridFacilities' => self::GRID_MAX_FACILITIES,
-        ]);
-    }
-
-    /**
-     * Ambil fasilitas via AJAX untuk live search.
-     */
-    public function ajaxFacilities(Request $request): JsonResponse
-    {
-        $filters = $request->only(['q', 'type', 'location', 'capacity']);
-
-        [$minCapacity, $maxCapacity] = self::CAPACITY_RANGES[$filters['capacity'] ?? ''] ?? [null, null];
-
-        $facilitiesQuery = Facility::search(
-            $filters['q'] ?? null,
-            $filters['type'] ?? null,
-            $filters['location'] ?? null,
-            $minCapacity,
-        )
-            ->when($maxCapacity !== null, fn ($query) => $query->where('capacity', '<=', $maxCapacity))
-            ->orderByRaw('CASE status WHEN "aktif" THEN 0 ELSE 1 END')
-            ->orderBy('name');
-
-        $facilities = $facilitiesQuery->get();
-
-        return \response()->json([
-            'facilities' => $facilities->toArray(),
-            'total' => $facilitiesQuery->count(),
         ]);
     }
 }
