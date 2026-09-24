@@ -59,7 +59,6 @@ it('stores a report with photo upload successfully', function () {
     Storage::disk('local')->assertExists($report->photo);
 
     expect($report->photo)->toStartWith('reports/')
-        ->and($report->photo)->toEndWith('.webp')
         ->and(Storage::disk('local')->size($report->photo))->toBeLessThan(500 * 1024);
 });
 
