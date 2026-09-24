@@ -92,7 +92,8 @@ class ReservationController extends Controller
     public function cancel(CancelReservationOfficerRequest $request, Reservation $reservation): RedirectResponse
     {
         try {
-            $this->reservations->cancel($reservation->fresh() ?? $reservation, $request->user(), $request->validated('cancel_reason'));
+            $cancelReason = strip_tags($request->validated('cancel_reason'));
+            $this->reservations->cancel($reservation->fresh() ?? $reservation, $request->user(), $cancelReason);
         } catch (ConflictHttpException $exception) {
             return back()->with('error', $exception->getMessage());
         }

@@ -137,8 +137,10 @@ class ReservationController extends Controller
             'cancel_reason.min' => 'Alasan pembatalan minimal 5 karakter.',
         ]);
 
+        $cancelReason = strip_tags($validated['cancel_reason']);
+
         try {
-            $this->reservationService->cancelByUser($reservation, auth()->user(), $validated['cancel_reason']);
+            $this->reservationService->cancelByUser($reservation, auth()->user(), $cancelReason);
 
             return redirect()->route('reservasi.show', $reservation)
                 ->with('success', 'Reservasi berhasil dibatalkan.');

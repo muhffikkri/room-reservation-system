@@ -73,7 +73,7 @@ class ReportService
                     'user_id' => $lockedUser->id,
                     'facility_id' => $data['facility_id'],
                     'category' => $data['category'],
-                    'description' => $data['description'],
+                    'description' => strip_tags($data['description']),
                     'photo' => $photoPath,
                     'status' => 'baru',
                 ]);
