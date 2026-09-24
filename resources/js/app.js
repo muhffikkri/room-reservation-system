@@ -279,19 +279,21 @@ if (petugasFilterForm !== null) {
 
         if (loadingIndicator !== null) loadingIndicator.classList.remove('hidden');
 
-        fetch(`{{ route('petugas.reservasi.ajax') }}?${params.toString()}`, {
+        fetch(`/petugas/reservasi/data?${params.toString()}`, {
             headers: { 'X-Requested-With': 'XMLHttpRequest' },
         })
             .then((response) => response.json())
             .then((data) => {
                 if (loadingIndicator !== null) loadingIndicator.classList.add('hidden');
 
+                document.querySelectorAll('[data-ajax-dialog]').forEach((dialog) => dialog.remove());
+
                 if (reservationBody !== null) {
                     reservationBody.innerHTML = '';
                     if (data.reservations.length === 0) {
                         reservationBody.innerHTML = `
                             <tr>
-                                <td colspan="5" class="px-6 py-10 text-center">
+                                <td colspan="6" class="px-6 py-10 text-center">
                                     <p class="text-sm font-medium text-[#00236f]">Tidak ada reservasi</p>
                                     <p class="mt-1 text-sm text-slate-500">Reservasi yang diajukan pengguna akan tampil di sini sesuai filter.</p>
                                 </td>
@@ -319,9 +321,54 @@ if (petugasFilterForm !== null) {
                                     <span class="text-xs text-slate-600">${formatTime(res.start_time)} – ${formatTime(res.end_time)}</span>
                                 </td>
                                 <td class="px-6 py-3">${statusHtml}</td>
+                                <td class="px-6 py-3 text-slate-600 text-xs whitespace-nowrap">${formatDate(res.created_at)}</td>
                                 <td class="px-6 py-3">${actionsHtml}</td>
                             `;
                             reservationBody.appendChild(row);
+
+                            const dialogHtml = `
+                                <dialog data-ajax-dialog id="approve-${res.id}" class="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl backdrop:bg-slate-950/40">
+                                    <h3 class="text-lg font-semibold text-[#00236f]">Setujui reservasi?</h3>
+                                    <p class="mt-1 text-sm text-slate-600">${escapeHtml(res.facility.name)} · ${formatDate(res.start_time)} ${formatTime(res.start_time)} – ${formatTime(res.end_time)}</p>
+                                    <form method="POST" action="/petugas/reservasi/${res.id}/approve" class="mt-4">
+                                        <input type="hidden" name="_token" value="${document.querySelector('meta[name="csrf-token"]')?.content ?? ''}">
+                                        <div class="mt-4 flex items-center justify-end gap-2">
+                                            <button type="button" data-close-dialog="approve-${res.id}" class="inline-flex h-10 items-center justify-center rounded-lg border border-[#D6DDF8] bg-white px-4 text-sm font-semibold text-[#00236f] transition-colors hover:bg-[#F2F3FF]">Kembali</button>
+                                            <button type="submit" class="inline-flex h-10 items-center justify-center rounded-lg bg-[#0051d5] px-4 text-sm font-semibold text-white transition-colors hover:bg-[#00236f]">Konfirmasi Setujui</button>
+                                        </div>
+                                    </form>
+                                </dialog>
+                                <dialog data-ajax-dialog id="reject-${res.id}" class="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl backdrop:bg-slate-950/40">
+                                    <h3 class="text-lg font-semibold text-[#00236f]">Tolak reservasi?</h3>
+                                    <p class="mt-1 text-sm text-slate-600">${escapeHtml(res.facility.name)} · ${formatDate(res.start_time)} ${formatTime(res.start_time)} – ${formatTime(res.end_time)}</p>
+                                    <form method="POST" action="/petugas/reservasi/${res.id}/reject" class="mt-4">
+                                        <input type="hidden" name="_token" value="${document.querySelector('meta[name="csrf-token"]')?.content ?? ''}">
+                                        <div class="mb-3">
+                                            <label class="mb-1 block text-sm font-medium text-slate-700">Alasan penolakan</label>
+                                            <textarea name="reason" rows="3" required minlength="10" maxlength="255" class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 transition focus:border-[#0051d5] focus:outline-none focus:ring-4 focus:ring-[#E2E7FF]" placeholder="Jelaskan alasan penolakan (min. 10 karakter)"></textarea>
+                                        </div>
+                                        <div class="mt-4 flex items-center justify-end gap-2">
+                                            <button type="button" data-close-dialog="reject-${res.id}" class="inline-flex h-10 items-center justify-center rounded-lg border border-[#D6DDF8] bg-white px-4 text-sm font-semibold text-[#00236f] transition-colors hover:bg-[#F2F3FF]">Kembali</button>
+                                            <button type="submit" class="inline-flex h-10 items-center justify-center rounded-lg bg-red-600 px-4 text-sm font-semibold text-white transition-colors hover:bg-red-700">Tolak Reservasi</button>
+                                        </div>
+                                    </form>
+                                </dialog>
+                                <dialog data-ajax-dialog id="cancel-${res.id}" class="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl backdrop:bg-slate-950/40">
+                                    <h3 class="text-lg font-semibold text-[#00236f]">Batalkan reservasi?</h3>
+                                    <p class="mt-1 text-sm text-slate-600">${escapeHtml(res.facility.name)} · ${formatDate(res.start_time)} ${formatTime(res.start_time)} – ${formatTime(res.end_time)}</p>
+                                    <form method="POST" action="/petugas/reservasi/${res.id}/cancel" class="mt-4">
+                                        <input type="hidden" name="_token" value="${document.querySelector('meta[name="csrf-token"]')?.content ?? ''}">
+                                        <div class="mb-3">
+                                            <label class="mb-1 block text-sm font-medium text-slate-700">Alasan pembatalan</label>
+                                            <textarea name="cancel_reason" rows="3" required minlength="10" maxlength="255" class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 transition focus:border-[#0051d5] focus:outline-none focus:ring-4 focus:ring-[#E2E7FF]" placeholder="Jelaskan alasan pembatalan (min. 10 karakter)"></textarea>
+                                        </div>
+                                        <div class="mt-4 flex items-center justify-end gap-2">
+                                            <button type="button" data-close-dialog="cancel-${res.id}" class="inline-flex h-10 items-center justify-center rounded-lg border border-[#D6DDF8] bg-white px-4 text-sm font-semibold text-[#00236f] transition-colors hover:bg-[#F2F3FF]">Kembali</button>
+                                            <button type="submit" class="inline-flex h-10 items-center justify-center rounded-lg bg-red-600 px-4 text-sm font-semibold text-white transition-colors hover:bg-red-700">Batalkan Reservasi</button>
+                                        </div>
+                                    </form>
+                                </dialog>`;
+                            document.body.insertAdjacentHTML('beforeend', dialogHtml);
                         });
                     }
                 }
@@ -370,13 +417,13 @@ function getActionsHtml(res) {
     let html = '<div class="flex flex-wrap gap-2">';
     html += `<a href="/petugas/reservasi/${res.id}" class="inline-flex h-8 items-center rounded-lg border border-[#D6DDF8] bg-white px-3 text-xs font-semibold text-[#00236f] transition-colors hover:bg-[#F2F3FF]">Detail</a>`;
     if (res.status === 'pending') {
-        html += `<form method="POST" action="/petugas/reservasi/${res.id}/approve" style="display:inline"><input type="hidden" name="_token" value="{{ csrf_token() }}"><button type="submit" class="inline-flex h-8 items-center rounded-lg bg-[#0051d5] px-3 text-xs font-semibold text-white transition-colors hover:bg-[#00236f]">Setujui</button></form>`;
-        html += `<button type="button" data-open-dialog="reject-${res.id}" class="inline-flex h-8 items-center rounded-lg border border-red-300 bg-white px-3 text-xs font-semibold text-red-600 transition-colors hover:bg-red-50">Tolak</button></div>`;
+        html += `<button type="button" data-open-dialog="approve-${res.id}" class="inline-flex h-8 items-center rounded-lg bg-[#0051d5] px-3 text-xs font-semibold text-white transition-colors hover:bg-[#00236f]">Setujui</button>`;
+        html += `<button type="button" data-open-dialog="reject-${res.id}" class="inline-flex h-8 items-center rounded-lg border border-red-300 bg-white px-3 text-xs font-semibold text-red-600 transition-colors hover:bg-red-50">Tolak</button>`;
     }
     if (['pending', 'approved'].includes(res.status)) {
-        html += `<button type="button" data-open-dialog="cancel-${res.id}" class="inline-flex h-8 items-center rounded-lg bg-red-600 px-3 text-xs font-semibold text-white transition-colors hover:bg-red-700">Batalkan</button></div>`;
+        html += `<button type="button" data-open-dialog="cancel-${res.id}" class="inline-flex h-8 items-center rounded-lg bg-red-600 px-3 text-xs font-semibold text-white transition-colors hover:bg-red-700">Batalkan</button>`;
     }
-    return html;
+    return html + '</div>';
 }
 
 function escapeHtml(str) {

@@ -183,3 +183,56 @@ it('does not allow cancelling an already rejected reservation', function () {
 
     expect($reservation->fresh()->status)->toBe('rejected');
 });
+
+it('sorts the queue by status priority, newest submission, then start time', function () {
+    [$facility, , $officer] = makeOfficerReservationActors();
+
+    $pending = User::factory()->create(['name' => 'Antrian Pending', 'role' => 'pengguna', 'account_status' => 'aktif']);
+    $approved = User::factory()->create(['name' => 'Antrian Approved', 'role' => 'pengguna', 'account_status' => 'aktif']);
+    $cancelled = User::factory()->create(['name' => 'Antrian Dibatalkan', 'role' => 'pengguna', 'account_status' => 'aktif']);
+
+    Reservation::factory()->create([
+        'user_id' => $cancelled->id,
+        'facility_id' => $facility->id,
+        'status' => 'cancelled_by_user',
+        'start_time' => officerReservationCarbon('2030-02-01', '08:00'),
+        'end_time' => officerReservationCarbon('2030-02-01', '09:00'),
+    ]);
+    Reservation::factory()->create([
+        'user_id' => $approved->id,
+        'facility_id' => $facility->id,
+        'status' => 'approved',
+        'start_time' => officerReservationCarbon('2030-02-01', '08:00'),
+        'end_time' => officerReservationCarbon('2030-02-01', '09:00'),
+    ]);
+    Reservation::factory()->create([
+        'user_id' => $pending->id,
+        'facility_id' => $facility->id,
+        'status' => 'pending',
+        'start_time' => officerReservationCarbon('2030-02-01', '08:00'),
+        'end_time' => officerReservationCarbon('2030-02-01', '09:00'),
+    ]);
+
+    $html = $this->actingAs($officer)
+        ->get(route('petugas.reservasi.index'))
+        ->assertOk()
+        ->getContent();
+
+    $pendingPos = strpos($html, 'Antrian Pending');
+    $approvedPos = strpos($html, 'Antrian Approved');
+    $cancelledPos = strpos($html, 'Antrian Dibatalkan');
+
+    expect($pendingPos)->toBeLessThan($approvedPos)
+        ->and($approvedPos)->toBeLessThan($cancelledPos);
+});
+
+it('shows the submitted at column and an approve confirmation dialog', function () {
+    [$facility, , $officer] = makeOfficerReservationActors();
+
+    $this->actingAs($officer)
+        ->get(route('petugas.reservasi.index'))
+        ->assertOk()
+        ->assertSee('Waktu Diajukan')
+        ->assertSee('Setujui reservasi?', false)
+        ->assertSee('data-open-dialog="approve-', false);
+});

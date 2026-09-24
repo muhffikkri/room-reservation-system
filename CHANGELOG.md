@@ -8,6 +8,16 @@ Format mengikuti riwayat commit tim. Tanggal terbaru di atas. Status merge: **De
 
 ## [Unreleased] — Sedang dikerjakan di branch anggota tim
 
+### feat/petugas-dashboard-features — Fitur Dashboard Petugas (feat/petugas-dashboard-features)
+
+- **Sorting antrian reservasi**: `Officer\ReservationController` (`index` + `ajaxIndex`) mengurutkan berdasarkan prioritas status (pending → approved → rejected → cancelled_by_user → cancelled_by_officer), lalu `created_at` desc, lalu `start_time` asc.
+- **Tab rekapitulasi laporan**: `Officer\ReportController@index` mendukung query `tab` (`menunggu` = baru/diproses/ditolak, `selesai` = selesai/cancelled_by_user/cancelled_by_officer). Kartu filter status asli tetap ada dan dikombinasikan dengan tab (status filter mengabaikan tab agar tidak menghasilkan irisan kosong).
+- **Kolom "Waktu Diajukan"**: Kolom `created_at` ditambahkan ke tabel antrian reservasi dan laporan petugas.
+- **Dialog konfirmasi Setujui**: Tombol "Setujui" pada antrian reservasi kini membuka `<dialog>` konfirmasi (sebelumnya submit langsung), konsisten dengan Tolak/Batalkan. Dialog AJAX ditandai `data-ajax-dialog` dan dibersihkan sebelum tiap fetch.
+- **Fix filter AJAX petugas**: URL fetch di `resources/js/app.js` sebelumnya memakai sintaks Blade `{{ route(...) }}` yang tidak diproses di file JS hasil bundling Vite (URL literal rusak) — diganti path statis `/petugas/reservasi/data`. Token CSRF kini diambil dari `<meta name="csrf-token">` yang ditambahkan ke `layouts/app.blade.php`. Empty-state `colspan` disesuaikan jadi 6.
+- **Sorting dashboard petugas**: `Officer\DashboardController` mengurutkan antrian reservasi pending dan laporan baru berdasarkan `created_at` desc.
+- **Test**: 5 test baru (prioritas sorting, kolom Waktu Diajukan + dialog konfirmasi, tab laporan default/Selesai, kolom Waktu Diajukan laporan).
+
 ### feat/live-search-filter-dashboard — Live Search Filter di Dashboard Petugas (feat/live-search-filter-dashboard)
 
 - **Filter AJAX live search**: Menghapus `method="GET"` dari form filter di halaman antrian reservasi petugas (`resources/views/petugas/reservasi/index.blade.php`). Pencarian otomatis berjalan saat input berubah dengan debounce ±300ms tanpa reload halaman.

@@ -43,8 +43,9 @@ class ReservationController extends Controller
             ->with(['user', 'facility', 'decidedBy'])
             ->when($filters['status'] ?? null, fn ($query, string $status) => $query->where('status', $status))
             ->when($filters['date'] ?? null, fn ($query, string $date) => $query->whereDate('start_time', $date))
-            ->orderByRaw('CASE status WHEN "pending" THEN 0 ELSE 1 END')
-            ->orderBy('start_time')
+            ->orderByRaw('CASE status WHEN "pending" THEN 0 WHEN "approved" THEN 1 WHEN "rejected" THEN 2 WHEN "cancelled_by_user" THEN 3 WHEN "cancelled_by_officer" THEN 4 ELSE 5 END')
+            ->orderBy('created_at', 'desc')
+            ->orderBy('start_time', 'asc')
             ->paginate(15)
             ->withQueryString();
 
@@ -65,8 +66,9 @@ class ReservationController extends Controller
             ->with(['user', 'facility'])
             ->when($filters['status'] ?? null, fn ($query, string $status) => $query->where('status', $status))
             ->when($filters['date'] ?? null, fn ($query, string $date) => $query->whereDate('start_time', $date))
-            ->orderByRaw('CASE status WHEN "pending" THEN 0 ELSE 1 END')
-            ->orderBy('start_time')
+            ->orderByRaw('CASE status WHEN "pending" THEN 0 WHEN "approved" THEN 1 WHEN "rejected" THEN 2 WHEN "cancelled_by_user" THEN 3 WHEN "cancelled_by_officer" THEN 4 ELSE 5 END')
+            ->orderBy('created_at', 'desc')
+            ->orderBy('start_time', 'asc')
             ->paginate(15);
 
         return response()->json([

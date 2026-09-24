@@ -80,3 +80,52 @@ it('prevents regular pengguna from accessing officer report queue', function () 
 
     $response->assertStatus(403);
 });
+
+it('filters the report queue by the menunggu approval tab by default', function () {
+    $officer = User::factory()->create(['role' => 'petugas', 'account_status' => 'aktif']);
+    $user = User::factory()->create(['role' => 'pengguna', 'account_status' => 'aktif']);
+    $facility = Facility::factory()->create(['status' => 'aktif']);
+
+    Report::factory()->create(['user_id' => $user->id, 'facility_id' => $facility->id, 'status' => 'baru']);
+    Report::factory()->create(['user_id' => $user->id, 'facility_id' => $facility->id, 'status' => 'selesai', 'resolution_note' => 'Sudah diperbaiki']);
+
+    $this->actingAs($officer)
+        ->get(route('petugas.laporan.index'))
+        ->assertOk()
+        ->assertSee('Menunggu Approval')
+        ->assertSee($facility->name);
+
+    $this->actingAs($officer)
+        ->get(route('petugas.laporan.index', ['tab' => 'menunggu']))
+        ->assertOk()
+        ->assertSee($facility->name);
+});
+
+it('filters the report queue by the selesai tab', function () {
+    $officer = User::factory()->create(['role' => 'petugas', 'account_status' => 'aktif']);
+    $user = User::factory()->create(['role' => 'pengguna', 'account_status' => 'aktif']);
+    $pendingFacility = Facility::factory()->create(['name' => 'Fasilitas Menunggu', 'status' => 'aktif']);
+    $doneFacility = Facility::factory()->create(['name' => 'Fasilitas Rampung', 'status' => 'aktif']);
+
+    Report::factory()->create(['user_id' => $user->id, 'facility_id' => $pendingFacility->id, 'status' => 'diproses']);
+    Report::factory()->create(['user_id' => $user->id, 'facility_id' => $doneFacility->id, 'status' => 'selesai', 'resolution_note' => 'Sudah diperbaiki']);
+
+    $this->actingAs($officer)
+        ->get(route('petugas.laporan.index', ['tab' => 'selesai']))
+        ->assertOk()
+        ->assertSee('Fasilitas Rampung')
+        ->assertDontSee('Fasilitas Menunggu');
+});
+
+it('shows the submitted at column on the report queue', function () {
+    $officer = User::factory()->create(['role' => 'petugas', 'account_status' => 'aktif']);
+    $user = User::factory()->create(['role' => 'pengguna', 'account_status' => 'aktif']);
+    $facility = Facility::factory()->create(['status' => 'aktif']);
+
+    Report::factory()->create(['user_id' => $user->id, 'facility_id' => $facility->id, 'status' => 'baru']);
+
+    $this->actingAs($officer)
+        ->get(route('petugas.laporan.index'))
+        ->assertOk()
+        ->assertSee('Waktu Diajukan');
+});

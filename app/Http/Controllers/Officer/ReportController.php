@@ -24,14 +24,27 @@ class ReportController extends Controller
     public function index(Request $request): View
     {
         $status = $request->query('status');
+        $tab = $request->query('tab', 'menunggu');
+        $validStatuses = ['baru', 'diproses', 'selesai', 'ditolak'];
 
-        $query = Report::with(['facility', 'user'])->latest();
+        $query = Report::with(['facility', 'user']);
 
-        if ($status && in_array($status, ['baru', 'diproses', 'selesai', 'ditolak'], true)) {
+        if (! in_array($status, $validStatuses, true)) {
+            $status = null;
+
+            if ($tab === 'selesai') {
+                $query->whereIn('status', ['selesai', 'cancelled_by_user', 'cancelled_by_officer']);
+            } else {
+                $tab = 'menunggu';
+                $query->whereIn('status', ['baru', 'diproses', 'ditolak']);
+            }
+        }
+
+        if ($status !== null) {
             $query->where('status', $status);
         }
 
-        $reports = $query->paginate(10)->withQueryString();
+        $reports = $query->latest()->paginate(10)->withQueryString();
 
         $counts = [
             'total' => Report::count(),
@@ -39,9 +52,11 @@ class ReportController extends Controller
             'diproses' => Report::where('status', 'diproses')->count(),
             'selesai' => Report::where('status', 'selesai')->count(),
             'ditolak' => Report::where('status', 'ditolak')->count(),
+            'menunggu' => Report::whereIn('status', ['baru', 'diproses', 'ditolak'])->count(),
+            'selesai_count' => Report::whereIn('status', ['selesai', 'cancelled_by_user', 'cancelled_by_officer'])->count(),
         ];
 
-        return view('petugas.laporan.index', compact('reports', 'status', 'counts'));
+        return view('petugas.laporan.index', compact('reports', 'status', 'counts', 'tab'));
     }
 
     /**

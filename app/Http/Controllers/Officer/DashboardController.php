@@ -21,13 +21,14 @@ class DashboardController extends Controller
     {
         $pendingReservations = Reservation::pending()
             ->with(['user', 'facility'])
-            ->orderBy('start_time')
+            ->orderBy('created_at', 'desc')
+            ->orderBy('start_time', 'asc')
             ->get();
 
         $newReports = Report::query()
             ->with(['user', 'facility'])
             ->where('status', 'baru')
-            ->orderBy('created_at')
+            ->orderBy('created_at', 'desc')
             ->get();
 
         $processedReports = Report::query()

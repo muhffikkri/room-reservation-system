@@ -64,6 +64,7 @@
                         <th class="px-6 py-3">Fasilitas</th>
                         <th class="px-6 py-3">Jadwal</th>
                         <th class="px-6 py-3">Status</th>
+                        <th class="px-6 py-3">Waktu Diajukan</th>
                         <th class="px-6 py-3">Aksi</th>
                     </tr>
                 </thead>
@@ -98,6 +99,9 @@
                                     <span class="inline-flex items-center rounded-full bg-orange-50 px-2.5 py-1 text-xs font-semibold text-orange-700 ring-1 ring-inset ring-orange-200">Dibatalkan Petugas</span>
                                 @endif
                             </td>
+                            <td class="px-6 py-3 text-slate-600 text-xs whitespace-nowrap">
+                                {{ $reservation->created_at->format('d M Y, H.i') }}
+                            </td>
                             <td class="px-6 py-3">
                                 <div class="flex flex-wrap gap-2">
                                     <a href="{{ route('petugas.reservasi.show', $reservation) }}"
@@ -105,13 +109,10 @@
                                         Detail
                                     </a>
                                     @if ($reservation->status === 'pending')
-                                        <form method="POST" action="{{ route('petugas.reservasi.approve', $reservation) }}">
-                                            @csrf
-                                            <button type="submit"
-                                                    class="inline-flex h-8 items-center rounded-lg bg-[#0051d5] px-3 text-xs font-semibold text-white transition-colors hover:bg-[#00236f]">
-                                                Setujui
-                                            </button>
-                                        </form>
+                                        <button type="button" data-open-dialog="approve-{{ $reservation->id }}"
+                                                class="inline-flex h-8 items-center rounded-lg bg-[#0051d5] px-3 text-xs font-semibold text-white transition-colors hover:bg-[#00236f]">
+                                            Setujui
+                                        </button>
                                         <button type="button" data-open-dialog="reject-{{ $reservation->id }}"
                                                 class="inline-flex h-8 items-center rounded-lg border border-red-300 bg-white px-3 text-xs font-semibold text-red-600 transition-colors hover:bg-red-50">
                                             Tolak
@@ -127,6 +128,27 @@
                             </td>
                         </tr>
 
+                        <dialog id="approve-{{ $reservation->id }}"
+                                class="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl backdrop:bg-slate-950/40">
+                            <h3 class="text-lg font-semibold text-[#00236f]">Setujui reservasi?</h3>
+                            <p class="mt-1 text-sm text-slate-600">
+                                {{ $reservation->facility->name }} ·
+                                {{ $reservation->start_time->format('d M Y H.i') }} – {{ $reservation->end_time->format('H.i') }}
+                            </p>
+                            <form method="POST" action="{{ route('petugas.reservasi.approve', $reservation) }}" class="mt-4">
+                                @csrf
+                                <div class="mt-4 flex items-center justify-end gap-2">
+                                    <button type="button" data-close-dialog="approve-{{ $reservation->id }}"
+                                            class="inline-flex h-10 items-center justify-center rounded-lg border border-[#D6DDF8] bg-white px-4 text-sm font-semibold text-[#00236f] transition-colors hover:bg-[#F2F3FF]">
+                                        Kembali
+                                    </button>
+                                    <button type="submit"
+                                            class="inline-flex h-10 items-center justify-center rounded-lg bg-[#0051d5] px-4 text-sm font-semibold text-white transition-colors hover:bg-[#00236f]">
+                                        Konfirmasi Setujui
+                                    </button>
+                                </div>
+                            </form>
+                        </dialog>
                         <dialog id="reject-{{ $reservation->id }}"
                                 class="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl backdrop:bg-slate-950/40">
                             <h3 class="text-lg font-semibold text-[#00236f]">Tolak reservasi?</h3>
@@ -186,7 +208,7 @@
                         </dialog>
                     @empty
                         <tr>
-                            <td colspan="5" class="px-6 py-10 text-center">
+                            <td colspan="6" class="px-6 py-10 text-center">
                                 <p class="text-sm font-medium text-[#00236f]">Tidak ada reservasi</p>
                                 <p class="mt-1 text-sm text-slate-500">Reservasi yang diajukan pengguna akan tampil di sini sesuai filter.</p>
                             </td>
