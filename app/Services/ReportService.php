@@ -8,7 +8,6 @@ use App\Models\ReportUpdate;
 use App\Models\User;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Image;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
@@ -55,14 +54,7 @@ class ReportService
                 }
 
                 if (isset($data['photo']) && $data['photo'] instanceof UploadedFile) {
-                    // Konversi ke WebP (kualitas 80, lebar maks 1920px) agar foto
-                    // bukti kerusakan hemat penyimpanan namun tetap jelas.
-                    $photoPath = Image::fromUpload($data['photo'])
-                        ->orient()
-                        ->scale(width: 1920)
-                        ->toWebp()
-                        ->quality(80)
-                        ->store('reports', 'local');
+                    $photoPath = $data['photo']->store('reports', 'local');
 
                     if ($photoPath === false) {
                         throw new \RuntimeException('Foto laporan gagal disimpan.');
