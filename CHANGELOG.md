@@ -25,9 +25,10 @@ Format mengikuti riwayat commit tim. Tanggal terbaru di atas. Status merge: **De
 - **Verifikasi**: 186 tes / 758 assertions hijau (2026-09-23, MySQL) · `pint --dirty` bersih · `npm run build` sukses
 
 ### feat/image-webp-conversion — Media WebP (Dev — merge `b21af99`, PR #60)
-- **Dependencies**: `intervention/image ^4.0`
-- **Media**: foto fasilitas & laporan dikonversi otomatis ke WebP (kualitas 80, maks 1920px) via `Image::fromUpload(...)->toWebp()`
-- **Tests**: upload tersimpan `.webp` < 500KB (`AdminFacilityTest`, `UserReportTest`)
+- ~~**Dependencies**: `intervention/image ^4.0`~~
+- ~~**Media**: foto fasilitas & laporan dikonversi otomatis ke WebP (kualitas 80, maks 1920px) via `Image::fromUpload(...)->toWebp()`~~
+- ~~**Tests**: upload tersimpan `.webp` < 500KB (`AdminFacilityTest`, `UserReportTest`)~~
+- ⚠️ **Removed**: Fitur WebP conversion dihapus pada `feat/landing-page-features`. Upload kini menyimpan file asli tanpa konversi. Dependensi `intervention/image` tetap ada untuk backward compatibility.
 
 ---
 

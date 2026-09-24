@@ -70,7 +70,7 @@ class HomeController extends Controller
             ->orderBy('name');
 
         $totalFacilities = $facilitiesQuery->count();
-        $facilities = $facilitiesQuery->limit(self::GRID_MAX_FACILITIES)->get();
+        $facilities = $facilitiesQuery->limit(self::MAX_PUBLIC_FACILITIES)->get();
 
         $dayStart = $this->availability->dayStart(now());
         $dayEnd = $this->availability->dayEnd(now());

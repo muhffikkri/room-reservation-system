@@ -186,9 +186,9 @@
                 </span>
             </div>
 
-            @if ($facilities->count() > 9)
+            @if ($totalFacilities > 9)
             <div class="mt-4 text-center">
-                <a href="{{ route('home') }}" class="inline-block rounded-lg bg-[#00236f] px-4 py-2 text-sm font-medium text-white hover:bg-[#001a52]">Lihat Semua Fasilitas</a>
+                <a href="{{ route('home') }}" class="inline-block rounded-lg bg-[#00236f] px-4 py-2 text-sm font-medium text-white hover:bg-[#001a52]">Lihat Semua Fasilitas ({{ $totalFacilities }})</a>
             </div>
             @endif
 
@@ -201,7 +201,7 @@
             @endif
 
             <div class="grid grid-cols-1 gap-6 md:grid-cols-3 max-h-[500px] overflow-y-auto">
-                @foreach ($facilities as $facility)
+                @foreach ($facilities->take(9) as $facility)
                     <div class="group flex flex-col overflow-hidden rounded-xl bg-white shadow-sm transition-all hover:shadow-md">
                         <div class="relative aspect-[16/9] w-full overflow-hidden bg-[#f2f3ff]">
                             @if ($facility->photo)
