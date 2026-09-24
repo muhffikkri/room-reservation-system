@@ -250,6 +250,379 @@ if (landing !== null) {
             if (schedule !== null) {
                 schedule.scrollIntoView({ behavior: 'smooth', block: 'start' });
             }
+
+            if (scheduleDateInput !== null && scheduleGrid !== null) {
+                fetchSchedule();
+            }
         });
     });
+}
+
+const petugasFilterForm = document.getElementById('petugasFilterForm');
+const resetFilterBtn = document.getElementById('reset-filter');
+const loadingIndicator = document.getElementById('loading-indicator');
+const reservationBody = document.getElementById('reservation-body');
+const paginationContainer = document.getElementById('pagination-container');
+
+if (petugasFilterForm !== null) {
+    const statusSelect = document.getElementById('status');
+    const dateInput = document.getElementById('date');
+    let debounceTimer = null;
+
+    const fetchReservations = () => {
+        const params = new URLSearchParams();
+        const status = statusSelect.value;
+        const date = dateInput.value;
+
+        if (status) params.set('status', status);
+        if (date) params.set('date', date);
+
+        if (loadingIndicator !== null) loadingIndicator.classList.remove('hidden');
+
+        fetch(`{{ route('petugas.reservasi.ajax') }}?${params.toString()}`, {
+            headers: { 'X-Requested-With': 'XMLHttpRequest' },
+        })
+            .then((response) => response.json())
+            .then((data) => {
+                if (loadingIndicator !== null) loadingIndicator.classList.add('hidden');
+
+                if (reservationBody !== null) {
+                    reservationBody.innerHTML = '';
+                    if (data.reservations.length === 0) {
+                        reservationBody.innerHTML = `
+                            <tr>
+                                <td colspan="5" class="px-6 py-10 text-center">
+                                    <p class="text-sm font-medium text-[#00236f]">Tidak ada reservasi</p>
+                                    <p class="mt-1 text-sm text-slate-500">Reservasi yang diajukan pengguna akan tampil di sini sesuai filter.</p>
+                                </td>
+                            </tr>`;
+                    } else {
+                        data.reservations.forEach((res) => {
+                            const row = document.createElement('tr');
+                            row.className = 'transition-colors hover:bg-[#F8FAFC]';
+
+                            const statusHtml = getStatusBadge(res.status);
+                            const actionsHtml = getActionsHtml(res);
+
+                            row.innerHTML = `
+                                <td class="px-6 py-3">
+                                    <p class="font-semibold text-[#00236f]">${escapeHtml(res.user.name)}</p>
+                                    <p class="text-xs text-slate-600">${escapeHtml(res.user.email)}</p>
+                                </td>
+                                <td class="px-6 py-3">
+                                    <p class="font-medium text-[#00236f]">${escapeHtml(res.facility.name)}</p>
+                                    <p class="text-xs text-slate-600">${escapeHtml(res.facility.location)}</p>
+                                </td>
+                                <td class="whitespace-nowrap px-6 py-3 text-slate-700">
+                                    ${formatDate(res.start_time)}
+                                    <br>
+                                    <span class="text-xs text-slate-600">${formatTime(res.start_time)} – ${formatTime(res.end_time)}</span>
+                                </td>
+                                <td class="px-6 py-3">${statusHtml}</td>
+                                <td class="px-6 py-3">${actionsHtml}</td>
+                            `;
+                            reservationBody.appendChild(row);
+                        });
+                    }
+                }
+
+                if (paginationContainer !== null) {
+                    paginationContainer.style.display = data.pagination.total > 0 ? 'block' : 'none';
+                }
+            })
+            .catch((error) => {
+                if (loadingIndicator !== null) loadingIndicator.classList.add('hidden');
+                console.error('Failed to fetch reservations:', error);
+            });
+    };
+
+    const scheduleDebounce = (fn, delay) => {
+        return () => {
+            clearTimeout(debounceTimer);
+            debounceTimer = setTimeout(fn, delay);
+        };
+    };
+
+    statusSelect.addEventListener('change', scheduleDebounce(fetchReservations, 300));
+    dateInput.addEventListener('change', scheduleDebounce(fetchReservations, 300));
+
+    if (resetFilterBtn !== null) {
+        resetFilterBtn.addEventListener('click', () => {
+            statusSelect.value = '';
+            dateInput.value = '';
+            fetchReservations();
+        });
+    }
+}
+
+function getStatusBadge(status) {
+    const badges = {
+        pending: '<span class="inline-flex items-center rounded-full bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-700 ring-1 ring-inset ring-amber-200">Menunggu Persetujuan</span>',
+        approved: '<span class="inline-flex items-center rounded-full bg-green-50 px-2.5 py-1 text-xs font-semibold text-green-700 ring-1 ring-inset ring-green-200">Disetujui</span>',
+        rejected: '<span class="inline-flex items-center rounded-full bg-red-50 px-2.5 py-1 text-xs font-semibold text-red-700 ring-1 ring-inset ring-red-200">Ditolak</span>',
+        cancelled_by_user: '<span class="inline-flex items-center rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-600 ring-1 ring-inset ring-slate-200">Dibatalkan Pengguna</span>',
+        cancelled_by_officer: '<span class="inline-flex items-center rounded-full bg-orange-50 px-2.5 py-1 text-xs font-semibold text-orange-700 ring-1 ring-inset ring-orange-200">Dibatalkan Petugas</span>',
+    };
+    return badges[status] || status;
+}
+
+function getActionsHtml(res) {
+    let html = '<div class="flex flex-wrap gap-2">';
+    html += `<a href="/petugas/reservasi/${res.id}" class="inline-flex h-8 items-center rounded-lg border border-[#D6DDF8] bg-white px-3 text-xs font-semibold text-[#00236f] transition-colors hover:bg-[#F2F3FF]">Detail</a>`;
+    if (res.status === 'pending') {
+        html += `<form method="POST" action="/petugas/reservasi/${res.id}/approve" style="display:inline"><input type="hidden" name="_token" value="{{ csrf_token() }}"><button type="submit" class="inline-flex h-8 items-center rounded-lg bg-[#0051d5] px-3 text-xs font-semibold text-white transition-colors hover:bg-[#00236f]">Setujui</button></form>`;
+        html += `<button type="button" data-open-dialog="reject-${res.id}" class="inline-flex h-8 items-center rounded-lg border border-red-300 bg-white px-3 text-xs font-semibold text-red-600 transition-colors hover:bg-red-50">Tolak</button></div>`;
+    }
+    if (['pending', 'approved'].includes(res.status)) {
+        html += `<button type="button" data-open-dialog="cancel-${res.id}" class="inline-flex h-8 items-center rounded-lg bg-red-600 px-3 text-xs font-semibold text-white transition-colors hover:bg-red-700">Batalkan</button></div>`;
+    }
+    return html;
+}
+
+function escapeHtml(str) {
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+}
+
+function formatDate(dateStr) {
+    const d = new Date(dateStr);
+    const months = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
+    return `${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()}`;
+}
+
+function formatTime(dateStr) {
+    const d = new Date(dateStr);
+    return `${String(d.getHours()).padStart(2, '0')}.${String(d.getMinutes()).padStart(2, '0')}`;
+}
+
+// Landing page live search
+const landingFilterForm = document.getElementById('landingFilterForm');
+const landingResetBtn = document.getElementById('landing-reset-filter');
+const landingLoading = document.getElementById('landing-loading');
+const landingGridContainer = document.getElementById('landing-grid-container');
+const facilityCountNum = document.getElementById('facility-count-num');
+const scheduleDateInput = document.getElementById('schedule-date');
+const scheduleLoading = document.getElementById('schedule-loading');
+const scheduleGrid = document.getElementById('schedule-grid');
+const scheduleTabsContainer = document.getElementById('schedule-tabs');
+const scheduleIndicator = document.querySelector('[data-facility-indicator]');
+
+const typeLabels = {"ruang_kelas":"Ruang Kelas","aula":"Aula","laboratorium":"Laboratorium","alat":"Alat","lapangan":"Lapangan"};
+
+if (landingFilterForm !== null) {
+    const searchInput = document.getElementById('search-input');
+    const typeSelect = document.getElementById('filter-type');
+    const locationSelect = document.getElementById('filter-location');
+    const capacitySelect = document.getElementById('filter-capacity');
+    let debounceTimer = null;
+
+    const fetchLandingFacilities = () => {
+        const params = new URLSearchParams();
+        const q = searchInput.value.trim();
+        const type = typeSelect.value;
+        const location = locationSelect.value;
+        const capacity = capacitySelect.value;
+
+        if (q) params.set('q', q);
+        if (type) params.set('type', type);
+        if (location) params.set('location', location);
+        if (capacity) params.set('capacity', capacity);
+
+        if (landingLoading !== null) landingLoading.classList.remove('hidden');
+        if (landingGridContainer !== null) landingGridContainer.style.opacity = '0.5';
+
+        fetch(`/home/facilities?${params.toString()}`, {
+            headers: { 'X-Requested-With': 'XMLHttpRequest' },
+        })
+            .then((response) => response.json())
+            .then((data) => {
+                if (landingLoading !== null) landingLoading.classList.add('hidden');
+                if (landingGridContainer !== null) landingGridContainer.style.opacity = '1';
+
+                // Update count
+                if (facilityCountNum !== null) {
+                    facilityCountNum.textContent = data.total;
+                }
+
+                // Update grid cards
+                if (landingGridContainer !== null && data.facilities.length > 0) {
+                    landingGridContainer.innerHTML = '';
+                    data.facilities.forEach((facility) => {
+                        const card = document.createElement('div');
+                        card.className = 'group facility-card flex flex-col overflow-hidden rounded-xl bg-white shadow-sm transition-all hover:shadow-md';
+                        card.dataset.facilityId = facility.id;
+
+                        const badgeClass = facility.status === 'aktif' ? 'bg-green-50 text-green-700 ring-green-200' :
+                            facility.status === 'perbaikan' ? 'bg-amber-50 text-amber-700 ring-amber-200' :
+                            'bg-slate-100 text-slate-600 ring-slate-200';
+                        const statusDot = facility.status === 'aktif' ? 'bg-green-500' :
+                            facility.status === 'perbaikan' ? 'bg-amber-500' : 'bg-slate-400';
+                        const typeLabel = typeLabels[facility.type] || facility.type;
+
+                        card.innerHTML = `
+                            <div class="relative aspect-[16/9] w-full overflow-hidden bg-[#f2f3ff]">
+                                ${facility.photo ? `<img src="${facility.photo}" alt="${escapeHtml(facility.name)}" loading="lazy" class="img-fade h-full w-full object-cover transition-transform duration-300 group-hover:scale-105">` :
+                                `<div class="flex h-full w-full items-center justify-center bg-gradient-to-br from-[#00236f] to-[#0051d5]"><span class="text-5xl font-bold text-white/90">${escapeHtml(facility.name.charAt(0) + facility.name.charAt(1))}</span></div>`}
+                                <span class="absolute right-3 top-3 inline-flex items-center gap-1 rounded-full bg-white/95 px-2.5 py-1 text-xs font-medium shadow-sm ring-1 ${badgeClass}">
+                                    <span class="h-1.5 w-1.5 rounded-full ${statusDot}"></span>
+                                    ${escapeHtml(facility.status)}
+                                </span>
+                            </div>
+                            <div class="flex flex-1 flex-col justify-between gap-4 p-6">
+                                <div class="space-y-2">
+                                    <h3 class="text-lg font-semibold text-[#0F172A]">${escapeHtml(facility.name)}</h3>
+                                    <span class="inline-block rounded bg-[#e2e7ff] px-2 py-0.5 text-xs font-medium text-[#00236f]">${escapeHtml(typeLabel)}</span>
+                                    <div class="space-y-1 pt-1">
+                                        <div class="flex items-center gap-2 text-sm text-[#475569]">
+                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="h-4 w-4 text-[#94A3B8]" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M12 21s7-5.5 7-11a7 7 0 10-14 0c0 5.5 7 11 7 11z"/><circle cx="12" cy="10" r="2.5"/></svg>
+                                            <span>${escapeHtml(facility.location)}</span>
+                                        </div>
+                                        <div class="flex items-center gap-2 text-sm text-[#475569]">
+                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="h-4 w-4 text-[#94A3B8]" aria-hidden="true"><circle cx="9" cy="8" r="3.5"/><path stroke-linecap="round" d="M3 20v-1a6 6 0 0112 0v1M16 8.5a3 3 0 010 5.5M17.5 15.2a6 6 0 013.5 4.8"/></svg>
+                                            <span>Kapasitas: ${facility.capacity} orang</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <button type="button" data-landing-go="${facility.id}" class="flex h-10 w-full items-center justify-center gap-1.5 rounded-lg bg-[#f2f3ff] text-sm font-medium text-[#00236f] transition-colors hover:bg-[#e2e7ff]">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="h-[18px] w-[18px]" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M8 3v4m8-4v4M3 10h18"/></svg>
+                                    Lihat Jadwal
+                                </button>
+                            </div>`;
+                        landingGridContainer.appendChild(card);
+                    });
+                } else if (landingGridContainer !== null) {
+                    landingGridContainer.innerHTML = '<div class="col-span-full rounded-xl bg-white p-10 text-center shadow-sm"><p class="text-base font-medium text-[#0F172A]">Fasilitas tidak ditemukan</p><p class="mt-1 text-sm text-[#475569]">Coba ubah kata kunci atau filter pencarian Anda.</p><a href="/" class="mt-4 inline-block rounded-lg bg-[#00236f] px-4 py-2 text-sm font-medium text-white hover:bg-[#001a52]">Reset Filter</a></div>';
+                }
+            })
+            .catch((error) => {
+                if (landingLoading !== null) landingLoading.classList.add('hidden');
+                if (landingGridContainer !== null) landingGridContainer.style.opacity = '1';
+                console.error('Failed to fetch facilities:', error);
+            });
+    };
+
+    const scheduleDebounce = (fn, delay) => {
+        return () => {
+            clearTimeout(debounceTimer);
+            debounceTimer = setTimeout(fn, delay);
+        };
+    };
+
+    searchInput.addEventListener('input', scheduleDebounce(fetchLandingFacilities, 300));
+    typeSelect.addEventListener('change', scheduleDebounce(fetchLandingFacilities, 300));
+    locationSelect.addEventListener('change', scheduleDebounce(fetchLandingFacilities, 300));
+    capacitySelect.addEventListener('change', scheduleDebounce(fetchLandingFacilities, 300));
+
+    if (landingResetBtn !== null) {
+        landingResetBtn.addEventListener('click', () => {
+            searchInput.value = '';
+            typeSelect.value = '';
+            locationSelect.value = '';
+            capacitySelect.value = '';
+            fetchLandingFacilities();
+        });
+    }
+}
+
+// Schedule date change handler
+const slotClasses = {
+    available: 'bg-white text-[#0F172A] shadow-sm hover:shadow',
+    booked: 'bg-[#FFDAD6]/40 text-[#DC2626]',
+    past: 'bg-[#EEF2FF] text-[#94A3B8]',
+    inactive: 'bg-[#EEF2FF] text-[#94A3B8]',
+};
+const slotLabels = {
+    available: 'Tersedia',
+    booked: 'Terpakai',
+    past: 'Waktu Lewat',
+    inactive: 'Tidak Aktif',
+};
+
+let scheduleDebounceTimer = null;
+
+const updateScheduleGrid = (data) => {
+    if (scheduleLoading !== null) scheduleLoading.classList.add('hidden');
+    if (scheduleGrid !== null) scheduleGrid.style.opacity = '1';
+
+    if (!data || !data.grids || !data.facilities || data.facilities.length === 0) return;
+
+    const facility = data.facilities[0];
+    const facilityId = String(facility.id);
+    const grids = data.grids[facilityId] || [];
+
+    const indicator = document.querySelector('[data-facility-indicator]');
+    if (indicator) indicator.textContent = `Fasilitas: ${facility.name}`;
+
+    const title = document.getElementById('schedule-title');
+    if (title) {
+        const selectedDate = scheduleDateInput.value;
+        const dateObj = selectedDate ? new Date(selectedDate + 'T00:00:00') : null;
+        const dateStr = dateObj ? dateObj.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }) : 'Jadwal';
+        title.textContent = `Pratinjau Ketersediaan Jadwal — ${dateStr}`;
+    }
+
+    const gridContainer = document.getElementById('schedule-grid');
+    if (!gridContainer) return;
+
+    gridContainer.innerHTML = `
+        <div role="tabpanel" aria-labelledby="tab-facility-${facilityId}" id="facility-grid-${facilityId}"
+             data-facility-grid="${facilityId}" data-facility-name="${escapeHtml(facility.name)}"
+             class="space-y-3">
+            <div class="flex items-center justify-between">
+                <span class="text-xs font-medium uppercase tracking-wider text-[#475569]">Slot Waktu Pemakaian (Interval 30 Menit)</span>
+                <span class="text-xs text-[#94A3B8]">Total ${grids.length} Slot</span>
+            </div>
+            <div class="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6">
+                ${grids.map(slot => `
+                    <div class="flex flex-col items-center justify-center rounded-lg p-3 text-center select-none ${slotClasses[slot.state] || ''}
+                        ${['past', 'booked', 'inactive'].includes(slot.state) ? 'cursor-not-allowed opacity-70' : ''}">
+                        <span class="text-sm font-medium">${escapeHtml(slot.start)} - ${escapeHtml(slot.end)}</span>
+                        <span class="mt-0.5 text-xs font-medium ${['booked', 'past', 'inactive'].includes(slot.state) ? 'text-[#DC2626]' : 'text-green-600'}">${slotLabels[slot.state] || slot.state}</span>
+                    </div>
+                `).join('')}
+            </div>
+        </div>`;
+};
+
+const fetchSchedule = () => {
+    if (!scheduleDateInput || !scheduleGrid) return;
+
+    const date = scheduleDateInput.value;
+    const activeTab = document.querySelector('[data-landing-tab].bg-\\[\\#00236f\\]');
+    const facilityId = activeTab ? activeTab.dataset.landingTab : null;
+
+    if (!facilityId) return;
+
+    if (scheduleLoading !== null) scheduleLoading.classList.remove('hidden');
+    if (scheduleGrid !== null) scheduleGrid.style.opacity = '0.5';
+
+    fetch(`/home/facilities?date=${date}&facility_id=${facilityId}`, {
+        headers: { 'X-Requested-With': 'XMLHttpRequest' },
+    })
+        .then((response) => response.json())
+        .then((data) => {
+            updateScheduleGrid(data);
+        })
+        .catch((error) => {
+            if (scheduleLoading !== null) scheduleLoading.classList.add('hidden');
+            if (scheduleGrid !== null) scheduleGrid.style.opacity = '1';
+            console.error('Failed to fetch schedule:', error);
+        });
+};
+
+if (scheduleDateInput !== null && scheduleGrid !== null) {
+    scheduleDateInput.addEventListener('change', () => {
+        clearTimeout(scheduleDebounceTimer);
+        scheduleDebounceTimer = setTimeout(fetchSchedule, 300);
+    });
+
+    if (scheduleTabsContainer !== null) {
+        scheduleTabsContainer.addEventListener('click', (e) => {
+            const tab = e.target.closest('[data-landing-tab]');
+            if (!tab) return;
+            clearTimeout(scheduleDebounceTimer);
+            scheduleDebounceTimer = setTimeout(fetchSchedule, 300);
+        });
+    }
 }

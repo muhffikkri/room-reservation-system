@@ -7,6 +7,7 @@ use App\Http\Requests\CancelReservationOfficerRequest;
 use App\Http\Requests\RejectReservationRequest;
 use App\Models\Reservation;
 use App\Services\ReservationService;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -50,6 +51,34 @@ class ReservationController extends Controller
         return view('petugas.reservasi.index', [
             'reservations' => $reservations,
             'filters' => $filters,
+        ]);
+    }
+
+    public function ajaxIndex(Request $request): JsonResponse
+    {
+        $filters = $request->validate([
+            'status' => ['nullable', 'string', 'in:'.implode(',', self::STATUSES)],
+            'date' => ['nullable', 'date'],
+        ]);
+
+        $reservations = Reservation::query()
+            ->with(['user', 'facility'])
+            ->when($filters['status'] ?? null, fn ($query, string $status) => $query->where('status', $status))
+            ->when($filters['date'] ?? null, fn ($query, string $date) => $query->whereDate('start_time', $date))
+            ->orderByRaw('CASE status WHEN "pending" THEN 0 ELSE 1 END')
+            ->orderBy('start_time')
+            ->paginate(15);
+
+        return response()->json([
+            'reservations' => $reservations->items(),
+            'pagination' => [
+                'current_page' => $reservations->currentPage(),
+                'last_page' => $reservations->lastPage(),
+                'per_page' => $reservations->perPage(),
+                'total' => $reservations->total(),
+                'from' => $reservations->firstItem(),
+                'to' => $reservations->lastItem(),
+            ],
         ]);
     }
 

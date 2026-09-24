@@ -122,22 +122,23 @@
         </section>
         
         {{-- SECTION 2: Pencarian --}}
-<section class="rounded-xl bg-white p-6 shadow-sm md:p-8 max-w-2xl mx-auto">
-            <form id="landingFilterForm" class="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-5">
-                <div>
+        <section class="rounded-xl bg-white p-6 shadow-sm">
+            <form id="landingFilterForm" class="grid grid-cols-1 items-end gap-4 md:grid-cols-2 lg:grid-cols-5">
+                <div class="lg:col-span-1">
                     <label for="search-input" class="mb-1.5 block text-sm font-medium text-[#475569]">Pencarian</label>
                     <div class="relative">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="absolute left-3 top-2.5 h-[18px] w-[18px] text-[#94A3B8]" aria-hidden="true">
                             <circle cx="11" cy="11" r="7"/><path stroke-linecap="round" d="M20 20l-3.5-3.5"/>
                         </svg>
-                        <input id="search-input" type="text" placeholder="Cari fasilitas..."
+                        <input id="search-input" type="text" placeholder="Cari fasilitas..." value=""
                                class="h-10 w-full rounded-lg bg-[#f2f3ff] pl-9 pr-3 text-sm text-[#0F172A] transition focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#00236f]/40"
                                data-debounce="300">
                     </div>
                 </div>
                 <div>
                     <label for="filter-type" class="mb-1.5 block text-sm font-medium text-[#475569]">Jenis Fasilitas</label>
-                    <select id="filter-type" class="h-10 w-full rounded-lg bg-[#f2f3ff] px-3 text-sm text-[#0F172A] focus:outline-none focus:ring-2 focus:ring-[#00236f]/40">
+                    <select id="filter-type" data-debounce="300"
+                            class="h-10 w-full rounded-lg bg-[#f2f3ff] px-3 text-sm text-[#0F172A] focus:outline-none focus:ring-2 focus:ring-[#00236f]/40">
                         <option value="">Semua Jenis</option>
                         @foreach ($typeLabels as $value => $label)
                             <option value="{{ $value }}">{{ $label }}</option>
@@ -146,7 +147,8 @@
                 </div>
                 <div>
                     <label for="filter-location" class="mb-1.5 block text-sm font-medium text-[#475569]">Lokasi</label>
-                    <select id="filter-location" class="h-10 w-full rounded-lg bg-[#f2f3ff] px-3 text-sm text-[#0F172A] focus:outline-none focus:ring-2 focus:ring-[#00236f]/40">
+                    <select id="filter-location" data-debounce="300"
+                            class="h-10 w-full rounded-lg bg-[#f2f3ff] px-3 text-sm text-[#0F172A] focus:outline-none focus:ring-2 focus:ring-[#00236f]/40">
                         <option value="">Semua Gedung</option>
                         @foreach ($locationOptions as $location)
                             <option value="{{ $location }}">{{ $location }}</option>
@@ -155,7 +157,8 @@
                 </div>
                 <div>
                     <label for="filter-capacity" class="mb-1.5 block text-sm font-medium text-[#475569]">Kapasitas</label>
-                    <select id="filter-capacity" class="h-10 w-full rounded-lg bg-[#f2f3ff] px-3 text-sm text-[#0F172A] focus:outline-none focus:ring-2 focus:ring-[#00236f]/40">
+                    <select id="filter-capacity" data-debounce="300"
+                            class="h-10 w-full rounded-lg bg-[#f2f3ff] px-3 text-sm text-[#0F172A] focus:outline-none focus:ring-2 focus:ring-[#00236f]/40">
                         <option value="">Semua Kapasitas</option>
                         <option value="lt_40">< 40 orang</option>
                         <option value="40_100">40 - 100 orang</option>
@@ -163,7 +166,7 @@
                     </select>
                 </div>
                 <div>
-                    <button type="button" id="reset-filter"
+                    <button type="button" id="landing-reset-filter"
                             class="flex h-10 w-full items-center justify-center gap-2 rounded-lg bg-[#00236f] text-sm font-medium text-white shadow-sm transition-all hover:bg-[#001a52]">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="h-[18px] w-[18px]" aria-hidden="true">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16M8 6v-.5A1.5 1.5 0 0110 4v0A1.5 1.5 0 0111.5 6v0M12 12v-.5A1.5 1.5 0 0114 10v0A1.5 1.5 0 0115.5 12v0M8 18v-.5A1.5 1.5 0 0110 16v0A1.5 1.5 0 0111.5 18v0"/>
@@ -172,37 +175,40 @@
                     </button>
                 </div>
             </form>
+            <div id="landing-loading" class="mt-4 hidden">
+                <div class="rounded-xl bg-white p-8 shadow-sm text-center">
+                    <svg class="animate-spin h-8 w-8 text-[#0051d5] mx-auto" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.37 0 0 5.37 0 12h4z"></path>
+                    </svg>
+                    <p class="mt-2 text-sm text-slate-500">Memuat fasilitas...</p>
+                </div>
+            </div>
         </section>
 
         {{-- SECTION 3: Grid Kartu Fasilitas --}}
         <section id="fasilitas" data-landing-section class="scroll-mt-24 space-y-6">
-            <div class="flex flex-wrap items-center justify-between gap-3 max-w-2xl mx-auto">
+            <div class="flex flex-wrap items-center justify-between gap-3">
                 <div>
                     <h2 class="text-xl font-semibold text-[#0F172A]">Fasilitas Kampus Unggulan</h2>
                     <p class="text-xs text-[#475569]">Fasilitas standar akademik dengan pratinjau ketersediaan jam secara real-time.</p>
                 </div>
-                <span class="rounded-full bg-[#e2e7ff] px-3 py-1 text-xs font-medium text-[#475569]">
-                    Menampilkan {{ min($facilities->count(), 9) }} dari {{ $totalFacilities }} Fasilitas
+                <span class="rounded-full bg-[#e2e7ff] px-3 py-1 text-xs font-medium text-[#475569]" id="facility-count">
+                    Menampilkan <span id="facility-count-num">{{ $facilities->count() }}</span> dari {{ $totalFacilities }} Fasilitas
                 </span>
             </div>
 
-            @if ($totalFacilities > 9)
-            <div class="mt-4 text-center">
-                <a href="{{ route('home') }}" class="inline-block rounded-lg bg-[#00236f] px-4 py-2 text-sm font-medium text-white hover:bg-[#001a52]">Lihat Semua Fasilitas ({{ $totalFacilities }})</a>
-            </div>
-            @endif
-
             @if ($facilities->isEmpty())
-                <div class="fixed inset-0 flex items-center justify-center rounded-xl bg-white shadow-sm">
+                <div class="rounded-xl bg-white p-10 text-center shadow-sm">
                     <p class="text-base font-medium text-[#0F172A]">Fasilitas tidak ditemukan</p>
                     <p class="mt-1 text-sm text-[#475569]">Coba ubah kata kunci atau filter pencarian Anda.</p>
                     <a href="{{ route('home') }}" class="mt-4 inline-block rounded-lg bg-[#00236f] px-4 py-2 text-sm font-medium text-white hover:bg-[#001a52]">Reset Filter</a>
                 </div>
             @endif
 
-            <div class="grid grid-cols-1 gap-6 md:grid-cols-3 max-h-[500px] overflow-y-auto">
-                @foreach ($facilities->take(9) as $facility)
-                    <div class="group flex flex-col overflow-hidden rounded-xl bg-white shadow-sm transition-all hover:shadow-md">
+            <div id="landing-grid-container" class="grid grid-cols-1 gap-6 md:grid-cols-3 max-h-[500px] overflow-y-auto">
+                @foreach ($facilities as $facility)
+                    <div class="group facility-card flex flex-col overflow-hidden rounded-xl bg-white shadow-sm transition-all hover:shadow-md" data-facility-id="{{ $facility->id }}">
                         <div class="relative aspect-[16/9] w-full overflow-hidden bg-[#f2f3ff]">
                             @if ($facility->photo)
                                 <img src="{{ Storage::disk('public')->url($facility->photo) }}" alt="{{ $facility->name }}" loading="lazy"
@@ -250,26 +256,40 @@
                     </div>
                 @endforeach
             </div>
+
+            @if ($totalFacilities > 9)
+            <div class="mt-4 text-center">
+                <a href="{{ route('home') }}" class="inline-block rounded-lg bg-[#00236f] px-4 py-2 text-sm font-medium text-white hover:bg-[#001a52]">Lihat Semua Fasilitas ({{ $totalFacilities }})</a>
+            </div>
+            @endif
+        </section>
+
+        {{-- SECTION 4: Pratinjau Jadwal --}}
+        <section id="jadwal-preview" data-landing-section class="scroll-mt-24 space-y-6 rounded-xl bg-white p-6 shadow-sm md:p-8">
             <div class="flex flex-col justify-between gap-4 md:flex-row md:items-center">
                 <div>
                     <div class="flex items-center gap-2">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="h-6 w-6 text-[#00236f]" aria-hidden="true">
                             <rect x="3" y="5" width="18" height="16" rx="2"/><path d="M8 3v4m8-4v4M3 10h18M9 15h6"/>
                         </svg>
-                        <h2 class="text-lg font-semibold text-[#0F172A]">Pratinjau Ketersediaan Jadwal (Hari Ini: {{ $today->format('j F Y') }})</h2>
+                        <h2 class="text-lg font-semibold text-[#0F172A]" id="schedule-title">Pratinjau Ketersediaan Jadwal</h2>
                     </div>
-                    <p class="mt-1 text-xs text-[#475569]">Pilih fasilitas untuk melihat jam ketersediaan publik secara real-time.</p>
+                    <p class="mt-1 text-xs text-[#475569]">Pilih fasilitas dan tanggal untuk melihat jam ketersediaan publik secara real-time.</p>
                 </div>
-                <div class="inline-flex items-center gap-2 self-start rounded-lg bg-[#f2f3ff] px-3 py-1.5 text-sm text-[#475569] md:self-auto">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="h-4 w-4 text-[#0891B2]" aria-hidden="true">
-                        <circle cx="12" cy="12" r="9"/><path stroke-linecap="round" d="M12 7v5l3 2"/>
-                    </svg>
-                    Waktu Server: {{ $today->format('H:i') }} WIB
+                <div class="flex items-center gap-2">
+                    <input type="date" id="schedule-date" value="{{ $today->toDateString() }}" min="{{ $today->toDateString() }}"
+                           class="h-10 rounded-lg border border-slate-300 bg-white px-3 text-sm text-[#0F172A] focus:outline-none focus:ring-2 focus:ring-[#0051d5]/40">
+                    <div class="inline-flex items-center gap-2 rounded-lg bg-[#f2f3ff] px-3 py-1.5 text-sm text-[#475569]">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="h-4 w-4 text-[#0891B2]" aria-hidden="true">
+                            <circle cx="12" cy="12" r="9"/><path stroke-linecap="round" d="M12 7v5l3 2"/>
+                        </svg>
+                        Waktu Server: {{ $today->format('H:i') }} WIB
+                    </div>
                 </div>
             </div>
 
             {{-- Tab fasilitas --}}
-            <div role="tablist" aria-label="Pilih fasilitas" class="flex flex-wrap gap-2 pt-1">
+            <div role="tablist" aria-label="Pilih fasilitas" class="flex flex-wrap gap-2 pt-1" id="schedule-tabs">
                 @foreach ($facilities as $facility)
                     <button type="button" role="tab" id="tab-facility-{{ $facility->id }}"
                             aria-controls="facility-grid-{{ $facility->id }}"
@@ -294,6 +314,17 @@
                 <span class="text-xs font-medium text-[#475569]">Zona Operasional: 07:00 - 20:00 WIB</span>
             </div>
 
+            <div id="schedule-loading" class="hidden mt-6">
+                <div class="rounded-2xl border border-[#E2E7FF] bg-white p-8 shadow-sm text-center">
+                    <svg class="animate-spin h-8 w-8 text-[#0051d5] mx-auto" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.37 0 0 5.37 0 12h4z"></path>
+                    </svg>
+                    <p class="mt-2 text-sm text-slate-500">Memuat jadwal...</p>
+                </div>
+            </div>
+
+            <div id="schedule-grid" class="space-y-3">
             @if ($facilities->isEmpty())
                 <p class="rounded-lg bg-[#f2f3ff]/70 p-6 text-center text-sm text-[#475569]">
                     Tidak ada fasilitas untuk ditampilkan. Reset filter untuk melihat pratinjau ketersediaan.
@@ -319,8 +350,7 @@
                     </div>
                 </div>
             @endforeach
-
-            {{-- Legend --}}
+            </div>
             <div class="flex flex-wrap items-center gap-6 pb-1 pt-2">
                 <div class="flex items-center gap-2">
                     <span class="flex h-4 w-4 items-center justify-center rounded bg-white shadow-sm"><span class="h-2 w-2 rounded-full bg-green-500"></span></span>

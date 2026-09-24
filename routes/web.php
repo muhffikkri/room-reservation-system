@@ -75,6 +75,7 @@ Route::middleware(['auth', 'active', 'role:petugas'])->prefix('petugas')->group(
     Route::patch('/laporan/{report}/status', [OfficerReportController::class, 'updateStatus'])->name('petugas.laporan.status');
     Route::patch('/laporan/{report}/fasilitas-status', [OfficerReportController::class, 'toggleFacilityStatus'])->name('petugas.laporan.fasilitas-status');
     Route::get('/reservasi', [OfficerReservationController::class, 'index'])->name('petugas.reservasi.index');
+    Route::get('/reservasi/data', [OfficerReservationController::class, 'ajaxIndex'])->name('petugas.reservasi.ajax');
     Route::get('/reservasi/{reservation}', [OfficerReservationController::class, 'show'])->name('petugas.reservasi.show');
     Route::post('/reservasi/{reservation}/approve', [OfficerReservationController::class, 'approve'])
         ->name('petugas.reservasi.approve');
