@@ -25,10 +25,6 @@ Route::get('/', HomeController::class)
     ->middleware('throttle:public-browse')
     ->name('home');
 
-Route::get('/home/facilities', [HomeController::class, 'ajaxFacilities'])
-    ->middleware('throttle:public-browse')
-    ->name('home.facilities.ajax');
-
 Route::get('/fasilitas', [FacilityController::class, 'index'])
     ->middleware('throttle:public-browse')
     ->name('fasilitas.index');

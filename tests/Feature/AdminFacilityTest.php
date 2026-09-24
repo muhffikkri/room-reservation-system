@@ -81,6 +81,7 @@ it('creates an active facility and stores its photo under facilities/', function
 
     Storage::disk('public')->assertExists($facility->photo);
     expect($facility->photo)->toStartWith('facilities/')
+        ->and($facility->photo)->toEndWith('.webp')
         ->and(Storage::disk('public')->size($facility->photo))->toBeLessThan(500 * 1024);
 });
 
@@ -154,7 +155,7 @@ it('updates a facility and replaces its photo', function () {
     Storage::disk('public')->assertExists($facility->photo);
     Storage::disk('public')->assertMissing('facilities/lama.jpg');
 
-    expect($facility->photo)->toStartWith('facilities/')
+    expect($facility->photo)->toEndWith('.webp')
         ->and(Storage::disk('public')->size($facility->photo))->toBeLessThan(500 * 1024);
 });
 

@@ -8,6 +8,7 @@ use App\Models\Facility;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Image;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\View\View;
 
@@ -136,7 +137,8 @@ class FacilityController extends Controller
     }
 
     /**
-     * Simpan foto fasilitas ke storage/public/facilities.
+     * Simpan foto fasilitas sebagai WebP (kualitas 80, lebar maks 1920px)
+     * agar ukuran file di storage/public/facilities tetap ringan.
      */
     private function storePhoto(FacilityRequest $request): ?string
     {
@@ -144,7 +146,12 @@ class FacilityController extends Controller
             return null;
         }
 
-        $path = $request->file('photo')->storePublicly('facilities', 'public');
+        $path = Image::fromUpload($request->file('photo'))
+            ->orient()
+            ->scale(width: 1920)
+            ->toWebp()
+            ->quality(80)
+            ->storePublicly('facilities', 'public');
 
         if ($path === false) {
             throw new \RuntimeException('Foto fasilitas gagal disimpan.');

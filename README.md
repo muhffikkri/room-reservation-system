@@ -23,10 +23,10 @@ Dokumen acuan:
 - Siklus akun: registrasi berstatus `pending`, admin memverifikasi/menolak, akun yang dibuat admin langsung `aktif`, akun ditolak bisa dipulihkan admin, riwayat verifikasi tersimpan
 - Kelola akun admin: admin dapat membuat akun petugas, pengguna, dan admin (BR-17)
 - Alur reservasi pengguna (`/reservasi`): ajukan reservasi (form + slot picker), riwayat & detail, batalkan milik sendiri min 1 jam sebelum mulai (BR-8)
-- CRUD fasilitas admin: tambah/edit/nonaktifkan/aktifkan, dengan upload foto (simpan file asli)
+- CRUD fasilitas admin: tambah/edit/nonaktifkan/aktifkan, dengan upload foto (otomatis dikonversi WebP)
 - Admin dashboard (agregat read-only): ringkasan antrian reservasi, laporan, fasilitas perbaikan, dan akun menunggu verifikasi
 - Antrian reservasi petugas: daftar + filter status/tanggal, detail, setujui/tolak/batalkan dengan alasan (konfirmasi via dialog)
-- Laporan kerusakan pengguna (`/laporan`): buat laporan (kategori, deskripsi, foto), daftar & detail laporan milik sendiri
+- Laporan kerusakan pengguna (`/laporan`): buat laporan (kategori, deskripsi, foto WebP), daftar & detail laporan milik sendiri
 - Antrian laporan petugas (`/petugas/laporan`): filter status, transisi `baru → diproses → selesai/tolak` dengan catatan resolusi, tandai fasilitas `perbaikan` ↔ `aktif` (BR-10, BR-11)
 - **Rekap okupansi & frekuensi kerusakan admin (`/admin/rekap/okupansi`, `/admin/rekap/kerusakan`): filter tanggal, ringkasan metrik, tabel per fasilitas, ekspor CSV & PDF (BR-12)**
 - Mesin ketersediaan reservasi (`App\Services\ReservationAvailability`): slot 30 menit (07:00–20:00, 26 slot), kuota pending, lead time 60 menit, anti-bentrok approved, proyeksi jadwal publik & pemesanan, approve dengan kunci transaksi — format waktu kanonik `H:i`
