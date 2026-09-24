@@ -8,6 +8,14 @@ Format mengikuti riwayat commit tim. Tanggal terbaru di atas. Status merge: **De
 
 ## [Unreleased] — Sedang dikerjakan di branch anggota tim
 
+### feat/landing-page-features — Grid Fasilitas Maksimal 9 + Live Search AJAX + View All + Pratinjau Jadwal Tanggal (feat/landing-page-features)
+
+- **Filter live search (AJAX)**: Menghapus `method="GET"` dari form filter, mencari fasilitas saat input berhenti diketik (debounce ±300ms) tanpa reload halaman. Kriteria kombinasi: query `LIKE %input%` + Jenis Fasilitas + Lokasi + Kapasitas. Menampilkan animasi loading (skeleton) saat fetch data. Tombol "Terapkan Filter" diganti "Reset Filter" untuk mengosongkan semua nilai.
+- **Grid kartu fasilitas maksimal 9**: Menampilkan maksimal 9 kartu (3 baris × 3 kolom). Jika hasil > 9, muncul link "Lihat Semua (N)" yang mengarah ke halaman `/fasilitas` menampilkan seluruh fasilitas. Penampungan hasil pada grid konsisten dengan hasil filter live.
+- **Container grid fixed height**: Grid kartu fasilitas ditempatkan di dalam container dengan `max-h-[500px] overflow-y-auto` untuk mencegah layout shift saat data sedikit atau kosong. State kosong menampilkan di dalam container tersebut.
+- **Section "Pratinjau Ketersediaan Jadwal"**: Menambahkan input tanggal untuk memilih tanggal berbeda (default: hari ini). Judul section tanpa "(Hari Ini: ...)". Menggunakan AJAX untuk mengambil grid ketersediaan per tanggal lewat `ReservationAvailability::publicScheduleSlots`. Tab/kartu fasilitas menggunakan container terpisah dengan ukuran fixed agar result kosong tidak menggeser komponen di bawahnya. Ketika jumlah fasilitas sangat banyak, tampilkan dalam carousel.
+- **HomeController**: Ditambah metode `ajaxFacilities()` untuk endpoint live search AJAX. Fitur filter quantity limit 9 fasilitas untuk grid.
+
 ### refactor/reservation-availability — Keputusan Ketersediaan Slot di Satu Modul (`60cde7e`, belum di-merge ke `dev`)
 - **Modul baru `ReservationAvailability`** (BR-1..BR-6, BR-12): konstanta 07:00–20:00 / 30 menit / 26 slot / maks 8 slot (240 menit) / lead time 60 menit / format `H:i`; predikat `isFacilityBookable`, `leadTimeCutoff`/`isWithinLeadTime`, `pendingQuotaError`, `hasApprovedOverlap`/`hasBlockingOverlap`; query `approvedForDay`; proyeksi `publicScheduleSlots` (publik, tanpa lead time) & `bookingSlots` (form); `dayStart`/`dayEnd`/`slotsForDay`/`timeOptions`
 - **Adapters**: `HomeController` (landing → `bookingSlots`), `FacilityController` (jadwal publik → `publicScheduleSlots`), `ReservationController` (`timeOptions` + `maxDurationSlots` ke view), `reservation-form.js` memakai `data-max-duration-slots`; konstanta/helper jam operasional duplikat di controller dihapus; format grid `H.i` → `H:i`; inline script di `reservasi/create` dipindah ke file JS

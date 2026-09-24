@@ -122,55 +122,53 @@
         </section>
         
         {{-- SECTION 2: Pencarian --}}
-        <section class="rounded-xl bg-white p-6 shadow-sm">
-            <form method="GET" action="{{ route('home') }}" class="grid grid-cols-1 items-end gap-4 md:grid-cols-2 lg:grid-cols-5">
-                <div class="lg:col-span-1">
+<section class="rounded-xl bg-white p-6 shadow-sm md:p-8 max-w-2xl mx-auto">
+            <form id="landingFilterForm" class="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-5">
+                <div>
                     <label for="search-input" class="mb-1.5 block text-sm font-medium text-[#475569]">Pencarian</label>
                     <div class="relative">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="absolute left-3 top-2.5 h-[18px] w-[18px] text-[#94A3B8]" aria-hidden="true">
                             <circle cx="11" cy="11" r="7"/><path stroke-linecap="round" d="M20 20l-3.5-3.5"/>
                         </svg>
-                        <input id="search-input" name="q" value="{{ $filters['q'] ?? '' }}" type="text" placeholder="Cari fasilitas..."
-                               class="h-10 w-full rounded-lg bg-[#f2f3ff] pl-9 pr-3 text-sm text-[#0F172A] transition focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#00236f]/40">
+                        <input id="search-input" type="text" placeholder="Cari fasilitas..."
+                               class="h-10 w-full rounded-lg bg-[#f2f3ff] pl-9 pr-3 text-sm text-[#0F172A] transition focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#00236f]/40"
+                               data-debounce="300">
                     </div>
                 </div>
                 <div>
                     <label for="filter-type" class="mb-1.5 block text-sm font-medium text-[#475569]">Jenis Fasilitas</label>
-                    <select id="filter-type" name="type"
-                            class="h-10 w-full rounded-lg bg-[#f2f3ff] px-3 text-sm text-[#0F172A] focus:outline-none focus:ring-2 focus:ring-[#00236f]/40">
+                    <select id="filter-type" class="h-10 w-full rounded-lg bg-[#f2f3ff] px-3 text-sm text-[#0F172A] focus:outline-none focus:ring-2 focus:ring-[#00236f]/40">
                         <option value="">Semua Jenis</option>
                         @foreach ($typeLabels as $value => $label)
-                            <option value="{{ $value }}" @selected(($filters['type'] ?? null) === $value)>{{ $label }}</option>
+                            <option value="{{ $value }}">{{ $label }}</option>
                         @endforeach
                     </select>
                 </div>
                 <div>
                     <label for="filter-location" class="mb-1.5 block text-sm font-medium text-[#475569]">Lokasi</label>
-                    <select id="filter-location" name="location"
-                            class="h-10 w-full rounded-lg bg-[#f2f3ff] px-3 text-sm text-[#0F172A] focus:outline-none focus:ring-2 focus:ring-[#00236f]/40">
+                    <select id="filter-location" class="h-10 w-full rounded-lg bg-[#f2f3ff] px-3 text-sm text-[#0F172A] focus:outline-none focus:ring-2 focus:ring-[#00236f]/40">
                         <option value="">Semua Gedung</option>
                         @foreach ($locationOptions as $location)
-                            <option value="{{ $location }}" @selected(($filters['location'] ?? null) === $location)>{{ $location }}</option>
+                            <option value="{{ $location }}">{{ $location }}</option>
                         @endforeach
                     </select>
                 </div>
                 <div>
                     <label for="filter-capacity" class="mb-1.5 block text-sm font-medium text-[#475569]">Kapasitas</label>
-                    <select id="filter-capacity" name="capacity"
-                            class="h-10 w-full rounded-lg bg-[#f2f3ff] px-3 text-sm text-[#0F172A] focus:outline-none focus:ring-2 focus:ring-[#00236f]/40">
+                    <select id="filter-capacity" class="h-10 w-full rounded-lg bg-[#f2f3ff] px-3 text-sm text-[#0F172A] focus:outline-none focus:ring-2 focus:ring-[#00236f]/40">
                         <option value="">Semua Kapasitas</option>
-                        <option value="lt_40" @selected(($filters['capacity'] ?? null) === 'lt_40')>&lt; 40 orang</option>
-                        <option value="40_100" @selected(($filters['capacity'] ?? null) === '40_100')>40 - 100 orang</option>
-                        <option value="gt_100" @selected(($filters['capacity'] ?? null) === 'gt_100')>&gt; 100 orang</option>
+                        <option value="lt_40">< 40 orang</option>
+                        <option value="40_100">40 - 100 orang</option>
+                        <option value="gt_100">> 100 orang</option>
                     </select>
                 </div>
                 <div>
-                    <button type="submit"
+                    <button type="button" id="reset-filter"
                             class="flex h-10 w-full items-center justify-center gap-2 rounded-lg bg-[#00236f] text-sm font-medium text-white shadow-sm transition-all hover:bg-[#001a52]">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="h-[18px] w-[18px]" aria-hidden="true">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16M8 6v-.5A1.5 1.5 0 0110 4v0A1.5 1.5 0 0111.5 6v0M12 12v-.5A1.5 1.5 0 0114 10v0A1.5 1.5 0 0115.5 12v0M8 18v-.5A1.5 1.5 0 0110 16v0A1.5 1.5 0 0111.5 18v0"/>
                         </svg>
-                        Terapkan Filter
+                        Reset Filter
                     </button>
                 </div>
             </form>
@@ -178,25 +176,31 @@
 
         {{-- SECTION 3: Grid Kartu Fasilitas --}}
         <section id="fasilitas" data-landing-section class="scroll-mt-24 space-y-6">
-            <div class="flex flex-wrap items-center justify-between gap-3">
+            <div class="flex flex-wrap items-center justify-between gap-3 max-w-2xl mx-auto">
                 <div>
                     <h2 class="text-xl font-semibold text-[#0F172A]">Fasilitas Kampus Unggulan</h2>
                     <p class="text-xs text-[#475569]">Fasilitas standar akademik dengan pratinjau ketersediaan jam secara real-time.</p>
                 </div>
                 <span class="rounded-full bg-[#e2e7ff] px-3 py-1 text-xs font-medium text-[#475569]">
-                    Menampilkan {{ $facilities->count() }} dari {{ $totalFacilities }} Fasilitas
+                    Menampilkan {{ min($facilities->count(), 9) }} dari {{ $totalFacilities }} Fasilitas
                 </span>
             </div>
 
+            @if ($facilities->count() > 9)
+            <div class="mt-4 text-center">
+                <a href="{{ route('home') }}" class="inline-block rounded-lg bg-[#00236f] px-4 py-2 text-sm font-medium text-white hover:bg-[#001a52]">Lihat Semua Fasilitas</a>
+            </div>
+            @endif
+
             @if ($facilities->isEmpty())
-                <div class="rounded-xl bg-white p-10 text-center shadow-sm">
+                <div class="fixed inset-0 flex items-center justify-center rounded-xl bg-white shadow-sm">
                     <p class="text-base font-medium text-[#0F172A]">Fasilitas tidak ditemukan</p>
                     <p class="mt-1 text-sm text-[#475569]">Coba ubah kata kunci atau filter pencarian Anda.</p>
                     <a href="{{ route('home') }}" class="mt-4 inline-block rounded-lg bg-[#00236f] px-4 py-2 text-sm font-medium text-white hover:bg-[#001a52]">Reset Filter</a>
                 </div>
             @endif
 
-            <div class="grid grid-cols-1 gap-6 md:grid-cols-3">
+            <div class="grid grid-cols-1 gap-6 md:grid-cols-3 max-h-[500px] overflow-y-auto">
                 @foreach ($facilities as $facility)
                     <div class="group flex flex-col overflow-hidden rounded-xl bg-white shadow-sm transition-all hover:shadow-md">
                         <div class="relative aspect-[16/9] w-full overflow-hidden bg-[#f2f3ff]">
@@ -246,10 +250,6 @@
                     </div>
                 @endforeach
             </div>
-        </section>
-
-        {{-- SECTION 4: Pratinjau Jadwal --}}
-        <section id="jadwal-preview" data-landing-section class="scroll-mt-24 space-y-6 rounded-xl bg-white p-6 shadow-sm md:p-8">
             <div class="flex flex-col justify-between gap-4 md:flex-row md:items-center">
                 <div>
                     <div class="flex items-center gap-2">
