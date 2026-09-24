@@ -8,15 +8,37 @@ Format mengikuti riwayat commit tim. Tanggal terbaru di atas. Status merge: **De
 
 ## [Unreleased] — Sedang dikerjakan di branch anggota tim
 
-### feat/landing-page-features — Grid Fasilitas Maksimal 9 + Live Search AJAX + View All + Pratinjau Jadwal Tanggal (feat/landing-page-features)
+### feat/live-search-filter-dashboard — Live Search Filter di Dashboard Petugas (feat/live-search-filter-dashboard)
 
-- **Filter live search (AJAX)**: Menghapus `method="GET"` dari form filter, mencari fasilitas saat input berhenti diketik (debounce ±300ms) tanpa reload halaman. Kriteria kombinasi: query `LIKE %input%` + Jenis Fasilitas + Lokasi + Kapasitas. Menampilkan animasi loading (skeleton) saat fetch data. Tombol "Terapkan Filter" diganti "Reset Filter" untuk mengosongkan semua nilai.
+- **Filter AJAX live search**: Menghapus `method="GET"` dari form filter di halaman antrian reservasi petugas (`resources/views/petugas/reservasi/index.blade.php`). Pencarian otomatis berjalan saat input berubah dengan debounce ±300ms tanpa reload halaman.
+- **Tombol Reset Filter**: Tombol "Filter" diganti "Reset Filter" yang mengosongkan semua input dan menampilkan data default.
+- **Loading indicator**: Menampilkan animasi loading saat fetch data berlangsung.
+- **AJAX endpoint**: `GET /petugas/reservasi/data` → `OfficerReservationController@ajaxIndex` mengembalikan JSON dengan data reservasi terfilter.
+- **Kombinasi filter**: Status (`status`) dan Tanggal (`date`) menyaring hasil dengan benar.
+- **JavaScript**: Menambahkan `fetch()` dengan debounce di `resources/js/app.js` untuk update tabel secara dinamis tanpa reload.
+
+### feat/live-search-filter-dashboard — Live Search Filter Landing Page + Schedule AJAX (feat/live-search-filter-dashboard)
+- **Landing page AJAX live search**: Mengganti form filter `method="GET"` dengan AJAX live search pada `resources/views/landing/index.blade.php`. Fasilitas kartu diperbarui secara dinamis saat input pencarian, jenis, lokasi, atau kapasitas berubah (debounce ±300ms) tanpa reload halaman.
+- **Reset Filter**: Tombol "Terapkan Filter" diganti "Reset Filter" yang mengosongkan semua input dan mengembalikan data default.
+- **Loading indicator**: Menampilkan animasi loading `#landing-loading` saat fetch data berlangsung.
+- **AJAX endpoint**: `GET /home/facilities` → `HomeController@ajaxFacilities` mengembalikan JSON dengan data fasilitas terfilter dan grid ketersediaan. Mendukung parameter `facility_id` dan `date` untuk schedule preview update.
+- **Container grid fixed height**: Grid kartu fasilitas menggunakan `max-h-[500px] overflow-y-auto` untuk mencegah layout shift.
+- **Schedule date picker**: Menambahkan input `type="date"` di section "Pratinjau Ketersediaan Jadwal" untuk memilih tanggal berbeda. Container fixed height pada grid jadwal.
+- **JavaScript**: Menambahkan `fetch()` dengan debounce di `resources/js/app.js` untuk update grid fasilitas dan jadwal secara dinamis.
+
+### feat/landing-page-features — Grid Fasilitas Maksimal 9 + Live Search AJAX + View All + Pratinjau Jadwal Tanggal (feat/landing-page-features)
 - **Grid kartu fasilitas maksimal 9**: Menampilkan maksimal 9 kartu (3 baris × 3 kolom). Jika hasil > 9, muncul link "Lihat Semua (N)" yang mengarah ke halaman `/fasilitas` menampilkan seluruh fasilitas. Penampungan hasil pada grid konsisten dengan hasil filter live.
 - **Container grid fixed height**: Grid kartu fasilitas ditempatkan di dalam container dengan `max-h-[500px] overflow-y-auto` untuk mencegah layout shift saat data sedikit atau kosong. State kosong menampilkan di dalam container tersebut.
 - **Section "Pratinjau Ketersediaan Jadwal"**: Menambahkan input tanggal untuk memilih tanggal berbeda (default: hari ini). Judul section tanpa "(Hari Ini: ...)". Menggunakan AJAX untuk mengambil grid ketersediaan per tanggal lewat `ReservationAvailability::publicScheduleSlots`. Tab/kartu fasilitas menggunakan container terpisah dengan ukuran fixed agar result kosong tidak menggeser komponen di bawahnya. Ketika jumlah fasilitas sangat banyak, tampilkan dalam carousel.
 - **HomeController**: Ditambah metode `ajaxFacilities()` untuk endpoint live search AJAX. Fitur filter quantity limit 9 fasilitas untuk grid.
 
+### feat/image-webp-conversion — Media WebP (Dev — merge `b21af99`, PR #60)
+- ~~**Dependencies**: `intervention/image ^4.0`~~
+- ~~**Media**: foto fasilitas & laporan dikonversi otomatis ke WebP (kualitas 80, maks 1920px) via `Image::fromUpload(...)->toWebp()`~~
+- **Status**: Fitur WebP conversion dihapus. Upload kini menyimpan file asli tanpa konversi. `intervention/image` tetap ada sebagai dependency untuk backward compatibility.
+
 ### refactor/reservation-availability — Keputusan Ketersediaan Slot di Satu Modul (`60cde7e`, belum di-merge ke `dev`)
+
 - **Modul baru `ReservationAvailability`** (BR-1..BR-6, BR-12): konstanta 07:00–20:00 / 30 menit / 26 slot / maks 8 slot (240 menit) / lead time 60 menit / format `H:i`; predikat `isFacilityBookable`, `leadTimeCutoff`/`isWithinLeadTime`, `pendingQuotaError`, `hasApprovedOverlap`/`hasBlockingOverlap`; query `approvedForDay`; proyeksi `publicScheduleSlots` (publik, tanpa lead time) & `bookingSlots` (form); `dayStart`/`dayEnd`/`slotsForDay`/`timeOptions`
 - **Adapters**: `HomeController` (landing → `bookingSlots`), `FacilityController` (jadwal publik → `publicScheduleSlots`), `ReservationController` (`timeOptions` + `maxDurationSlots` ke view), `reservation-form.js` memakai `data-max-duration-slots`; konstanta/helper jam operasional duplikat di controller dihapus; format grid `H.i` → `H:i`; inline script di `reservasi/create` dipindah ke file JS
 - **Internalize checks**: `ReservationService::create()` menjalankan cek slot/lead/kuota/overlap/kelayakan di dalam transaksi via modul (`assertSlotShape`, `assertAvailability`); `approve()` → `ConflictHttpException` saat `hasBlockingOverlap`; `App\Rules\*` (5 kelas) dihapus

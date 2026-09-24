@@ -18,11 +18,12 @@
     </div>
 
     <div class="mt-8 rounded-2xl border border-[#E2E7FF] bg-white p-4 shadow-sm">
-        <form method="GET" action="{{ route('petugas.reservasi.index') }}" class="flex flex-wrap items-end gap-3">
+        <form id="petugasFilterForm" class="flex flex-wrap items-end gap-3">
             <div>
                 <label for="status" class="mb-1 block text-sm font-medium text-slate-700">Status</label>
                 <select id="status" name="status"
-                        class="h-10 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm text-slate-900 transition focus:border-[#0051d5] focus:outline-none focus:ring-4 focus:ring-[#E2E7FF]">
+                        class="h-10 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm text-slate-900 transition focus:border-[#0051d5] focus:outline-none focus:ring-4 focus:ring-[#E2E7FF]"
+                        data-debounce="300">
                     <option value="">Semua status</option>
                     <option value="pending" @selected(($filters['status'] ?? '') === 'pending')>Menunggu Persetujuan</option>
                     <option value="approved" @selected(($filters['status'] ?? '') === 'approved')>Disetujui</option>
@@ -34,24 +35,29 @@
             <div>
                 <label for="date" class="mb-1 block text-sm font-medium text-slate-700">Tanggal</label>
                 <input id="date" name="date" type="date" value="{{ $filters['date'] ?? '' }}"
-                       class="h-10 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm text-slate-900 transition focus:border-[#0051d5] focus:outline-none focus:ring-4 focus:ring-[#E2E7FF]">
+                       class="h-10 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm text-slate-900 transition focus:border-[#0051d5] focus:outline-none focus:ring-4 focus:ring-[#E2E7FF]"
+                       data-debounce="300">
             </div>
-            <button type="submit"
+            <button type="button" id="reset-filter"
                     class="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-[#0051d5] px-4 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-[#00236f] focus:outline-none focus:ring-2 focus:ring-[#0051d5] focus:ring-offset-2">
-                Filter
+                Reset Filter
             </button>
-            @if (($filters['status'] ?? null) || ($filters['date'] ?? null))
-                <a href="{{ route('petugas.reservasi.index') }}"
-                   class="inline-flex h-10 items-center justify-center rounded-lg border border-[#D6DDF8] bg-white px-4 text-sm font-semibold text-[#00236f] transition-colors hover:bg-[#F2F3FF]">
-                    Reset
-                </a>
-            @endif
         </form>
+    </div>
+
+    <div id="loading-indicator" class="mt-6 hidden">
+        <div class="rounded-2xl border border-[#E2E7FF] bg-white p-8 shadow-sm text-center">
+            <svg class="animate-spin h-8 w-8 text-[#0051d5] mx-auto" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.37 0 0 5.37 0 12h4z"></path>
+            </svg>
+            <p class="mt-2 text-sm text-slate-500">Memuat data...</p>
+        </div>
     </div>
 
     <div class="mt-6 overflow-hidden rounded-2xl border border-[#E2E7FF] bg-white shadow-sm">
         <div class="overflow-x-auto">
-            <table class="w-full text-sm">
+            <table class="w-full text-sm" id="reservation-table">
                 <thead class="border-b border-[#E2E7FF] bg-[#F8FAFC] text-left text-xs font-semibold uppercase tracking-wide text-slate-600">
                     <tr>
                         <th class="px-6 py-3">Pemohon</th>
@@ -61,7 +67,7 @@
                         <th class="px-6 py-3">Aksi</th>
                     </tr>
                 </thead>
-                <tbody class="divide-y divide-[#EEF2FF]">
+                <tbody class="divide-y divide-[#EEF2FF]" id="reservation-body">
                     @forelse ($reservations as $reservation)
                         <tr class="transition-colors hover:bg-[#F8FAFC]">
                             <td class="px-6 py-3">
@@ -191,7 +197,7 @@
         </div>
 
         @if ($reservations->hasPages())
-            <div class="border-t border-[#EEF2FF] px-6 py-4">
+            <div class="border-t border-[#EEF2FF] px-6 py-4" id="pagination-container">
                 {{ $reservations->links() }}
             </div>
         @endif
