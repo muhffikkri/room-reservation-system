@@ -101,12 +101,15 @@ it('flashes an error when approving a conflicting pending reservation (BR-7)', f
 
     $this->actingAs($officer)->post(route('petugas.reservasi.approve', $first))->assertRedirect();
 
+    // Persetujuan pertama otomatis menolak reservasi overlap lainnya.
+    expect($second->fresh()->status)->toBe('rejected_by_system');
+
     $this->actingAs($officer)
         ->post(route('petugas.reservasi.approve', $second))
         ->assertRedirect()
         ->assertSessionHas('error');
 
-    expect($second->fresh()->status)->toBe('pending');
+    expect($second->fresh()->status)->toBe('rejected_by_system');
 });
 
 it('requires a reason of at least 10 characters to reject (BR-9)', function () {

@@ -142,6 +142,32 @@ document.querySelectorAll('[data-mobile-menu-toggle]').forEach((toggle) => {
     });
 });
 
+document.querySelectorAll('[data-notification-toggle]').forEach((toggle) => {
+    const panel = document.getElementById(toggle.getAttribute('aria-controls'));
+
+    if (panel === null) {
+        return;
+    }
+
+    toggle.addEventListener('click', (event) => {
+        event.stopPropagation();
+
+        const isOpen = toggle.getAttribute('aria-expanded') === 'true';
+
+        toggle.setAttribute('aria-expanded', String(! isOpen));
+        panel.classList.toggle('hidden', isOpen);
+    });
+
+    document.addEventListener('click', (event) => {
+        if (toggle.contains(event.target) || panel.contains(event.target)) {
+            return;
+        }
+
+        toggle.setAttribute('aria-expanded', 'false');
+        panel.classList.add('hidden');
+    });
+});
+
 const landing = document.querySelector('[data-landing]');
 
 if (landing !== null) {
@@ -412,6 +438,7 @@ function getStatusBadge(status) {
         cancelled_by_user: '<span class="inline-flex items-center rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-600 ring-1 ring-inset ring-slate-200">Dibatalkan Pengguna</span>',
         cancelled_by_officer: '<span class="inline-flex items-center rounded-full bg-orange-50 px-2.5 py-1 text-xs font-semibold text-orange-700 ring-1 ring-inset ring-orange-200">Dibatalkan Petugas</span>',
         cancelled_by_system: '<span class="inline-flex items-center rounded-full bg-violet-50 px-2.5 py-1 text-xs font-semibold text-violet-700 ring-1 ring-inset ring-violet-200">Dibatalkan oleh Sistem</span>',
+        rejected_by_system: '<span class="inline-flex items-center rounded-full bg-violet-50 px-2.5 py-1 text-xs font-semibold text-violet-700 ring-1 ring-inset ring-violet-200">Ditolak oleh Sistem</span>',
     };
     return badges[status] || status;
 }

@@ -17,6 +17,7 @@
                             'pending' => 'Menunggu Persetujuan',
                             'approved' => 'Disetujui',
                             'rejected' => 'Ditolak',
+                            'rejected_by_system' => 'Ditolak oleh Sistem',
                             'cancelled_by_user' => 'Dibatalkan Pengguna',
                             'cancelled_by_officer' => 'Dibatalkan Petugas',
                             'cancelled_by_system' => 'Gagal',
@@ -77,9 +78,15 @@
 
             {{-- Catatan Penolakan / Pembatalan --}}
             @if ($reservation->reject_reason)
-                <div class="rounded-lg border border-rose-200 bg-rose-50 p-4">
-                    <h3 class="text-sm font-semibold text-rose-800">Alasan Penolakan:</h3>
-                    <p class="mt-1 text-sm text-rose-700">{{ $reservation->reject_reason }}</p>
+                @php
+                    $rejectReasonStyle = match ($reservation->status) {
+                        'rejected_by_system' => ['border-violet-200 bg-violet-50', 'text-violet-800', 'text-violet-700', 'Alasan Penolakan Otomatis oleh Sistem:'],
+                        default => ['border-rose-200 bg-rose-50', 'text-rose-800', 'text-rose-700', 'Alasan Penolakan:'],
+                    };
+                @endphp
+                <div class="rounded-lg border {{ $rejectReasonStyle[0] }} p-4">
+                    <h3 class="text-sm font-semibold {{ $rejectReasonStyle[1] }}">{{ $rejectReasonStyle[3] }}</h3>
+                    <p class="mt-1 text-sm {{ $rejectReasonStyle[2] }}">{{ $reservation->reject_reason }}</p>
                 </div>
             @endif
 

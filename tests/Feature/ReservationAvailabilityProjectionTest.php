@@ -39,10 +39,12 @@ it('keeps booking and public projections agreed on overlap and facility state', 
         $booking = $availability->bookingSlots($facility, Carbon::parse('2026-09-09'), $approved);
         $public = $availability->publicScheduleSlots($facility, Carbon::parse('2026-09-09'), $approved);
 
+        // Overlap interval tertutup: slot 10:30 (publik, di luar jendela waktu
+        // lewat) dan slot 12:00 (bersinggungan setelah reservasi) ikut terpakai.
         expect(collect($booking)->filter(fn ($slot): bool => $slot['state'] === 'booked')->pluck('start')->all())
-            ->toBe(['11:00', '11:30']);
+            ->toBe(['11:00', '11:30', '12:00']);
         expect(collect($public)->filter(fn ($slot): bool => $slot['state'] === 'booked')->pluck('start')->all())
-            ->toBe(['11:00', '11:30']);
+            ->toBe(['10:30', '11:00', '11:30', '12:00']);
 
         $facility->update(['status' => 'perbaikan']);
 

@@ -228,14 +228,15 @@ class ReservationAvailability
 
     /**
      * Definisi overlap tunggal (BR-6): slot dianggap terisi bila ada reservasi
-     * approved pada fasilitas sama dengan start_time < end_baru AND end_time > start_baru.
+     * approved pada fasilitas sama dengan start_time <= end_baru AND
+     * end_time >= start_baru — interval yang bersinggungan ikut terhitung.
      *
      * @param  iterable<int, Reservation>  $approved
      */
     public function hasApprovedOverlap(iterable $approved, Carbon $start, Carbon $end): bool
     {
         foreach ($approved as $reservation) {
-            if ($reservation->start_time->lt($end) && $reservation->end_time->gt($start)) {
+            if ($reservation->start_time->lte($end) && $reservation->end_time->gte($start)) {
                 return true;
             }
         }
@@ -292,7 +293,7 @@ class ReservationAvailability
     public function overlapError(int $facilityId, Carbon $start, Carbon $end, ?int $ignoreId = null): ?string
     {
         return $this->hasBlockingOverlap($facilityId, $start, $end, $ignoreId)
-            ? 'Slot waktu tersebut sudah dipesan (bentrok dengan reservasi yang disetujui).'
+            ? 'Maaf, fasilitas ini sudah dipesan pada jam yang sama (atau overlap). Permohonan Anda ditolak.'
             : null;
     }
 

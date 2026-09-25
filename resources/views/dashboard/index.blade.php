@@ -8,6 +8,7 @@
             'pending' => ['label' => 'Menunggu', 'class' => 'bg-amber-50 text-amber-700'],
             'approved' => ['label' => 'Disetujui', 'class' => 'bg-emerald-50 text-emerald-700'],
             'rejected' => ['label' => 'Ditolak', 'class' => 'bg-rose-50 text-rose-700'],
+            'rejected_by_system' => ['label' => 'Ditolak oleh Sistem', 'class' => 'bg-violet-50 text-violet-700'],
             'cancelled' => ['label' => 'Dibatalkan', 'class' => 'bg-slate-100 text-slate-600'],
             'cancelled_by_system' => ['label' => 'Gagal', 'class' => 'bg-violet-50 text-violet-700'],
         ];

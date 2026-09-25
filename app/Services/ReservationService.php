@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Facility;
 use App\Models\Reservation;
 use App\Models\User;
+use App\Notifications\ReservationOverlapRejected;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
@@ -18,9 +19,24 @@ use Symfony\Component\HttpKernel\Exception\ConflictHttpException;
  */
 class ReservationService
 {
+    /**
+     * Jumlah reservasi yang otomatis ditolak oleh approve() terakhir
+     * (overlap dengan reservasi yang baru disetujui) — dipakai controller
+     * untuk flash notifikasi ke petugas.
+     */
+    private int $autoRejectedOnApprove = 0;
+
     public function __construct(
         protected ReservationAvailability $availability,
     ) {}
+
+    /**
+     * Jumlah reservasi yang otomatis ditolak sistem pada approve() terakhir.
+     */
+    public function autoRejectedOnApprove(): int
+    {
+        return $this->autoRejectedOnApprove;
+    }
 
     /**
      * Tandai reservasi pending yang melewati batas persetujuan (BR-3: kurang
@@ -98,7 +114,7 @@ class ReservationService
                 ->exists();
 
             if ($conflict) {
-                throw new ConflictHttpException('Slot waktu tersebut sudah dipesan (bentrok dengan reservasi yang disetujui).');
+                throw new ConflictHttpException('Maaf, fasilitas ini sudah dipesan pada jam yang sama (atau overlap). Permohonan Anda ditolak.');
             }
 
             return Reservation::create([
@@ -119,6 +135,10 @@ class ReservationService
      * bentrok (kondisi balapan), kembalikan HTTP 409. Fasilitas juga
      * dikunci dan harus berstatus aktif: persetujuan yang diberikan
      * setelah fasilitas rusak melanggar BR-12.
+     *
+     * Setelah disetujui, seluruh reservasi pending pada fasilitas sama yang
+     * intervalnya overlap (termasuk bersinggungan) otomatis ditolak sistem
+     * (rejected_by_system) dan pemiliknya diberi notifikasi in-app.
      */
     public function approve(Reservation $reservation, User $officer): Reservation
     {
@@ -127,6 +147,8 @@ class ReservationService
         // Reservasi lewat batas dikonversi ke cancelled_by_system lebih dulu
         // sehingga guard status di bawah menjawab 409, bukan menyetujui.
         $this->expireStale();
+
+        $this->autoRejectedOnApprove = 0;
 
         return DB::transaction(function () use ($reservation, $officer): Reservation {
             // Sistem mengunci baris ini agar dua petugas yang menekan
@@ -162,8 +184,45 @@ class ReservationService
                 'decided_at' => now(),
             ]);
 
+            $this->autoRejectedOnApprove = $this->rejectOverlappingPendings($locked);
+
             return $locked->refresh();
         });
+    }
+
+    /**
+     * Tolak otomatis seluruh reservasi pending pada fasilitas sama yang
+     * intervalnya overlap (interval tertutup — termasuk yang bersinggungan)
+     * dengan reservasi yang baru disetujui.
+     *
+     * Berjalan di dalam transaksi approve(); pemilik tiap reservasi yang
+     * ditolak menerima notifikasi in-app "Maaf, fasilitas ini sudah
+     * dipesan pada jam yang sama (atau overlap)...". Mengembalikan jumlah
+     * reservasi yang ditolak.
+     */
+    private function rejectOverlappingPendings(Reservation $approved): int
+    {
+        $losers = Reservation::pending()
+            ->overlap($approved->facility_id, $approved->start_time, $approved->end_time)
+            ->whereKeyNot($approved->id)
+            ->lockForUpdate()
+            ->get();
+
+        if ($losers->isEmpty()) {
+            return 0;
+        }
+
+        foreach ($losers as $loser) {
+            $loser->update([
+                'status' => 'rejected_by_system',
+                'reject_reason' => 'Otomatis ditolak sistem: jadwal bertabrakan dengan reservasi #'.$approved->id.' yang disetujui petugas.',
+                'decided_at' => now(),
+            ]);
+
+            $loser->user?->notify(new ReservationOverlapRejected($loser));
+        }
+
+        return $losers->count();
     }
 
     /**
