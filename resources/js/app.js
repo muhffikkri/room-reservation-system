@@ -273,9 +273,11 @@ if (petugasFilterForm !== null) {
         const params = new URLSearchParams();
         const status = statusSelect.value;
         const date = dateInput.value;
+        const tab = new URLSearchParams(window.location.search).get('tab');
 
         if (status) params.set('status', status);
         if (date) params.set('date', date);
+        if (tab) params.set('tab', tab);
 
         if (loadingIndicator !== null) loadingIndicator.classList.remove('hidden');
 

@@ -17,6 +17,20 @@
         </a>
     </div>
 
+    {{-- Tab Rekapitulasi --}}
+    <div class="mt-6 flex flex-wrap gap-2" role="tablist" aria-label="Tab rekapitulasi reservasi">
+        <a href="{{ route('petugas.reservasi.index', ['tab' => 'menunggu']) }}"
+           role="tab" aria-selected="{{ $tab === 'menunggu' ? 'true' : 'false' }}"
+           class="rounded-lg px-4 py-2 text-sm font-semibold transition {{ $tab === 'menunggu' ? 'bg-amber-500 text-white' : 'bg-[#F2F3FF] text-[#00236f] hover:bg-[#E2E7FF]' }}">
+            Menunggu Approval
+        </a>
+        <a href="{{ route('petugas.reservasi.index', ['tab' => 'selesai']) }}"
+           role="tab" aria-selected="{{ $tab === 'selesai' ? 'true' : 'false' }}"
+           class="rounded-lg px-4 py-2 text-sm font-semibold transition {{ $tab === 'selesai' ? 'bg-emerald-600 text-white' : 'bg-[#F2F3FF] text-[#00236f] hover:bg-[#E2E7FF]' }}">
+            Selesai
+        </a>
+    </div>
+
     <div class="mt-8 rounded-2xl border border-[#E2E7FF] bg-white p-4 shadow-sm">
         <form id="petugasFilterForm" class="flex flex-wrap items-end gap-3">
             <div>

@@ -13,36 +13,36 @@
     {{-- Tab Rekapitulasi --}}
     <div class="flex flex-wrap gap-2" role="tablist" aria-label="Tab rekapitulasi laporan">
         <a href="{{ route('petugas.laporan.index', ['tab' => 'menunggu']) }}"
-           role="tab" aria-selected="{{ ($tab ?? 'menunggu') === 'menunggu' ? 'true' : 'false' }}"
-           class="rounded-lg px-4 py-2 text-sm font-semibold transition {{ ($tab ?? 'menunggu') === 'menunggu' ? 'bg-[#00236f] text-white' : 'bg-[#F2F3FF] text-[#00236f] hover:bg-[#E2E7FF]' }}">
+           role="tab" aria-selected="{{ $tab === 'menunggu' ? 'true' : 'false' }}"
+           class="rounded-lg px-4 py-2 text-sm font-semibold transition {{ $tab === 'menunggu' ? 'bg-amber-500 text-white' : 'bg-[#F2F3FF] text-[#00236f] hover:bg-[#E2E7FF]' }}">
             Menunggu Approval
         </a>
         <a href="{{ route('petugas.laporan.index', ['tab' => 'selesai']) }}"
-           role="tab" aria-selected="{{ ($tab ?? 'menunggu') === 'selesai' ? 'true' : 'false' }}"
-           class="rounded-lg px-4 py-2 text-sm font-semibold transition {{ ($tab ?? 'menunggu') === 'selesai' ? 'bg-emerald-600 text-white' : 'bg-[#F2F3FF] text-[#00236f] hover:bg-[#E2E7FF]' }}">
+           role="tab" aria-selected="{{ $tab === 'selesai' ? 'true' : 'false' }}"
+           class="rounded-lg px-4 py-2 text-sm font-semibold transition {{ $tab === 'selesai' ? 'bg-emerald-600 text-white' : 'bg-[#F2F3FF] text-[#00236f] hover:bg-[#E2E7FF]' }}">
             Selesai
         </a>
     </div>
 
     {{-- Ringkasan Jumlah Status --}}
     <div class="grid grid-cols-2 gap-4 sm:grid-cols-5">
-        <a href="{{ route('petugas.laporan.index', ['tab' => $tab ?? 'menunggu']) }}" class="rounded-xl border p-4 shadow-sm transition {{ empty($status) ? 'border-[#0051d5] bg-[#F2F3FF] ring-2 ring-[#E2E7FF]' : 'border-[#E2E7FF] bg-white hover:border-[#D6DDF8]' }}">
+        <a href="{{ route('petugas.laporan.index', ['tab' => $tab]) }}" class="rounded-xl border p-4 shadow-sm transition {{ empty($status) ? 'border-[#0051d5] bg-[#F2F3FF] ring-2 ring-[#E2E7FF]' : 'border-[#E2E7FF] bg-white hover:border-[#D6DDF8]' }}">
             <div class="text-xs font-semibold text-slate-500">Semua Laporan</div>
             <div class="mt-2 text-2xl font-bold text-slate-900">{{ $counts['total'] }}</div>
         </a>
-        <a href="{{ route('petugas.laporan.index', ['tab' => $tab ?? 'menunggu', 'status' => 'baru']) }}" class="rounded-xl border p-4 shadow-sm transition {{ $status === 'baru' ? 'border-sky-600 bg-sky-50/50 ring-2 ring-sky-200' : 'border-[#E2E7FF] bg-white hover:border-[#D6DDF8]' }}">
+        <a href="{{ route('petugas.laporan.index', ['tab' => $tab, 'status' => 'baru']) }}" class="rounded-xl border p-4 shadow-sm transition {{ $status === 'baru' ? 'border-sky-600 bg-sky-50/50 ring-2 ring-sky-200' : 'border-[#E2E7FF] bg-white hover:border-[#D6DDF8]' }}">
             <div class="text-xs font-semibold text-sky-600">Baru</div>
             <div class="mt-2 text-2xl font-semibold text-sky-700">{{ $counts['baru'] }}</div>
         </a>
-        <a href="{{ route('petugas.laporan.index', ['tab' => $tab ?? 'menunggu', 'status' => 'diproses']) }}" class="rounded-xl border p-4 shadow-sm transition {{ $status === 'diproses' ? 'border-amber-600 bg-amber-50/50 ring-2 ring-amber-200' : 'border-[#E2E7FF] bg-white hover:border-[#D6DDF8]' }}">
+        <a href="{{ route('petugas.laporan.index', ['tab' => $tab, 'status' => 'diproses']) }}" class="rounded-xl border p-4 shadow-sm transition {{ $status === 'diproses' ? 'border-amber-600 bg-amber-50/50 ring-2 ring-amber-200' : 'border-[#E2E7FF] bg-white hover:border-[#D6DDF8]' }}">
             <div class="text-xs font-semibold text-amber-600">Diproses</div>
             <div class="mt-2 text-2xl font-bold text-amber-700">{{ $counts['diproses'] }}</div>
         </a>
-        <a href="{{ route('petugas.laporan.index', ['tab' => 'selesai', 'status' => 'selesai']) }}" class="rounded-xl border p-4 shadow-sm transition {{ $status === 'selesai' ? 'border-emerald-600 bg-emerald-50/50 ring-2 ring-emerald-200' : 'border-[#E2E7FF] bg-white hover:border-[#D6DDF8]' }}">
+        <a href="{{ route('petugas.laporan.index', ['tab' => $tab, 'status' => 'selesai']) }}" class="rounded-xl border p-4 shadow-sm transition {{ $status === 'selesai' ? 'border-emerald-600 bg-emerald-50/50 ring-2 ring-emerald-200' : 'border-[#E2E7FF] bg-white hover:border-[#D6DDF8]' }}">
             <div class="text-xs font-semibold text-emerald-600">Selesai</div>
             <div class="mt-2 text-2xl font-bold text-emerald-700">{{ $counts['selesai'] }}</div>
         </a>
-        <a href="{{ route('petugas.laporan.index', ['tab' => $tab ?? 'menunggu', 'status' => 'ditolak']) }}" class="rounded-xl border p-4 shadow-sm transition {{ $status === 'ditolak' ? 'border-rose-600 bg-rose-50/50 ring-2 ring-rose-200' : 'border-[#E2E7FF] bg-white hover:border-[#D6DDF8]' }}">
+        <a href="{{ route('petugas.laporan.index', ['tab' => $tab, 'status' => 'ditolak']) }}" class="rounded-xl border p-4 shadow-sm transition {{ $status === 'ditolak' ? 'border-rose-600 bg-rose-50/50 ring-2 ring-rose-200' : 'border-[#E2E7FF] bg-white hover:border-[#D6DDF8]' }}">
             <div class="text-xs font-semibold text-rose-600">Ditolak</div>
             <div class="mt-2 text-2xl font-bold text-rose-700">{{ $counts['ditolak'] }}</div>
         </a>

@@ -75,7 +75,7 @@
                 <h2 class="text-base font-semibold text-[#00236f]">Antrian Laporan Terbaru</h2>
             </div>
             <div class="p-6">
-                @forelse ($newReports as $report)
+                @forelse ($queueReports as $report)
                     <div class="flex items-center justify-between gap-4 border-b border-[#EEF2FF] py-3 last:border-b-0">
                         <div class="min-w-0">
                             <a href="{{ route('petugas.laporan.show', $report) }}"
@@ -88,8 +88,17 @@
                             </p>
                         </div>
                         <div class="flex shrink-0 items-center gap-2">
-                            <span class="inline-flex items-center rounded-full bg-cyan-50 px-2.5 py-1 text-xs font-semibold text-cyan-700 ring-1 ring-inset ring-cyan-200">
-                                Baru
+                            @php
+                                $reportBadges = [
+                                    'baru' => ['bg-cyan-50 text-cyan-700 ring-cyan-200', 'Baru'],
+                                    'diproses' => ['bg-amber-50 text-amber-700 ring-amber-200', 'Diproses'],
+                                    'selesai' => ['bg-emerald-50 text-emerald-700 ring-emerald-200', 'Selesai'],
+                                    'ditolak' => ['bg-rose-50 text-rose-700 ring-rose-200', 'Ditolak'],
+                                ];
+                                [$reportBadgeClass, $reportBadgeLabel] = $reportBadges[$report->status] ?? ['bg-slate-100 text-slate-600 ring-slate-200', ucfirst($report->status)];
+                            @endphp
+                            <span class="inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ring-inset {{ $reportBadgeClass }}">
+                                {{ $reportBadgeLabel }}
                             </span>
                             <a href="{{ route('petugas.laporan.show', $report) }}"
                                class="inline-flex h-9 items-center rounded-lg border border-[#D6DDF8] bg-white px-3 text-xs font-semibold text-[#00236f] transition-colors hover:bg-[#F2F3FF]">
@@ -98,7 +107,7 @@
                         </div>
                     </div>
                 @empty
-                    <p class="py-6 text-center text-sm text-slate-500">Tidak ada laporan baru.</p>
+                    <p class="py-6 text-center text-sm text-slate-500">Tidak ada laporan.</p>
                 @endforelse
             </div>
         </section>

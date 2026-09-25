@@ -25,10 +25,12 @@ class DashboardController extends Controller
             ->orderBy('start_time', 'asc')
             ->get();
 
-        $newReports = Report::query()
+        $newReportCount = Report::where('status', 'baru')->count();
+
+        $queueReports = Report::query()
             ->with(['user', 'facility'])
-            ->where('status', 'baru')
-            ->orderBy('created_at', 'desc')
+            ->orderByRaw('CASE status WHEN "baru" THEN 0 WHEN "diproses" THEN 1 WHEN "selesai" THEN 2 WHEN "ditolak" THEN 3 ELSE 4 END')
+            ->latest()
             ->get();
 
         $processedReports = Report::query()
@@ -41,11 +43,11 @@ class DashboardController extends Controller
 
         return view('petugas.dashboard', [
             'pendingReservationCount' => $pendingReservations->count(),
-            'newReportCount' => $newReports->count(),
+            'newReportCount' => $newReportCount,
             'processedReportCount' => $processedReports,
             'repairFacilityCount' => $repairFacilities,
             'pendingReservations' => $pendingReservations->take(5),
-            'newReports' => $newReports->take(5),
+            'queueReports' => $queueReports->take(5),
         ]);
     }
 }
