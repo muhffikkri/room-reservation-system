@@ -19,6 +19,7 @@
                             'rejected' => 'Ditolak',
                             'cancelled_by_user' => 'Dibatalkan Pengguna',
                             'cancelled_by_officer' => 'Dibatalkan Petugas',
+                            'cancelled_by_system' => 'Gagal',
                             default => ucfirst($reservation->status),
                         } }}
                     </x-ui.badge>
@@ -83,14 +84,18 @@
             @endif
 
             @if ($reservation->cancel_reason)
-                <div
-                    class="rounded-lg border {{ $reservation->status === 'cancelled_by_officer' ? 'border-amber-200 bg-amber-50' : 'border-slate-200 bg-slate-50' }} p-4">
-                    <h3
-                        class="text-sm font-semibold {{ $reservation->status === 'cancelled_by_officer' ? 'text-amber-800' : 'text-slate-800' }}">
-                        {{ $reservation->status === 'cancelled_by_officer' ? 'Alasan Pembatalan oleh Petugas:' : 'Alasan Pembatalan:' }}
+                @php
+                    $cancelReasonStyle = match ($reservation->status) {
+                        'cancelled_by_officer' => ['border-amber-200 bg-amber-50', 'text-amber-800', 'text-amber-700', 'Alasan Pembatalan oleh Petugas:'],
+                        'cancelled_by_system' => ['border-violet-200 bg-violet-50', 'text-violet-800', 'text-violet-700', 'Alasan Pembatalan Otomatis oleh Sistem:'],
+                        default => ['border-slate-200 bg-slate-50', 'text-slate-800', 'text-slate-700', 'Alasan Pembatalan:'],
+                    };
+                @endphp
+                <div class="rounded-lg border {{ $cancelReasonStyle[0] }} p-4">
+                    <h3 class="text-sm font-semibold {{ $cancelReasonStyle[1] }}">
+                        {{ $cancelReasonStyle[3] }}
                     </h3>
-                    <p
-                        class="mt-1 text-sm {{ $reservation->status === 'cancelled_by_officer' ? 'text-amber-700' : 'text-slate-700' }}">
+                    <p class="mt-1 text-sm {{ $cancelReasonStyle[2] }}">
                         {{ $reservation->cancel_reason }}
                     </p>
                 </div>

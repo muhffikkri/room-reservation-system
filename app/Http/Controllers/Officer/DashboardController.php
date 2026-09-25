@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Facility;
 use App\Models\Report;
 use App\Models\Reservation;
+use App\Services\ReservationService;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
@@ -17,8 +18,19 @@ use Illuminate\View\View;
  */
 class DashboardController extends Controller
 {
+    public function __construct(private readonly ReservationService $reservations) {}
+
     public function __invoke(Request $request): View
     {
+        $expired = $this->reservations->expireStale();
+
+        if ($expired > 0) {
+            $request->session()->flash(
+                'info',
+                "{$expired} reservasi otomatis dibatalkan sistem karena melewati batas persetujuan."
+            );
+        }
+
         $pendingReservations = Reservation::pending()
             ->with(['user', 'facility'])
             ->orderBy('created_at', 'desc')

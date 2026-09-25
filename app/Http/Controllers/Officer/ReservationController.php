@@ -29,14 +29,15 @@ class ReservationController extends Controller
         'rejected',
         'cancelled_by_user',
         'cancelled_by_officer',
+        'cancelled_by_system',
     ];
 
     public const TABS = [
         'menunggu' => ['pending'],
-        'selesai' => ['approved', 'rejected', 'cancelled_by_user', 'cancelled_by_officer'],
+        'selesai' => ['approved', 'rejected', 'cancelled_by_user', 'cancelled_by_officer', 'cancelled_by_system'],
     ];
 
-    public const STATUS_ORDER = 'CASE status WHEN "pending" THEN 0 WHEN "approved" THEN 1 WHEN "rejected" THEN 2 WHEN "cancelled_by_user" THEN 3 WHEN "cancelled_by_officer" THEN 4 ELSE 5 END';
+    public const STATUS_ORDER = 'CASE status WHEN "pending" THEN 0 WHEN "approved" THEN 1 WHEN "rejected" THEN 2 WHEN "cancelled_by_user" THEN 3 WHEN "cancelled_by_officer" THEN 4 WHEN "cancelled_by_system" THEN 5 ELSE 6 END';
 
     public function __construct(private readonly ReservationService $reservations) {}
 
@@ -47,6 +48,15 @@ class ReservationController extends Controller
             'date' => ['nullable', 'date'],
             'tab' => ['nullable', 'string', 'in:'.implode(',', array_keys(self::TABS))],
         ]);
+
+        $expired = $this->reservations->expireStale();
+
+        if ($expired > 0) {
+            $request->session()->flash(
+                'info',
+                "{$expired} reservasi otomatis dibatalkan sistem karena melewati batas persetujuan."
+            );
+        }
 
         $reservations = $this->filteredQuery($filters)
             ->orderBy('created_at', 'desc')
@@ -69,6 +79,8 @@ class ReservationController extends Controller
             'date' => ['nullable', 'date'],
             'tab' => ['nullable', 'string', 'in:'.implode(',', array_keys(self::TABS))],
         ]);
+
+        $this->reservations->expireStale();
 
         $reservations = $this->filteredQuery($filters)
             ->orderBy('created_at', 'desc')
@@ -104,8 +116,18 @@ class ReservationController extends Controller
             ->when($filters['date'] ?? null, fn ($query, string $date) => $query->whereDate('start_time', $date));
     }
 
-    public function show(Reservation $reservation): View
+    public function show(Request $request, Reservation $reservation): View
     {
+        $expired = $this->reservations->expireStale();
+
+        if ($expired > 0) {
+            $request->session()->flash(
+                'info',
+                "{$expired} reservasi otomatis dibatalkan sistem karena melewati batas persetujuan."
+            );
+        }
+
+        $reservation->refresh();
         $reservation->load(['user', 'facility', 'decidedBy']);
 
         return view('petugas.reservasi.show', ['reservation' => $reservation]);

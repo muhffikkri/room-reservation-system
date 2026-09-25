@@ -26,6 +26,7 @@
                     'rejected' => 'Ditolak',
                     'cancelled_by_user' => 'Dibatalkan Pengguna',
                     'cancelled_by_officer' => 'Dibatalkan Petugas',
+                    'cancelled_by_system' => 'Gagal',
                 ];
             @endphp
 
@@ -84,6 +85,7 @@
                                                 'rejected' => 'Ditolak',
                                                 'cancelled_by_user' => 'Dibatalkan Pengguna',
                                                 'cancelled_by_officer' => 'Dibatalkan Petugas',
+                                                'cancelled_by_system' => 'Gagal',
                                                 default => ucfirst($res->status),
                                             } }}
                                         </x-ui.badge>

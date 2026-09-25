@@ -8,6 +8,16 @@ Format mengikuti riwayat commit tim. Tanggal terbaru di atas. Status merge: **De
 
 ## [Unreleased] — Sedang dikerjakan di branch anggota tim
 
+### feat/reservation-auto-expire — Auto-cancel Reservasi & Status "Gagal" (feat/reservation-auto-expire)
+
+- **Status baru `cancelled_by_system`**: migrasi `add_cancelled_by_system_status_to_reservations_table` menambah nilai enum `cancelled_by_system` (label **"Gagal"** di sisi pengguna, **"Dibatalkan oleh Sistem"** di sisi petugas; badge violet).
+- **`ReservationService::expireStale(?User $viewer)`**: menkonversi bulk reservasi `pending` dengan `start_time < now() + 60 menit` (lead time BR-3) menjadi `cancelled_by_system` + `cancel_reason` otomatis + `decided_at`. Mengembalikan jumlah kedaluwarsa milik viewer untuk flash.
+- **Lazy check di semua akses**: dashboard & riwayat & detail pengguna (`DashboardController`, `ReservationController@index/@show`), dashboard & antrean & AJAX & detail petugas (`Officer\DashboardController`, `Officer\ReservationController@index/@ajaxIndex/@show`) — status terkini langsung tersimpan saat halaman dibuka.
+- **Blokir keputusan lewat batas**: `ReservationService::approve()`/`reject()` menjalankan `expireStale()` lebih dulu sehingga reservasi lewat batas menjawab 409 (tidak bisa lagi disetujui/ditolak petugas). `create()` juga mengecek agar pending basi tidak memakan kuota pending. Jalur cancel manual (BR-8/BR-16) tidak diubah.
+- **Flash `info`**: layout `layouts/app.blade.php` mendapat blok notifikasi `session('info')` (sky) — tampil saat ada reservasi yang otomatis dibatalkan, teks berbeda untuk pengguna ("N reservasi Anda...") dan petugas ("N reservasi...").
+- **Label per peran**: view pengguna (`dashboard/index`, `reservasi/index`, `reservasi/show` termasuk blok "Alasan Pembatalan Otomatis oleh Sistem", `components/ui/badge`) menampilkan "Gagal"; view petugas (`petugas/reservasi/index` filter+badge, `petugas/reservasi/show`, `app.js getStatusBadge`) menampilkan "Dibatalkan oleh Sistem". `STATUSES`/`TABS['selesai']`/`STATUS_ORDER` officer ikut diperbarui.
+- **Test**: `ReservationExpiryTest` (11 test: flip di dashboard/detail/riwayat pengguna, dashboard & halaman petugas, approve diblokir 409, approve dalam jendela aman tetap bisa, expiry saat `create()`, filter status + AJAX queue, reservasi jauh dari batas tidak terpengaruh).
+
 ### feat/dashboard-petugas-sorting-filter — Sorting, Tab, & Filter Dashboard Petugas (feat/dashboard-petugas-sorting-filter)
 
 - **Sorting antrian reservasi (sesuai AC)**: `Officer\ReservationController` (`index` + `ajaxIndex`) mengurutkan `created_at` desc → `start_time` asc → prioritas status (pending → approved → rejected → cancelled_by_user → cancelled_by_officer). Konstanta `TABS`/`STATUS_ORDER` dipakai bersama oleh view dan endpoint AJAX.

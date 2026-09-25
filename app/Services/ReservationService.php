@@ -23,6 +23,42 @@ class ReservationService
     ) {}
 
     /**
+     * Tandai reservasi pending yang melewati batas persetujuan (BR-3: kurang
+     * dari 60 menit sebelum start_time) sebagai cancelled_by_system.
+     *
+     * Dijalankan lazy pada setiap akses antrean/dashboard, saat reservasi baru
+     * dibuat, dan sebelum approve/reject — sehingga reservasi yang lewat waktu
+     * tidak dapat lagi disetujui dan tidak memakan kuota pending. Pembaruan
+     * berlaku global agar antrean pengguna maupun petugas konsisten.
+     *
+     * @return int jumlah reservasi kedaluwarsa — milik $viewer bila diberikan,
+     *             seluruhnya bila $viewer null.
+     */
+    public function expireStale(?User $viewer = null): int
+    {
+        $stale = Reservation::pending()
+            ->where('start_time', '<', $this->availability->leadTimeCutoff());
+
+        $total = (clone $stale)->count();
+
+        if ($total === 0) {
+            return 0;
+        }
+
+        $expired = $viewer !== null
+            ? (clone $stale)->where('user_id', $viewer->id)->count()
+            : $total;
+
+        $stale->update([
+            'status' => 'cancelled_by_system',
+            'cancel_reason' => 'Otomatis dibatalkan sistem: melewati batas persetujuan (60 menit sebelum waktu mulai).',
+            'decided_at' => now(),
+        ]);
+
+        return $expired;
+    }
+
+    /**
      * Ajukan reservasi baru berstatus pending (BR-4, BR-5, BR-6).
      */
     public function create(User $user, Facility $facility, Carbon $start, Carbon $end, string $purpose): Reservation
@@ -34,6 +70,10 @@ class ReservationService
             $this->ensureActivePengguna($lockedUser);
 
             $lockedFacility = Facility::whereKey($facility->id)->lockForUpdate()->firstOrFail();
+
+            // Reservasi pending yang sudah melewati batas persetujuan dibersihkan
+            // lebih dulu agar tidak memakan kuota pending milik pengguna (BR-3).
+            $this->expireStale($lockedUser);
 
             // Semua aturan yang bergantung pada state database berjalan setelah
             // row user dan fasilitas dikunci, sehingga validasi dan insert tidak
@@ -84,6 +124,10 @@ class ReservationService
     {
         $this->ensureActivePetugas($officer);
 
+        // Reservasi lewat batas dikonversi ke cancelled_by_system lebih dulu
+        // sehingga guard status di bawah menjawab 409, bukan menyetujui.
+        $this->expireStale();
+
         return DB::transaction(function () use ($reservation, $officer): Reservation {
             // Sistem mengunci baris ini agar dua petugas yang menekan
             // approve bersamaan tidak meloloskan dua pemenang (BR-7).
@@ -131,6 +175,8 @@ class ReservationService
     public function reject(Reservation $reservation, User $officer, string $reason): Reservation
     {
         $this->ensureActivePetugas($officer);
+
+        $this->expireStale();
 
         return DB::transaction(function () use ($reservation, $officer, $reason): Reservation {
             $locked = Reservation::whereKey($reservation->id)->lockForUpdate()->firstOrFail();
