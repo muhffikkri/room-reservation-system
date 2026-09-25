@@ -7,6 +7,8 @@ use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\Request;
+use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\HttpKernel\Exception\HttpExceptionInterface;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -39,4 +41,15 @@ return Application::configure(basePath: dirname(__DIR__))
         $exceptions->shouldRenderJsonWhen(
             fn (Request $request) => $request->is('api/*') || $request->expectsJson(),
         );
+
+        // Selama APP_DEBUG=false, error tak terduga (500) tampil sebagai
+        // halaman ramah tanpa membocorkan stack trace. HttpException
+        // (404/403/419/dst.) tetap memakai alur penanganan bawaan Laravel.
+        $exceptions->render(function (Throwable $e, Request $request): ?Response {
+            if (config('app.debug') || $e instanceof HttpExceptionInterface || $request->is('api/*') || $request->expectsJson()) {
+                return null;
+            }
+
+            return response()->view('errors.500', ['exception' => $e], 500);
+        });
     })->create();

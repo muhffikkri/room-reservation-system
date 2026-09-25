@@ -199,3 +199,31 @@ it('throttles repeated register attempts', function () {
 
     $response->assertStatus(429);
 });
+
+it('keeps the post-logout back button off the dashboard', function () {
+    $user = User::factory()->create([
+        'account_status' => 'aktif',
+        'role' => 'pengguna',
+    ]);
+
+    $this->actingAs($user)->get(route('dashboard'))->assertOk();
+
+    $this->post(route('logout'))->assertRedirect(route('login'));
+
+    $this->assertGuest();
+
+    $this->get(route('dashboard'))->assertRedirect(route('login'));
+});
+
+it('stays error-free when logout is submitted repeatedly', function () {
+    $user = User::factory()->create([
+        'account_status' => 'aktif',
+        'role' => 'pengguna',
+    ]);
+
+    $this->actingAs($user)->post(route('logout'))->assertRedirect(route('login'));
+
+    $this->post(route('logout'))->assertRedirect(route('login'));
+
+    $this->assertGuest();
+});

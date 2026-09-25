@@ -19,6 +19,10 @@ class RecapService
 
     /**
      * Get occupancy recap data for all facilities within date range.
+     *
+     * Entri cache yang tidak berupa struktur array murni (mis. sisa
+     * serialisasi lama berupa __PHP_Incomplete_Class) otomatis dibuang dan
+     * dihitung ulang, sehingga count() tidak pernah menerima input tak valid.
      */
     public function getOccupancyRecap(?Carbon $startDate = null, ?Carbon $endDate = null): array
     {
@@ -26,98 +30,115 @@ class RecapService
         $endDate = $endDate ?? Carbon::now()->endOfDay();
 
         $cacheKey = $this->getCacheKey('occupancy', $startDate, $endDate);
+        $recap = Cache::get($cacheKey);
 
-        return Cache::remember($cacheKey, $this->cacheTtlSeconds, function () use ($startDate, $endDate) {
-            $queryStart = microtime(true);
+        if (! $this->isValidRecap($recap)) {
+            $recap = $this->computeOccupancyRecap($startDate, $endDate);
+            Cache::put($cacheKey, $recap, $this->cacheTtlSeconds);
+        }
 
-            $operationalDays = $startDate->diffInDays($endDate) + 1;
-            $maxPossibleHours = $operationalDays * 13; // 13 hours per day (07:00-20:00)
+        return $recap;
+    }
 
-            // Calculate total approved hours per facility using subquery to avoid N+1
-            $hoursSubquery = Reservation::approved()
-                ->where('facility_id', DB::raw('facilities.id'))
-                ->where('start_time', '>=', $startDate)
-                ->where('start_time', '<=', $endDate)
-                ->selectRaw('SUM(TIMESTAMPDIFF(MINUTE, start_time, end_time) / 60) as total_hours');
+    /**
+     * Hitung rekap okupansi langsung dari database (tanpa cache).
+     *
+     * @return array{data: array<int, array<string, mixed>>, summary: array<string, int|float>, date_range: array<string, string>}
+     */
+    protected function computeOccupancyRecap(Carbon $startDate, Carbon $endDate): array
+    {
+        $queryStart = microtime(true);
 
-            $facilities = Facility::query()
-                ->withCount(['reservations as approved_count' => function ($query) use ($startDate, $endDate) {
-                    $query->where('status', 'approved')
-                        ->where('start_time', '>=', $startDate)
-                        ->where('start_time', '<=', $endDate);
-                }])
-                ->withCount(['reservations as pending_count' => function ($query) use ($startDate, $endDate) {
-                    $query->where('status', 'pending')
-                        ->where('start_time', '>=', $startDate)
-                        ->where('start_time', '<=', $endDate);
-                }])
-                ->withCount(['reservations as rejected_count' => function ($query) use ($startDate, $endDate) {
-                    $query->where('status', 'rejected')
-                        ->where('start_time', '>=', $startDate)
-                        ->where('start_time', '<=', $endDate);
-                }])
-                ->withCount(['reservations as cancelled_count' => function ($query) use ($startDate, $endDate) {
-                    $query->where('status', 'cancelled')
-                        ->where('start_time', '>=', $startDate)
-                        ->where('start_time', '<=', $endDate);
-                }])
-                ->select('facilities.*')
-                ->selectSub($hoursSubquery, 'total_approved_hours')
-                ->get();
+        $operationalDays = $startDate->diffInDays($endDate) + 1;
+        $maxPossibleHours = $operationalDays * 13; // 13 hours per day (07:00-20:00)
 
-            $queryDuration = microtime(true) - $queryStart;
+        // Calculate total approved hours per facility using subquery to avoid N+1
+        $hoursSubquery = Reservation::approved()
+            ->where('facility_id', DB::raw('facilities.id'))
+            ->where('start_time', '>=', $startDate)
+            ->where('start_time', '<=', $endDate)
+            ->selectRaw('SUM(TIMESTAMPDIFF(MINUTE, start_time, end_time) / 60) as total_hours');
 
-            Log::info('RecapService: Occupancy query executed', [
-                'date_range' => [$startDate->toDateString(), $endDate->toDateString()],
-                'facilities_count' => $facilities->count(),
-                'query_duration_ms' => round($queryDuration * 1000, 2),
-            ]);
+        $facilities = Facility::query()
+            ->withCount(['reservations as approved_count' => function ($query) use ($startDate, $endDate) {
+                $query->where('status', 'approved')
+                    ->where('start_time', '>=', $startDate)
+                    ->where('start_time', '<=', $endDate);
+            }])
+            ->withCount(['reservations as pending_count' => function ($query) use ($startDate, $endDate) {
+                $query->where('status', 'pending')
+                    ->where('start_time', '>=', $startDate)
+                    ->where('start_time', '<=', $endDate);
+            }])
+            ->withCount(['reservations as rejected_count' => function ($query) use ($startDate, $endDate) {
+                $query->where('status', 'rejected')
+                    ->where('start_time', '>=', $startDate)
+                    ->where('start_time', '<=', $endDate);
+            }])
+            ->withCount(['reservations as cancelled_count' => function ($query) use ($startDate, $endDate) {
+                $query->where('status', 'cancelled')
+                    ->where('start_time', '>=', $startDate)
+                    ->where('start_time', '<=', $endDate);
+            }])
+            ->select('facilities.*')
+            ->selectSub($hoursSubquery, 'total_approved_hours')
+            ->get();
 
-            $data = $facilities->map(function ($facility) use ($maxPossibleHours) {
-                $totalHours = (float) ($facility->total_approved_hours ?? 0);
+        $queryDuration = microtime(true) - $queryStart;
 
-                return [
-                    'facility_id' => $facility->id,
-                    'facility_name' => $facility->name,
-                    'facility_type' => $facility->type,
-                    'facility_location' => $facility->location,
-                    'capacity' => $facility->capacity,
-                    'status' => $facility->status,
-                    'approved_count' => $facility->approved_count,
-                    'pending_count' => $facility->pending_count,
-                    'rejected_count' => $facility->rejected_count,
-                    'cancelled_count' => $facility->cancelled_count,
-                    'total_reservations' => $facility->approved_count + $facility->pending_count + $facility->rejected_count + $facility->cancelled_count,
-                    'total_approved_hours' => round($totalHours, 2),
-                    'max_possible_hours' => $maxPossibleHours,
-                    'occupancy_rate' => $maxPossibleHours > 0 ? round(($totalHours / $maxPossibleHours) * 100, 2) : 0,
-                ];
-            });
+        Log::info('RecapService: Occupancy query executed', [
+            'date_range' => [$startDate->toDateString(), $endDate->toDateString()],
+            'facilities_count' => $facilities->count(),
+            'query_duration_ms' => round($queryDuration * 1000, 2),
+        ]);
 
-            $summary = [
-                'total_facilities' => $facilities->count(),
-                'total_reservations' => $data->sum('total_reservations'),
-                'total_approved' => $data->sum('approved_count'),
-                'total_pending' => $data->sum('pending_count'),
-                'total_rejected' => $data->sum('rejected_count'),
-                'total_cancelled' => $data->sum('cancelled_count'),
-                'total_approved_hours' => round($data->sum('total_approved_hours'), 2),
-                'average_occupancy_rate' => $data->avg('occupancy_rate') ? round($data->avg('occupancy_rate'), 2) : 0,
-            ];
+        $data = $facilities->map(function ($facility) use ($maxPossibleHours) {
+            $totalHours = (float) ($facility->total_approved_hours ?? 0);
 
             return [
-                'data' => $data,
-                'summary' => $summary,
-                'date_range' => [
-                    'start' => $startDate->toDateString(),
-                    'end' => $endDate->toDateString(),
-                ],
+                'facility_id' => $facility->id,
+                'facility_name' => $facility->name,
+                'facility_type' => $facility->type,
+                'facility_location' => $facility->location,
+                'capacity' => $facility->capacity,
+                'status' => $facility->status,
+                'approved_count' => $facility->approved_count,
+                'pending_count' => $facility->pending_count,
+                'rejected_count' => $facility->rejected_count,
+                'cancelled_count' => $facility->cancelled_count,
+                'total_reservations' => $facility->approved_count + $facility->pending_count + $facility->rejected_count + $facility->cancelled_count,
+                'total_approved_hours' => round($totalHours, 2),
+                'max_possible_hours' => $maxPossibleHours,
+                'occupancy_rate' => $maxPossibleHours > 0 ? round(($totalHours / $maxPossibleHours) * 100, 2) : 0,
             ];
         });
+
+        $summary = [
+            'total_facilities' => $facilities->count(),
+            'total_reservations' => $data->sum('total_reservations'),
+            'total_approved' => $data->sum('approved_count'),
+            'total_pending' => $data->sum('pending_count'),
+            'total_rejected' => $data->sum('rejected_count'),
+            'total_cancelled' => $data->sum('cancelled_count'),
+            'total_approved_hours' => round($data->sum('total_approved_hours'), 2),
+            'average_occupancy_rate' => $data->avg('occupancy_rate') ? round($data->avg('occupancy_rate'), 2) : 0,
+        ];
+
+        return [
+            'data' => $data->all(),
+            'summary' => $summary,
+            'date_range' => [
+                'start' => $startDate->toDateString(),
+                'end' => $endDate->toDateString(),
+            ],
+        ];
     }
 
     /**
      * Get damage frequency recap data for all facilities within date range.
+     *
+     * Entri cache yang tidak berupa struktur array murni otomatis dibuang dan
+     * dihitung ulang, sehingga count() tidak pernah menerima input tak valid.
      */
     public function getDamageRecap(?Carbon $startDate = null, ?Carbon $endDate = null): array
     {
@@ -125,83 +146,111 @@ class RecapService
         $endDate = $endDate ?? Carbon::now()->endOfDay();
 
         $cacheKey = $this->getCacheKey('damage', $startDate, $endDate);
+        $recap = Cache::get($cacheKey);
 
-        return Cache::remember($cacheKey, $this->cacheTtlSeconds, function () use ($startDate, $endDate) {
-            $queryStart = microtime(true);
+        if (! $this->isValidRecap($recap)) {
+            $recap = $this->computeDamageRecap($startDate, $endDate);
+            Cache::put($cacheKey, $recap, $this->cacheTtlSeconds);
+        }
 
-            $facilities = Facility::query()
-                ->withCount(['reports as baru_count' => function ($query) use ($startDate, $endDate) {
-                    $query->where('status', 'baru')
-                        ->where('created_at', '>=', $startDate)
-                        ->where('created_at', '<=', $endDate);
-                }])
-                ->withCount(['reports as diproses_count' => function ($query) use ($startDate, $endDate) {
-                    $query->where('status', 'diproses')
-                        ->where('created_at', '>=', $startDate)
-                        ->where('created_at', '<=', $endDate);
-                }])
-                ->withCount(['reports as selesai_count' => function ($query) use ($startDate, $endDate) {
-                    $query->where('status', 'selesai')
-                        ->where('created_at', '>=', $startDate)
-                        ->where('created_at', '<=', $endDate);
-                }])
-                ->withCount(['reports as ditolak_count' => function ($query) use ($startDate, $endDate) {
-                    $query->where('status', 'ditolak')
-                        ->where('created_at', '>=', $startDate)
-                        ->where('created_at', '<=', $endDate);
-                }])
-                ->get();
+        return $recap;
+    }
 
-            $categoryData = Report::selectRaw('category, count(*) as count')
-                ->where('created_at', '>=', $startDate)
-                ->where('created_at', '<=', $endDate)
-                ->groupBy('category')
-                ->pluck('count', 'category')
-                ->toArray();
+    /**
+     * Hitung rekap kerusakan langsung dari database (tanpa cache).
+     *
+     * @return array{data: array<int, array<string, mixed>>, summary: array<string, mixed>, date_range: array<string, string>}
+     */
+    protected function computeDamageRecap(Carbon $startDate, Carbon $endDate): array
+    {
+        $queryStart = microtime(true);
 
-            $queryDuration = microtime(true) - $queryStart;
+        $facilities = Facility::query()
+            ->withCount(['reports as baru_count' => function ($query) use ($startDate, $endDate) {
+                $query->where('status', 'baru')
+                    ->where('created_at', '>=', $startDate)
+                    ->where('created_at', '<=', $endDate);
+            }])
+            ->withCount(['reports as diproses_count' => function ($query) use ($startDate, $endDate) {
+                $query->where('status', 'diproses')
+                    ->where('created_at', '>=', $startDate)
+                    ->where('created_at', '<=', $endDate);
+            }])
+            ->withCount(['reports as selesai_count' => function ($query) use ($startDate, $endDate) {
+                $query->where('status', 'selesai')
+                    ->where('created_at', '>=', $startDate)
+                    ->where('created_at', '<=', $endDate);
+            }])
+            ->withCount(['reports as ditolak_count' => function ($query) use ($startDate, $endDate) {
+                $query->where('status', 'ditolak')
+                    ->where('created_at', '>=', $startDate)
+                    ->where('created_at', '<=', $endDate);
+            }])
+            ->get();
 
-            Log::info('RecapService: Damage query executed', [
-                'date_range' => [$startDate->toDateString(), $endDate->toDateString()],
-                'facilities_count' => $facilities->count(),
-                'categories_count' => count($categoryData),
-                'query_duration_ms' => round($queryDuration * 1000, 2),
-            ]);
+        $categoryData = Report::selectRaw('category, count(*) as count')
+            ->where('created_at', '>=', $startDate)
+            ->where('created_at', '<=', $endDate)
+            ->groupBy('category')
+            ->pluck('count', 'category')
+            ->toArray();
 
-            $data = $facilities->map(function ($facility) {
-                return [
-                    'facility_id' => $facility->id,
-                    'facility_name' => $facility->name,
-                    'facility_type' => $facility->type,
-                    'facility_location' => $facility->location,
-                    'status' => $facility->status,
-                    'baru_count' => $facility->baru_count,
-                    'diproses_count' => $facility->diproses_count,
-                    'selesai_count' => $facility->selesai_count,
-                    'ditolak_count' => $facility->ditolak_count,
-                    'total_reports' => $facility->baru_count + $facility->diproses_count + $facility->selesai_count + $facility->ditolak_count,
-                ];
-            });
+        $queryDuration = microtime(true) - $queryStart;
 
-            $summary = [
-                'total_facilities_with_reports' => $data->where('total_reports', '>', 0)->count(),
-                'total_reports' => $data->sum('total_reports'),
-                'total_baru' => $data->sum('baru_count'),
-                'total_diproses' => $data->sum('diproses_count'),
-                'total_selesai' => $data->sum('selesai_count'),
-                'total_ditolak' => $data->sum('ditolak_count'),
-                'by_category' => $categoryData,
-            ];
+        Log::info('RecapService: Damage query executed', [
+            'date_range' => [$startDate->toDateString(), $endDate->toDateString()],
+            'facilities_count' => $facilities->count(),
+            'categories_count' => count($categoryData),
+            'query_duration_ms' => round($queryDuration * 1000, 2),
+        ]);
 
+        $data = $facilities->map(function ($facility) {
             return [
-                'data' => $data,
-                'summary' => $summary,
-                'date_range' => [
-                    'start' => $startDate->toDateString(),
-                    'end' => $endDate->toDateString(),
-                ],
+                'facility_id' => $facility->id,
+                'facility_name' => $facility->name,
+                'facility_type' => $facility->type,
+                'facility_location' => $facility->location,
+                'status' => $facility->status,
+                'baru_count' => $facility->baru_count,
+                'diproses_count' => $facility->diproses_count,
+                'selesai_count' => $facility->selesai_count,
+                'ditolak_count' => $facility->ditolak_count,
+                'total_reports' => $facility->baru_count + $facility->diproses_count + $facility->selesai_count + $facility->ditolak_count,
             ];
         });
+
+        $summary = [
+            'total_facilities_with_reports' => $data->where('total_reports', '>', 0)->count(),
+            'total_reports' => $data->sum('total_reports'),
+            'total_baru' => $data->sum('baru_count'),
+            'total_diproses' => $data->sum('diproses_count'),
+            'total_selesai' => $data->sum('selesai_count'),
+            'total_ditolak' => $data->sum('ditolak_count'),
+            'by_category' => $categoryData,
+        ];
+
+        return [
+            'data' => $data->all(),
+            'summary' => $summary,
+            'date_range' => [
+                'start' => $startDate->toDateString(),
+                'end' => $endDate->toDateString(),
+            ],
+        ];
+    }
+
+    /**
+     * Validasi struktur hasil rekap: tiga bagian utama wajib array murni
+     * (bukan objek hasil serialisasi rusak), termasuk rincian per kategori
+     * bila ada.
+     */
+    protected function isValidRecap(mixed $recap): bool
+    {
+        return is_array($recap)
+            && is_array($recap['data'] ?? null)
+            && is_array($recap['summary'] ?? null)
+            && is_array($recap['date_range'] ?? null)
+            && is_array($recap['summary']['by_category'] ?? []);
     }
 
     /**
@@ -600,7 +649,7 @@ HTML;
 
         Log::info('RecapService: Occupancy HTML exported', [
             'date_range' => $recapData['date_range'],
-            'facilities_count' => count($recapData['data']),
+            'facilities_count' => is_countable($recapData['data'] ?? null) ? count($recapData['data']) : 0,
             'duration_ms' => round((microtime(true) - $start) * 1000, 2),
             'bytes' => strlen($html),
         ]);
@@ -703,8 +752,8 @@ HTML;
 
         Log::info('RecapService: Damage HTML exported', [
             'date_range' => $recapData['date_range'],
-            'facilities_count' => count($recapData['data']),
-            'categories_count' => count($recapData['summary']['by_category'] ?? []),
+            'facilities_count' => is_countable($recapData['data'] ?? null) ? count($recapData['data']) : 0,
+            'categories_count' => is_countable($recapData['summary']['by_category'] ?? null) ? count($recapData['summary']['by_category']) : 0,
             'duration_ms' => round((microtime(true) - $start) * 1000, 2),
             'bytes' => strlen($html),
         ]);

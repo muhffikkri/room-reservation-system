@@ -238,3 +238,17 @@ it('caps public catalog results and rejects unbounded schedule dates', function 
         'date' => Carbon::now()->addDays(366)->toDateString(),
     ]))->assertSessionHasErrors('date');
 });
+
+it('disables browser caching for authenticated responses only', function (): void {
+    $guestResponse = $this->get('/');
+
+    $guestResponse->assertOk();
+    expect($guestResponse->baseResponse->headers->get('Cache-Control') ?? '')->not->toContain('no-store');
+
+    $user = User::factory()->create(['role' => 'pengguna', 'account_status' => 'aktif']);
+
+    $this->actingAs($user)
+        ->get(route('dashboard'))
+        ->assertOk()
+        ->assertHeaderContains('Cache-Control', 'no-store');
+});
