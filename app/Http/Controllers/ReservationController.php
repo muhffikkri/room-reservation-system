@@ -32,6 +32,15 @@ class ReservationController extends Controller
     {
         $status = $request->string('status')->trim()->toString();
 
+        $expired = $this->reservationService->expireStale($request->user());
+
+        if ($expired > 0) {
+            $request->session()->flash(
+                'info',
+                "{$expired} reservasi Anda otomatis dibatalkan sistem karena melewati batas persetujuan."
+            );
+        }
+
         $reservations = Reservation::with(['facility'])
             ->where('user_id', auth()->id())
             ->when($status !== '', fn ($query) => $query->where('status', $status))
@@ -111,11 +120,24 @@ class ReservationController extends Controller
 
     /**
      * Menampilkan detail informasi reservasi milik pengguna.
+     *
+     * Reservasi pending yang melewati batas persetujuan dikonversi lebih dulu
+     * oleh sistem agar detail menampilkan status terkini ("Gagal").
      */
-    public function show(Reservation $reservation): View
+    public function show(Request $request, Reservation $reservation): View
     {
         Gate::authorize('view', $reservation);
 
+        $expired = $this->reservationService->expireStale($request->user());
+
+        if ($expired > 0) {
+            $request->session()->flash(
+                'info',
+                "{$expired} reservasi Anda otomatis dibatalkan sistem karena melewati batas persetujuan."
+            );
+        }
+
+        $reservation->refresh();
         $reservation->load(['facility', 'decidedBy']);
 
         return view('reservasi.show', compact('reservation'));

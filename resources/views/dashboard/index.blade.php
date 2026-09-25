@@ -9,6 +9,7 @@
             'approved' => ['label' => 'Disetujui', 'class' => 'bg-emerald-50 text-emerald-700'],
             'rejected' => ['label' => 'Ditolak', 'class' => 'bg-rose-50 text-rose-700'],
             'cancelled' => ['label' => 'Dibatalkan', 'class' => 'bg-slate-100 text-slate-600'],
+            'cancelled_by_system' => ['label' => 'Gagal', 'class' => 'bg-violet-50 text-violet-700'],
         ];
         $reportStatuses = [
             'baru' => ['label' => 'Baru', 'class' => 'bg-sky-50 text-sky-700'],

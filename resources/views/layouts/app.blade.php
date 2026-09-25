@@ -96,6 +96,11 @@
                 {{ session('success') }}
             </div>
         @endif
+        @if (session('info'))
+            <div class="mb-5 rounded-xl border border-sky-200 bg-sky-50 px-4 py-3 text-sm leading-relaxed text-sky-800" role="status">
+                {{ session('info') }}
+            </div>
+        @endif
         @if (session('error'))
             <div class="mb-5 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm leading-relaxed text-rose-800" role="alert">
                 {{ session('error') }}
