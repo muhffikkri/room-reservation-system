@@ -81,40 +81,72 @@ it('prevents regular pengguna from accessing officer report queue', function () 
     $response->assertStatus(403);
 });
 
-it('filters the report queue by the menunggu approval tab by default', function () {
+it('shows all reports by default and filters the queue by the menunggu approval tab', function () {
     $officer = User::factory()->create(['role' => 'petugas', 'account_status' => 'aktif']);
     $user = User::factory()->create(['role' => 'pengguna', 'account_status' => 'aktif']);
-    $facility = Facility::factory()->create(['status' => 'aktif']);
+    $activeFacility = Facility::factory()->create(['name' => 'Fasilitas Masih Aktif', 'status' => 'aktif']);
+    $closedFacility = Facility::factory()->create(['name' => 'Fasilitas Sudah Tutup', 'status' => 'aktif']);
 
-    Report::factory()->create(['user_id' => $user->id, 'facility_id' => $facility->id, 'status' => 'baru']);
-    Report::factory()->create(['user_id' => $user->id, 'facility_id' => $facility->id, 'status' => 'selesai', 'resolution_note' => 'Sudah diperbaiki']);
+    Report::factory()->create(['user_id' => $user->id, 'facility_id' => $activeFacility->id, 'status' => 'baru']);
+    Report::factory()->create(['user_id' => $user->id, 'facility_id' => $closedFacility->id, 'status' => 'selesai', 'resolution_note' => 'Sudah diperbaiki']);
 
     $this->actingAs($officer)
         ->get(route('petugas.laporan.index'))
         ->assertOk()
         ->assertSee('Menunggu Approval')
-        ->assertSee($facility->name);
+        ->assertSee('Fasilitas Masih Aktif')
+        ->assertSee('Fasilitas Sudah Tutup');
 
     $this->actingAs($officer)
         ->get(route('petugas.laporan.index', ['tab' => 'menunggu']))
         ->assertOk()
-        ->assertSee($facility->name);
+        ->assertSee('Fasilitas Masih Aktif')
+        ->assertDontSee('Fasilitas Sudah Tutup');
 });
 
 it('filters the report queue by the selesai tab', function () {
     $officer = User::factory()->create(['role' => 'petugas', 'account_status' => 'aktif']);
     $user = User::factory()->create(['role' => 'pengguna', 'account_status' => 'aktif']);
-    $pendingFacility = Facility::factory()->create(['name' => 'Fasilitas Menunggu', 'status' => 'aktif']);
+    $activeFacility = Facility::factory()->create(['name' => 'Fasilitas Masih Aktif', 'status' => 'aktif']);
     $doneFacility = Facility::factory()->create(['name' => 'Fasilitas Rampung', 'status' => 'aktif']);
+    $rejectedFacility = Facility::factory()->create(['name' => 'Fasilitas Ditolak', 'status' => 'aktif']);
 
-    Report::factory()->create(['user_id' => $user->id, 'facility_id' => $pendingFacility->id, 'status' => 'diproses']);
+    Report::factory()->create(['user_id' => $user->id, 'facility_id' => $activeFacility->id, 'status' => 'diproses']);
     Report::factory()->create(['user_id' => $user->id, 'facility_id' => $doneFacility->id, 'status' => 'selesai', 'resolution_note' => 'Sudah diperbaiki']);
+    Report::factory()->create(['user_id' => $user->id, 'facility_id' => $rejectedFacility->id, 'status' => 'ditolak', 'resolution_note' => 'Bukan fasilitas kampus']);
 
     $this->actingAs($officer)
         ->get(route('petugas.laporan.index', ['tab' => 'selesai']))
         ->assertOk()
         ->assertSee('Fasilitas Rampung')
-        ->assertDontSee('Fasilitas Menunggu');
+        ->assertSee('Fasilitas Ditolak')
+        ->assertDontSee('Fasilitas Masih Aktif');
+});
+
+it('orders active reports above finished reports', function () {
+    $officer = User::factory()->create(['role' => 'petugas', 'account_status' => 'aktif']);
+    $user = User::factory()->create(['role' => 'pengguna', 'account_status' => 'aktif']);
+    $activeFacility = Facility::factory()->create(['name' => 'Fasilitas Masih Aktif', 'status' => 'aktif']);
+    $closedFacility = Facility::factory()->create(['name' => 'Fasilitas Sudah Tutup', 'status' => 'aktif']);
+
+    Report::factory()->create([
+        'user_id' => $user->id,
+        'facility_id' => $closedFacility->id,
+        'status' => 'selesai',
+        'resolution_note' => 'Sudah diperbaiki',
+        'created_at' => now()->addDay(),
+    ]);
+    Report::factory()->create([
+        'user_id' => $user->id,
+        'facility_id' => $activeFacility->id,
+        'status' => 'baru',
+        'created_at' => now()->subDay(),
+    ]);
+
+    $this->actingAs($officer)
+        ->get(route('petugas.laporan.index'))
+        ->assertOk()
+        ->assertSeeInOrder(['Fasilitas Masih Aktif', 'Fasilitas Sudah Tutup']);
 });
 
 it('shows the submitted at column on the report queue', function () {

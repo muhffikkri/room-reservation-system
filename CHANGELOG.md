@@ -8,15 +8,16 @@ Format mengikuti riwayat commit tim. Tanggal terbaru di atas. Status merge: **De
 
 ## [Unreleased] — Sedang dikerjakan di branch anggota tim
 
-### feat/petugas-dashboard-features — Fitur Dashboard Petugas (feat/petugas-dashboard-features)
+### feat/dashboard-petugas-sorting-filter — Sorting, Tab, & Filter Dashboard Petugas (feat/dashboard-petugas-sorting-filter)
 
-- **Sorting antrian reservasi**: `Officer\ReservationController` (`index` + `ajaxIndex`) mengurutkan berdasarkan prioritas status (pending → approved → rejected → cancelled_by_user → cancelled_by_officer), lalu `created_at` desc, lalu `start_time` asc.
-- **Tab rekapitulasi laporan**: `Officer\ReportController@index` mendukung query `tab` (`menunggu` = baru/diproses/ditolak, `selesai` = selesai/cancelled_by_user/cancelled_by_officer). Kartu filter status asli tetap ada dan dikombinasikan dengan tab (status filter mengabaikan tab agar tidak menghasilkan irisan kosong).
+- **Sorting antrian reservasi (sesuai AC)**: `Officer\ReservationController` (`index` + `ajaxIndex`) mengurutkan `created_at` desc → `start_time` asc → prioritas status (pending → approved → rejected → cancelled_by_user → cancelled_by_officer). Konstanta `TABS`/`STATUS_ORDER` dipakai bersama oleh view dan endpoint AJAX.
+- **Tab rekapitulasi reservasi**: Tab "Menunggu Approval" (`pending`) dan "Selesai" (`approved`/`rejected`/`cancelled_by_user`/`cancelled_by_officer`) di `petugas/reservasi/index.blade.php`. Query param `tab` didukung `index` + `ajaxIndex`; filter status menimpa tab; fetch AJAX meneruskan `tab` dari URL aktif.
+- **Tab rekapitulasi laporan diperbaiki**: `menunggu` = baru/diproses, `selesai` = selesai/ditolak (sebelumnya memakai status `cancelled_by_*` yang tidak ada di enum laporan dan menaruh `ditolak` di tab menunggu). Default tanpa tab menampilkan semua laporan, diurutkan baru/diproses di atas lalu selesai/ditolak di bawah (`CASE status` + `latest()`). Kartu filter status asli tetap ada dan dikombinasikan dengan tab.
+- **Sorting dashboard petugas**: Antrian reservasi pending diurutkan `created_at` desc → `start_time` asc; daftar laporan dashboard kini menampilkan semua status dengan urutan aktif (baru/diproses) di atas lalu tertutup (selesai/ditolak), badge status dinamis (baru/diproses/selesai/ditolak), variabel `newReports` → `queueReports`.
 - **Kolom "Waktu Diajukan"**: Kolom `created_at` ditambahkan ke tabel antrian reservasi dan laporan petugas.
 - **Dialog konfirmasi Setujui**: Tombol "Setujui" pada antrian reservasi kini membuka `<dialog>` konfirmasi (sebelumnya submit langsung), konsisten dengan Tolak/Batalkan. Dialog AJAX ditandai `data-ajax-dialog` dan dibersihkan sebelum tiap fetch.
 - **Fix filter AJAX petugas**: URL fetch di `resources/js/app.js` sebelumnya memakai sintaks Blade `{{ route(...) }}` yang tidak diproses di file JS hasil bundling Vite (URL literal rusak) — diganti path statis `/petugas/reservasi/data`. Token CSRF kini diambil dari `<meta name="csrf-token">` yang ditambahkan ke `layouts/app.blade.php`. Empty-state `colspan` disesuaikan jadi 6.
-- **Sorting dashboard petugas**: `Officer\DashboardController` mengurutkan antrian reservasi pending dan laporan baru berdasarkan `created_at` desc.
-- **Test**: 5 test baru (prioritas sorting, kolom Waktu Diajukan + dialog konfirmasi, tab laporan default/Selesai, kolom Waktu Diajukan laporan).
+- **Test**: 10 test (sorting reservasi 3 level, tab reservasi menunggu/selesai/status-menimpa-tab, kolom Waktu Diajukan + dialog konfirmasi, tab laporan menunggu/selesai, urutan laporan aktif-di-atas, urutan laporan dashboard, kolom Waktu Diajukan laporan).
 
 ### feat/live-search-filter-dashboard — Live Search Filter di Dashboard Petugas (feat/live-search-filter-dashboard)
 
