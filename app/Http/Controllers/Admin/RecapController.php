@@ -30,7 +30,7 @@ class RecapController extends Controller
         Log::info('RecapController: Occupancy page loaded', [
             'user_id' => auth()->id(),
             'date_range' => $recap['date_range'],
-            'facilities_count' => count($recap['data']),
+            'facilities_count' => $this->facilitiesCount($recap),
             'duration_ms' => round((microtime(true) - $start) * 1000, 2),
         ]);
 
@@ -55,7 +55,7 @@ class RecapController extends Controller
         Log::info('RecapController: Damage page loaded', [
             'user_id' => auth()->id(),
             'date_range' => $recap['date_range'],
-            'facilities_count' => count($recap['data']),
+            'facilities_count' => $this->facilitiesCount($recap),
             'duration_ms' => round((microtime(true) - $start) * 1000, 2),
         ]);
 
@@ -82,7 +82,7 @@ class RecapController extends Controller
         Log::info('RecapController: Occupancy CSV downloaded', [
             'user_id' => auth()->id(),
             'date_range' => $recap['date_range'],
-            'facilities_count' => count($recap['data']),
+            'facilities_count' => $this->facilitiesCount($recap),
             'duration_ms' => round((microtime(true) - $start) * 1000, 2),
             'bytes' => strlen($csv),
         ]);
@@ -110,7 +110,7 @@ class RecapController extends Controller
         Log::info('RecapController: Damage CSV downloaded', [
             'user_id' => auth()->id(),
             'date_range' => $recap['date_range'],
-            'facilities_count' => count($recap['data']),
+            'facilities_count' => $this->facilitiesCount($recap),
             'duration_ms' => round((microtime(true) - $start) * 1000, 2),
             'bytes' => strlen($csv),
         ]);
@@ -144,7 +144,7 @@ class RecapController extends Controller
             Log::info('RecapController: Occupancy PDF generated', [
                 'user_id' => auth()->id(),
                 'date_range' => $recap['date_range'],
-                'facilities_count' => count($recap['data']),
+                'facilities_count' => $this->facilitiesCount($recap),
                 'duration_ms' => round((microtime(true) - $start) * 1000, 2),
             ]);
 
@@ -189,7 +189,7 @@ class RecapController extends Controller
             Log::info('RecapController: Damage PDF generated', [
                 'user_id' => auth()->id(),
                 'date_range' => $recap['date_range'],
-                'facilities_count' => count($recap['data']),
+                'facilities_count' => $this->facilitiesCount($recap),
                 'duration_ms' => round((microtime(true) - $start) * 1000, 2),
             ]);
 
@@ -210,5 +210,14 @@ class RecapController extends Controller
                 ['Content-Type' => 'text/html; charset=UTF-8']
             );
         }
+    }
+
+    /**
+     * Jumlah baris rekap untuk log — aman walau cache pernah korup,
+     * karena count() hanya menerima array atau Countable.
+     */
+    private function facilitiesCount(array $recap): int
+    {
+        return is_countable($recap['data'] ?? null) ? count($recap['data']) : 0;
     }
 }

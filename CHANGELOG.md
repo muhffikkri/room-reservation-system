@@ -8,7 +8,16 @@ Format mengikuti riwayat commit tim. Tanggal terbaru di atas. Status merge: **De
 
 ## [Unreleased] — Sedang dikerjakan di branch anggota tim
 
-### feat/reservation-overlap-auto-reject — Auto-reject Overlap + Notifikasi In-App (feat/reservation-overlap-auto-reject)
+### fix/recap-count-session-logout — Guard count() Recap, Back-button Logout, & Halaman 500 Ramah (fix/recap-count-session-logout)
+
+- **Recap cache tahan korupsi**: `RecapService` tidak lagi memakai `Cache::remember` mentah — cache divalidasi (`isValidRecap()`) dan otomatis dihitung ulang bila bukan struktur array murni (mis. `__PHP_Incomplete_Class` sisa serialisasi lama yang membuat `count()` melempar TypeError), lalu disimpan ulang. Data rekap kini di-cache sebagai array biasa (`$data->all()`), bukan Collection.
+- **Guard `count()`**: 6 panggilan `count($recap['data'])` di log `RecapController` diganti `facilitiesCount()` (memakai `is_countable`); log ekspor HTML `RecapService` ikut dijaga.
+- **Tombol back setelah logout aman**: `AddSecurityHeaders` mengirim `Cache-Control: no-store, no-cache, must-revalidate, private` + `Pragma`/`Expires` untuk respons halaman user login — back browser memicu request baru sehingga sesi yang sudah dibuang berujung redirect 302 ke login (ritual `invalidate()` + `regenerateToken()` di `AccountStatusGate` tetap jadi pemilik tunggal).
+- **Logout tangguh**: `LogoutController` membungkus ritual terminasi dalam try/catch + `Log::warning` — kegagalan teknis sesi tidak pernah menggagalkan redirect ke login (respons tetap 302).
+- **Halaman 500 ramah**: view baru `resources/views/errors/500.blade.php` ("Maaf, ada kesalahan teknis", halaman mandiri tanpa Vite) + render callback di `bootstrap/app.php` yang menangkap semua exception tak terduga saat `APP_DEBUG=false` tanpa membocorkan stack trace; HttpException (404/403/419) tetap memakai alur bawaan Laravel.
+- **Test**: `AdminRecapTest` (4: render okupansi + cache array murni, heal cache rusak okupansi & damage, ekspor CSV), `ErrorHandlingTest` (2: 500 ramah tanpa trace + pesan exception tersembunyi, 404 tetap), `AuthFlowTest` +2 (back-button dashboard setelah logout → 302 login, logout ganda tanpa error), `SecurityHardeningTest` +1 (no-store hanya untuk respons terautentikasi, halaman publik tetap cacheable). Pest **228/230** (2 pre-existing GD); pint ✓.
+
+### feat/reservation-overlap-auto-reject — Auto-reject Overlap + Notifikasi In-App (Dev — merge 9ee28d1, PR #80)
 
 - **Overlap interval tertutup (BR-6)**: `Reservation::scopeOverlap` & `ReservationAvailability::hasApprovedOverlap` kini memakai `start_time <= end AND end_time >= start` — interval bersinggungan (09.00-11.00 vs 11.00-12.00) ikut dianggap bentrok di grid jadwal (landing/jadwal publik/form booking), penolakan saat submit, dan guard approve.
 - **Pesan penolakan sesuai AC**: `overlapError()` dan conflict `create()` menjawab "Maaf, fasilitas ini sudah dipesan pada jam yang sama (atau overlap). Permohonan Anda ditolak." — tampil inline pada field fasilitas di form dan sebagai flash error.

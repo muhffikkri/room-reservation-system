@@ -20,6 +20,15 @@ final class AddSecurityHeaders
         $response->headers->set('Referrer-Policy', 'strict-origin-when-cross-origin');
         $response->headers->set('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
 
+        // Halaman yang dibuka saat login tidak boleh disimpan browser:
+        // tombol back setelah logout harus memicu request baru sehingga
+        // sesi yang sudah dibuang berujung redirect 302 ke login.
+        if ($request->user() !== null) {
+            $response->headers->set('Cache-Control', 'no-store, no-cache, must-revalidate, private');
+            $response->headers->set('Pragma', 'no-cache');
+            $response->headers->set('Expires', '0');
+        }
+
         if (! app()->environment(['local', 'testing'])) {
             $response->headers->set(
                 'Content-Security-Policy',
