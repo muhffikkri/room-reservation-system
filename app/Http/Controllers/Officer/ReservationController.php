@@ -27,6 +27,7 @@ class ReservationController extends Controller
         'pending',
         'approved',
         'rejected',
+        'rejected_by_system',
         'cancelled_by_user',
         'cancelled_by_officer',
         'cancelled_by_system',
@@ -34,10 +35,10 @@ class ReservationController extends Controller
 
     public const TABS = [
         'menunggu' => ['pending'],
-        'selesai' => ['approved', 'rejected', 'cancelled_by_user', 'cancelled_by_officer', 'cancelled_by_system'],
+        'selesai' => ['approved', 'rejected', 'rejected_by_system', 'cancelled_by_user', 'cancelled_by_officer', 'cancelled_by_system'],
     ];
 
-    public const STATUS_ORDER = 'CASE status WHEN "pending" THEN 0 WHEN "approved" THEN 1 WHEN "rejected" THEN 2 WHEN "cancelled_by_user" THEN 3 WHEN "cancelled_by_officer" THEN 4 WHEN "cancelled_by_system" THEN 5 ELSE 6 END';
+    public const STATUS_ORDER = 'CASE status WHEN "pending" THEN 0 WHEN "approved" THEN 1 WHEN "rejected" THEN 2 WHEN "rejected_by_system" THEN 3 WHEN "cancelled_by_user" THEN 4 WHEN "cancelled_by_officer" THEN 5 WHEN "cancelled_by_system" THEN 6 ELSE 7 END';
 
     public function __construct(private readonly ReservationService $reservations) {}
 
@@ -148,7 +149,12 @@ class ReservationController extends Controller
             return back()->with('error', $exception->getMessage());
         }
 
-        return back()->with('success', 'Reservasi disetujui dan slot terkunci.');
+        $autoRejected = $this->reservations->autoRejectedOnApprove();
+        $message = $autoRejected > 0
+            ? "Reservasi disetujui dan slot terkunci. {$autoRejected} reservasi lain otomatis ditolak karena overlap."
+            : 'Reservasi disetujui dan slot terkunci.';
+
+        return back()->with('success', $message);
     }
 
     public function reject(RejectReservationRequest $request, Reservation $reservation): RedirectResponse

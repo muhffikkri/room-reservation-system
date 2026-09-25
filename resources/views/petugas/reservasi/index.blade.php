@@ -42,6 +42,7 @@
                     <option value="pending" @selected(($filters['status'] ?? '') === 'pending')>Menunggu Persetujuan</option>
                     <option value="approved" @selected(($filters['status'] ?? '') === 'approved')>Disetujui</option>
                     <option value="rejected" @selected(($filters['status'] ?? '') === 'rejected')>Ditolak</option>
+                    <option value="rejected_by_system" @selected(($filters['status'] ?? '') === 'rejected_by_system')>Ditolak oleh Sistem</option>
                     <option value="cancelled_by_user" @selected(($filters['status'] ?? '') === 'cancelled_by_user')>Dibatalkan Pengguna</option>
                     <option value="cancelled_by_officer" @selected(($filters['status'] ?? '') === 'cancelled_by_officer')>Dibatalkan Petugas</option>
                     <option value="cancelled_by_system" @selected(($filters['status'] ?? '') === 'cancelled_by_system')>Dibatalkan oleh Sistem</option>
@@ -112,6 +113,8 @@
                                     <span class="inline-flex items-center rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-600 ring-1 ring-inset ring-slate-200">Dibatalkan Pengguna</span>
                                 @elseif ($reservation->status === 'cancelled_by_system')
                                     <span class="inline-flex items-center rounded-full bg-violet-50 px-2.5 py-1 text-xs font-semibold text-violet-700 ring-1 ring-inset ring-violet-200">Dibatalkan oleh Sistem</span>
+                                @elseif ($reservation->status === 'rejected_by_system')
+                                    <span class="inline-flex items-center rounded-full bg-violet-50 px-2.5 py-1 text-xs font-semibold text-violet-700 ring-1 ring-inset ring-violet-200">Ditolak oleh Sistem</span>
                                 @else
                                     <span class="inline-flex items-center rounded-full bg-orange-50 px-2.5 py-1 text-xs font-semibold text-orange-700 ring-1 ring-inset ring-orange-200">Dibatalkan Petugas</span>
                                 @endif

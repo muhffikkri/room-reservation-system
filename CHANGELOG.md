@@ -8,7 +8,17 @@ Format mengikuti riwayat commit tim. Tanggal terbaru di atas. Status merge: **De
 
 ## [Unreleased] — Sedang dikerjakan di branch anggota tim
 
-### feat/reservation-auto-expire — Auto-cancel Reservasi & Status "Gagal" (feat/reservation-auto-expire)
+### feat/reservation-overlap-auto-reject — Auto-reject Overlap + Notifikasi In-App (feat/reservation-overlap-auto-reject)
+
+- **Overlap interval tertutup (BR-6)**: `Reservation::scopeOverlap` & `ReservationAvailability::hasApprovedOverlap` kini memakai `start_time <= end AND end_time >= start` — interval bersinggungan (09.00-11.00 vs 11.00-12.00) ikut dianggap bentrok di grid jadwal (landing/jadwal publik/form booking), penolakan saat submit, dan guard approve.
+- **Pesan penolakan sesuai AC**: `overlapError()` dan conflict `create()` menjawab "Maaf, fasilitas ini sudah dipesan pada jam yang sama (atau overlap). Permohonan Anda ditolak." — tampil inline pada field fasilitas di form dan sebagai flash error.
+- **Status baru `rejected_by_system`**: migrasi `add_rejected_by_system_status_to_reservations_table`; label **"Ditolak oleh Sistem"** di semua view pengguna & petugas (badge violet, terpisah dari `rejected` merah). `STATUSES`/`TABS['selesai']`/`STATUS_ORDER` petugas, filter opsi antrean, `reservasi/show` (label "Alasan Penolakan Otomatis oleh Sistem"), badge component, dan `getStatusBadge` di `app.js` ikut diperbarui.
+- **Auto-reject saat approve**: `ReservationService::rejectOverlappingPendings()` berjalan di dalam transaksi `approve()` — seluruh `pending` pada fasilitas sama yang overlap (identik maupun bersinggungan) ditolak jadi `rejected_by_system` + `reject_reason` otomatis + `decided_at`; jumlahnya diakses controller lewat `autoRejectedOnApprove()`.
+- **Fitur notifikasi baru (database channel)**: migrasi `create_notifications_table`, `App\Notifications\ReservationOverlapRejected` (sinkron di dalam transaksi, ikut ter-rollback bila approve gagal), **bell notifikasi** di `layouts/app.blade.php` (badge unread + panel 10 notifikasi terbaru + "Tandai semua dibaca"), route `notifications.read` & `notifications.read-all` (`NotificationController`).
+- **Flash petugas**: approve sukses menyertakan "N reservasi lain otomatis ditolak karena overlap." bila ada yang ter-auto-reject (tanpa perubahan pesan saat tidak ada).
+- **Test baru `ReservationOverlapRejectTest`** (11 test): adjacency saat submit dengan pesan AC persis, jarak 30 menit tetap diterima, auto-reject identik & bersinggungan, baris notifikasi DB + isinya, label per peran (pengguna vs petugas), flash jumlah untuk petugas, non-overlap & fasilitas lain tidak tersentuh + tanpa notifikasi, mark-read & read-all. **4 test lama disesuaikan** (kasus 4, BR-7 officer, grid landing, proyeksi jadwal). Pest **219/221** (2 pre-existing GD); `npm run build` ✓.
+
+### feat/reservation-auto-expire — Auto-cancel Reservasi & Status "Gagal" (Dev — merge e3314dd, PR #79)
 
 - **Status baru `cancelled_by_system`**: migrasi `add_cancelled_by_system_status_to_reservations_table` menambah nilai enum `cancelled_by_system` (label **"Gagal"** di sisi pengguna, **"Dibatalkan oleh Sistem"** di sisi petugas; badge violet).
 - **`ReservationService::expireStale(?User $viewer)`**: menkonversi bulk reservasi `pending` dengan `start_time < now() + 60 menit` (lead time BR-3) menjadi `cancelled_by_system` + `cancel_reason` otomatis + `decided_at`. Mengembalikan jumlah kedaluwarsa milik viewer untuk flash.
@@ -18,7 +28,7 @@ Format mengikuti riwayat commit tim. Tanggal terbaru di atas. Status merge: **De
 - **Label per peran**: view pengguna (`dashboard/index`, `reservasi/index`, `reservasi/show` termasuk blok "Alasan Pembatalan Otomatis oleh Sistem", `components/ui/badge`) menampilkan "Gagal"; view petugas (`petugas/reservasi/index` filter+badge, `petugas/reservasi/show`, `app.js getStatusBadge`) menampilkan "Dibatalkan oleh Sistem". `STATUSES`/`TABS['selesai']`/`STATUS_ORDER` officer ikut diperbarui.
 - **Test**: `ReservationExpiryTest` (11 test: flip di dashboard/detail/riwayat pengguna, dashboard & halaman petugas, approve diblokir 409, approve dalam jendela aman tetap bisa, expiry saat `create()`, filter status + AJAX queue, reservasi jauh dari batas tidak terpengaruh).
 
-### feat/dashboard-petugas-sorting-filter — Sorting, Tab, & Filter Dashboard Petugas (feat/dashboard-petugas-sorting-filter)
+### feat/dashboard-petugas-sorting-filter — Sorting, Tab, & Filter Dashboard Petugas (Dev — merge 74033fb, PR #78)
 
 - **Sorting antrian reservasi (sesuai AC)**: `Officer\ReservationController` (`index` + `ajaxIndex`) mengurutkan `created_at` desc → `start_time` asc → prioritas status (pending → approved → rejected → cancelled_by_user → cancelled_by_officer). Konstanta `TABS`/`STATUS_ORDER` dipakai bersama oleh view dan endpoint AJAX.
 - **Tab rekapitulasi reservasi**: Tab "Menunggu Approval" (`pending`) dan "Selesai" (`approved`/`rejected`/`cancelled_by_user`/`cancelled_by_officer`) di `petugas/reservasi/index.blade.php`. Query param `tab` didukung `index` + `ajaxIndex`; filter status menimpa tab; fetch AJAX meneruskan `tab` dari URL aktif.

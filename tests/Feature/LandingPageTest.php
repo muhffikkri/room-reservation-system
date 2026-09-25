@@ -54,11 +54,12 @@ it('menandai slot lewat dan slot terpakai pada grid', function (): void {
 
     $html = $this->get('/')->assertOk()->getContent();
 
-    // With 1-hour lead time: now=10:00, past slots are <=11:00 (9 slots), but 11:00-12:00 is booked (2 slots)
-    // Past: 07:00-10:30 = 8 slots | Booked: 11:00-11:30 = 2 slots | Available: 12:00-19:30 = 16 slots
-    expect(substr_count($html, '>Terpakai</span>'))->toBe(2);
+    // Dengan interval tertutup, reservasi 11:00-12:00 juga menandai slot
+    // bersinggungan 12:00-12:30 sebagai terpakai.
+    // Past: 07:00-10:30 = 8 slots | Booked: 11:00-12:00 = 3 slots | Available: 12:30-19:30 = 15 slots
+    expect(substr_count($html, '>Terpakai</span>'))->toBe(3);
     expect(substr_count($html, '>Waktu Lewat</span>'))->toBe(8);
-    expect(substr_count($html, '>Tersedia</span>'))->toBe(16);
+    expect(substr_count($html, '>Tersedia</span>'))->toBe(15);
 });
 
 it('tidak membocorkan identitas pemohon dan tujuan ke publik (BR-13)', function (): void {

@@ -13,6 +13,7 @@ use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\FacilityController;
 use App\Http\Controllers\HomeController;
+use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\Officer\DashboardController as OfficerDashboardController;
 use App\Http\Controllers\Officer\ReportController as OfficerReportController;
 use App\Http\Controllers\Officer\ReservationController as OfficerReservationController;
@@ -146,4 +147,8 @@ Route::middleware(['auth', 'active', 'role:admin'])->prefix('admin')->group(func
 
 Route::middleware('auth')->group(function (): void {
     Route::post('/logout', LogoutController::class)->name('logout');
+    Route::get('/notifications/{notification}/read', [NotificationController::class, 'markRead'])
+        ->name('notifications.read');
+    Route::post('/notifications/read-all', [NotificationController::class, 'markAllRead'])
+        ->name('notifications.read-all');
 });

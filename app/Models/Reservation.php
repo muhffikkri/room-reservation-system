@@ -16,8 +16,10 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * Status approved memblokir slot (BR-6). Scope overlap TIDAK memfilter
  * status dengan sengaja dan pemanggil yang menentukan, karena reservasi
  * pending boleh masuk antrean dan hanya approved yang memblokir.
- * Contoh antrean: dua pending 08.00-09.00 boleh berdampingan, lalu
- * petugas menyetujui satu dan sistem menolak yang lain dengan 409.
+ * Definisi overlap bersifat tertutup: interval yang bersinggungan
+ * (contoh 09.00-11.00 vs 11.00-12.00) ikut dianggap bentrok. Contoh
+ * antrean: dua pending 08.00-09.00 boleh berdampingan, lalu petugas
+ * menyetujui satu dan sistem otomatis menolak sisanya (rejected_by_system).
  */
 class Reservation extends Model
 {
@@ -63,12 +65,18 @@ class Reservation extends Model
         return $query->where('status', 'pending');
     }
 
+    /**
+     * Overlap interval tertutup (BR-6): reservasi dianggap bentrok bila pada
+     * fasilitas sama dengan start_time <= end_lama AND end_time >= start_lama,
+     * sehingga interval yang bersinggungan (09.00-11.00 vs 11.00-12.00) ikut
+     * terdeteksi.
+     */
     public function scopeOverlap(Builder $query, int $facilityId, mixed $start, mixed $end): Builder
     {
         return $query
             ->where('facility_id', $facilityId)
-            ->where('start_time', '<', $end)
-            ->where('end_time', '>', $start);
+            ->where('start_time', '<=', $end)
+            ->where('end_time', '>=', $start);
     }
 
     /**

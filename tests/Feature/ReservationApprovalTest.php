@@ -65,7 +65,7 @@ it('creates a pending reservation and approves it (kasus 3)', function () {
         ->and($approved->decided_at)->not->toBeNull();
 });
 
-it('allows overlapping pending reservations in queue but rejects the second approval with 409 (kasus 4)', function () {
+it('auto-rejects the overlapping pending queue once one is approved (kasus 4)', function () {
     [$facility, $user, $officer] = makeActors();
     $other = User::factory()->create(['role' => 'pengguna', 'account_status' => 'aktif']);
     $service = app(ReservationService::class);
@@ -77,6 +77,9 @@ it('allows overlapping pending reservations in queue but rejects the second appr
 
     $service->approve($first, $officer);
 
+    expect($second->fresh()->status)->toBe('rejected_by_system')
+        ->and($service->autoRejectedOnApprove())->toBe(1);
+
     try {
         $service->approve($second, $officer);
         $this->fail('Approve kedua seharusnya mengembalikan 409.');
@@ -84,7 +87,7 @@ it('allows overlapping pending reservations in queue but rejects the second appr
         expect($exception->getStatusCode())->toBe(409);
     }
 
-    expect($second->fresh()->status)->toBe('pending');
+    expect($second->fresh()->status)->toBe('rejected_by_system');
 });
 
 it('rejects a new request overlapping an approved reservation (BR-6)', function () {

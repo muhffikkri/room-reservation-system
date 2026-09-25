@@ -44,7 +44,7 @@
             'ring' => 'ring-slate-200',
             'dot' => 'bg-slate-400',
         ],
-        'cancelled_by_system' => [
+        'cancelled_by_system', 'rejected_by_system' => [
             'bg' => 'bg-violet-50',
             'text' => 'text-violet-700',
             'ring' => 'ring-violet-200',
@@ -71,6 +71,7 @@
         'nonaktif' => 'Nonaktif',
         'cancelled_by_user' => 'Dibatalkan Pengguna',
         'cancelled_by_system' => 'Dibatalkan oleh Sistem',
+        'rejected_by_system' => 'Ditolak oleh Sistem',
         default => ucfirst(str_replace('_', ' ', (string) $status)),
     };
 @endphp
