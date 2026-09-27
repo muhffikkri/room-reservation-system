@@ -10,6 +10,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\View\View;
+use Throwable;
 
 /**
  * CRUD master fasilitas oleh admin (§7.3).
@@ -68,20 +69,29 @@ class FacilityController extends Controller
     public function update(FacilityRequest $request, Facility $facility): RedirectResponse
     {
         $validated = $request->validated();
+        $previousPhoto = $facility->photo;
+        $replacementPhoto = $this->storePhoto($request);
 
-        // Foto baru menggantikan yang lama agar file tak terpakai tidak menumpuk.
-        if ($request->hasFile('photo')) {
-            $this->deletePhoto($facility);
+        try {
+            DB::transaction(function () use ($facility, $validated, $replacementPhoto, $previousPhoto): void {
+                $facility->update([
+                    'name' => $validated['name'],
+                    'type' => $validated['type'],
+                    'location' => $validated['location'],
+                    'capacity' => $validated['capacity'],
+                    'description' => $validated['description'] ?? null,
+                    'photo' => $replacementPhoto ?? $previousPhoto,
+                ]);
+            });
+        } catch (Throwable $exception) {
+            $this->deletePhoto($replacementPhoto);
+
+            throw $exception;
         }
 
-        $facility->update([
-            'name' => $validated['name'],
-            'type' => $validated['type'],
-            'location' => $validated['location'],
-            'capacity' => $validated['capacity'],
-            'description' => $validated['description'] ?? null,
-            'photo' => $this->storePhoto($request) ?? $facility->photo,
-        ]);
+        if ($replacementPhoto !== null) {
+            $this->deletePhoto($previousPhoto);
+        }
 
         return redirect()
             ->route('admin.fasilitas.index')
@@ -153,10 +163,10 @@ class FacilityController extends Controller
         return $path;
     }
 
-    private function deletePhoto(Facility $facility): void
+    private function deletePhoto(?string $photo): void
     {
-        if ($facility->photo !== null) {
-            Storage::disk('public')->delete($facility->photo);
+        if ($photo !== null) {
+            Storage::disk('public')->delete($photo);
         }
     }
 }
