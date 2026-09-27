@@ -97,3 +97,42 @@ it('menampilkan pesan ramah ketika tidak ada hasil pencarian', function (): void
         ->assertSee('Fasilitas tidak ditemukan')
         ->assertDontSee('Aula Terpadu');
 });
+
+it('melayani endpoint ajax landing page tanpa error', function (): void {
+    $facility = Facility::factory()->create([
+        'name' => 'Aula Terpadu',
+        'type' => 'aula',
+        'location' => 'Gedung A',
+        'capacity' => 300,
+    ]);
+
+    // Tanpa filter: jalur yang dipanggil oleh pencarian langsung.
+    $this->getJson(route('home.facilities.ajax'))
+        ->assertOk()
+        ->assertJsonPath('total', 1);
+
+    // Semua filter yang dikirim app.js,termasuk date+facility_id yang
+    // memanggil cabang jadwal dan langkah Carbon di dalam controller.
+    $this->getJson(route('home.facilities.ajax', [
+        'q' => 'aula',
+        'type' => 'aula',
+        'location' => 'Gedung A',
+        'capacity' => 'gt_100',
+    ]))->assertOk()->assertJsonPath('total', 1);
+
+    $this->getJson(route('home.facilities.ajax', [
+        'facility_id' => $facility->id,
+        'date' => '2026-09-10',
+    ]))
+        ->assertOk()
+        ->assertJsonPath('total', 1)
+        ->assertJsonStructure(['facilities', 'grids', 'total']);
+});
+
+it('menolak nilai filter yang tidak dikenal pada endpoint ajax', function (): void {
+    Facility::factory()->create();
+
+    $this->getJson(route('home.facilities.ajax', ['type' => 'bukan_tipe']))
+        ->assertStatus(422)
+        ->assertJsonValidationErrors('type');
+});
