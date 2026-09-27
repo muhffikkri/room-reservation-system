@@ -82,6 +82,7 @@ class ReservationService
             // ReservationAvailability; service memetakan hasilnya ke pesan
             // validasi agar alur HTTP tidak berubah.
             $this->assertSlotShape($start, $end);
+            $this->assertBookableWindow($start);
             $this->assertAvailability($lockedFacility, $lockedUser, $start, $end);
 
             Validator::make([
@@ -316,6 +317,21 @@ class ReservationService
 
         if ($errors !== []) {
             throw ValidationException::withMessages(['slot' => $errors[0]]);
+        }
+    }
+
+    /**
+     * Penjaga batas pemesanan ke depan (BR-3) di batas bersama, bukan hanya
+     * di form: pemanggil internal service lewat jalan yang sama.
+     *
+     * Dilempar pada kunci `date` karena ini bukan masalah fasilitas.
+     */
+    private function assertBookableWindow(Carbon $start): void
+    {
+        $error = $this->availability->lookaheadError($start);
+
+        if ($error !== null) {
+            throw ValidationException::withMessages(['date' => [$error]]);
         }
     }
 

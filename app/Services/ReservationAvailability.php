@@ -32,6 +32,8 @@ class ReservationAvailability
 
     private const LEAD_TIME_MINUTES = 60;
 
+    private const MAX_LOOKAHEAD_DAYS = 365;
+
     private const TIME_FORMAT = 'H:i';
 
     public function maxDurationSlots(): int
@@ -122,6 +124,31 @@ class ReservationAvailability
     public function leadTimeError(Carbon $start): ?string
     {
         return $this->isWithinLeadTime($start) ? 'Waktu mulai minimal 1 jam dari sekarang.' : null;
+    }
+
+    /**
+     * Hari terakhir yang boleh dipilih di form pemesanan.
+     *
+     * Batas bawah dan atas keduanya dihitung per hari kalender, sehingga
+     * hari ke-365 masih dapat dipilih utuh — bentuk yang sama dipakai
+     * validasi form dan penjaga di service.
+     */
+    public function maxBookingDate(): Carbon
+    {
+        return Carbon::now(config('app.timezone'))->startOfDay()->addDays(self::MAX_LOOKAHEAD_DAYS);
+    }
+
+    /**
+     * Menolak pemesanan yang terlalu jauh ke depan (BR-3).
+     *
+     * Jumlah hari tetap, bukan relatif terhadap waktu pemesanan, supaya
+     * form dan service tidak bisa berbeda pendapat.
+     */
+    public function lookaheadError(Carbon $start): ?string
+    {
+        return $start->gt($this->maxBookingDate()->copy()->endOfDay())
+            ? 'Reservasi hanya dapat dibuat maksimal '.self::MAX_LOOKAHEAD_DAYS.' hari ke depan.'
+            : null;
     }
 
     private function isInPast(Carbon $start): bool

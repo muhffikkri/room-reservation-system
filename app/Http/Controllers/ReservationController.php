@@ -18,8 +18,6 @@ use Symfony\Component\HttpKernel\Exception\ConflictHttpException;
 
 class ReservationController extends Controller
 {
-    private const MAX_BOOKING_LOOKAHEAD_DAYS = 365;
-
     public function __construct(
         protected ReservationService $reservationService,
         protected ReservationAvailability $availability,
@@ -68,7 +66,7 @@ class ReservationController extends Controller
                 'nullable',
                 'date_format:Y-m-d',
                 'after_or_equal:'.$today->toDateString(),
-                'before_or_equal:'.$today->copy()->addDays(self::MAX_BOOKING_LOOKAHEAD_DAYS)->toDateString(),
+                'before_or_equal:'.$this->availability->maxBookingDate()->toDateString(),
             ],
         ]);
 
