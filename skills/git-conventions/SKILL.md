@@ -7,7 +7,7 @@ description: Konvensi git proyek sistem-reservasi — nama branch konvensional B
 
 ## Branch
 
-- Selalu buat branch baru dari `main` terbaru untuk setiap milestone/fitur. JANGAN commit langsung di `main`.
+- Selalu buat branch baru dari `dev` terbaru untuk setiap milestone/fitur. JANGAN commit langsung di branch terlindungi.
 - Nama branch: `<type>/<deskripsi-singkat-english>`, contoh:
   - `feat/data-foundation`
   - `feat/auth-and-roles`
@@ -41,7 +41,7 @@ Aturan:
 
 Sebelum `git push`, selalu tampilkan ke user:
 
-1. `git log --oneline origin/main..HEAD` — daftar commit yang akan ter-push.
+1. `git log --oneline origin/dev..HEAD` — daftar commit yang akan ter-push.
 2. Ringkasan file per commit bila relevan.
 3. Konfirmasi `.env` / `vendor/` / `node_modules/` tidak ikut (`git status` bersih selain yang sengaja).
 
@@ -51,7 +51,7 @@ Push hanya setelah user menyetujui. Setelah push, verifikasi dengan
 ## Pull Request (gh CLI)
 
 ```bash
-gh pr create --base main --head <branch> --title "<conventional title>" --body-file <file.md>
+gh pr create --base dev --head <branch> --title "<conventional title>" --body-file <file.md>
 gh pr view <nomor> --json title,state,headRefName,url,commits   # verifikasi
 ```
 
@@ -63,8 +63,8 @@ gh pr view <nomor> --json title,state,headRefName,url,commits   # verifikasi
 ## Pasca-merge
 
 ```bash
-git checkout main
-git pull origin main
+git checkout dev
+git pull origin dev
 git log --oneline -5        # pastikan merge commit ada
 ```
 

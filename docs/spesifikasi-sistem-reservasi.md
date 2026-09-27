@@ -7,7 +7,7 @@
 | Database | MySQL (via XAMPP/Laragon) |
 | Batas pengumpulan | 11 Oktober 2026, 12.00 WIB |
 
-> Dokumen ini adalah **sumber kebenaran tunggal** untuk implementasi. Setiap agen/developer wajib mengikuti spesifikasi ini; jika ada kebutuhan di luar spesifikasi, perbarui dokumen ini lebih dulu dengan commit berpesan jelas.
+> Dokumen ini adalah sumber kebenaran untuk kebutuhan produk, skema domain, business rules, workflow, dan kriteria penerimaan. Migrasi adalah sumber skema database yang dieksekusi, `routes/web.php` adalah sumber route yang dieksekusi, dan test adalah bukti perilaku. Jika kebutuhan berubah, perbarui spesifikasi bersama implementasinya.
 
 ## 1. Ikhtisar
 
@@ -73,63 +73,16 @@ SESSION_LIFETIME=120
 # SEED_PENDING_PASSWORD=
 ```
 
-### 2.2 Perintah Setup (juga ditulis di README)
+### 2.2 Setup
 
-```bash
-composer install
-npm install && npm run build   # atau npm run dev saat development
-php artisan key:generate
-php artisan migrate --seed
-php artisan storage:link       # foto fasilitas publik; foto laporan tetap private
-php artisan serve              # http://localhost:8000
-```
+Instruksi setup lokal, database testing, akun demo, dan upgrade storage berada di `README.md`.
 
-Jika database/storage berasal dari versi lama, backup terlebih dahulu lalu jalankan
-`php artisan reports:protect-photos --delete-public` untuk memindahkan foto laporan
-ke `storage/app/private/reports` dan menghapus salinan public setelah copy berhasil.
-
-
-## 3. Konvensi Kode & Struktur Folder
-
-```text
-sistem-reservasi/
-├── public/                      # entry point index.php, aset build (ketentuan tugas)
-├── app/
-│   ├── Http/
-│   │   ├── Controllers/
-│   │   │   ├── Auth/            # LoginController, RegisterController, LogoutController (session-based, custom)
-│   │   │   ├── FacilityController.php        # publik: daftar + jadwal
-│   │   │   ├── ReservationController.php     # pengguna
-│   │   │   ├── ReportController.php          # pengguna
-│   │   │   ├── Officer/         # petugas: ReservationController, ReportController, DashboardController
-│   │   │   └── Admin/           # admin: AccountVerificationController, AdminAccountController, OfficerAccountController, UserAccountController, FacilityController, RecapController, DashboardController
-│   │   ├── Middleware/EnsureRole.php
-│   │   └── Requests/            # Form Request (validasi server)
-│   ├── Models/                  # User, Facility, Reservation, Report, ReportUpdate, AccountVerificationAction
-│   ├── Policies/                # ReservationPolicy, ReportPolicy
-│   └── Services/
-│       ├── AccountVerificationService.php # verifikasi/tolak/pulihkan akun (transaksi + audit)
-│       ├── AccountStatusGate.php     # keputusan akses akun berdasarkan status
-│       ├── ReservationAvailability.php # SATU kepemilikan keputusan ketersediaan slot (BR-1..BR-8, BR-12)
-│       ├── ReservationService.php   # mutasi reservasi + transaksi; cek ketersediaan via ReservationAvailability
-│       ├── ReportService.php        # transisi status laporan + audit
-│       └── RecapService.php         # agregasi okupansi & kerusakan
-├── config/                      # database.php, app.php (ketentuan tugas)
-├── database/
-│   ├── migrations/
-│   └── seeders/                 # DatabaseSeeder: akun demo + fasilitas
-├── resources/views/             # tampilan Blade (ketentuan tugas: /views)
-│   ├── layouts/  components/ui/  fasilitas/  reservasi/  laporan/
-│   ├── petugas/  admin/  auth/  dashboard/
-├── resources/js/validation.js   # validasi sisi client
-├── routes/web.php
-└── tests/Feature  tests/Unit
-```
+## 3. Konvensi Kode
 
 Aturan konvensi:
 - **Model** hanya berisi relasi, scope, cast, dan query dasar — TIDAK berisi logika alur bisnis.
 - **Controller** tipis: validasi (FormRequest) → panggil Service → redirect/view dengan flash message.
-- **Service** memuat logika proses (slot, bentrok, transisi status) agar dapat diuji unit.
+- **Service** memuat logika proses (slot, bentrok, transisi status) agar dapat diuji melalui interface publiknya.
 - **View** Blade hanya presentasi; query TIDAK dilakukan di view.
 - Penamaan route pakai titik: `reservasi.create`, `petugas.reservasi.approve`, dst.
 - Flash message standar: `session('success')`, `session('error')` — dirender oleh layout.
@@ -311,103 +264,19 @@ source control atau dokumen publik.
 
 Sistem mendukung lebih dari satu admin. Seeder cukup menyediakan satu admin untuk demo; admin aktif dapat membuat akun admin tambahan.
 
-## 6. Daftar Routes (`routes/web.php`)
+## 6. Route & Akses
 
-### Publik (tanpa login)
-| Method | URI | Nama | Controller@method |
+`routes/web.php` adalah sumber route yang dieksekusi. Daftar aktual diperoleh dengan `php artisan route:list --except-vendor`.
+
+| Aktor | Prefix utama | Middleware | Tanggung jawab |
 |---|---|---|---|
-| GET | `/` | `home` | HomeController (landing, dibatasi + throttle publik) |
-| GET | `/home/facilities` | `home.facilities.ajax` | HomeController@ajaxFacilities (data fasilitas untuk landing page) |
-| GET | `/fasilitas` | `fasilitas.index` | FacilityController@index (filter: `q`, `tipe`, `lokasi`, `kapasitas_min`, hasil dibatasi) |
-| GET | `/fasilitas/{facility}` | `fasilitas.show` | FacilityController@show (info umum, tanpa data pemohon) |
-| GET | `/fasilitas/{facility}/jadwal?date=` | `fasilitas.jadwal` | FacilityController@jadwal (grid slot tersedia/tidak, tanggal dibatasi) |
+| Publik | `/`, `/fasilitas` | throttle publik bila diperlukan | katalog fasilitas dan jadwal tanpa data pemohon |
+| Guest | `/login`, `/register` | `guest` | autentikasi dan registrasi mandiri pengguna |
+| Pengguna | `/dashboard`, `/reservasi`, `/laporan` | `auth`, `active`, `role:pengguna` | reservasi dan laporan milik sendiri |
+| Petugas | `/petugas` | `auth`, `active`, `role:petugas` | operasi reservasi dan laporan |
+| Admin | `/admin` | `auth`, `active`, `role:admin` | akun, fasilitas, dan rekap read-only operasional |
 
-### Auth (custom, session-based)
-| Method | URI | Nama | Catatan |
-|---|---|---|---|
-| GET / POST | `/register` | `register`, `register.store` | route guest; registrasi mandiri hanya membuat role `pengguna` |
-| GET / POST | `/login` | `login`, `login.store` | route guest; dibatasi laju percobaan |
-| POST | `/logout` | `logout` | autentikasi diperlukan |
-| GET | `/notifications/{notification}/read` | `notifications.read` | autentikasi diperlukan; hanya notifikasi milik penerima yang dapat ditandai dibaca |
-| POST | `/notifications/read-all` | `notifications.read-all` | autentikasi diperlukan; tandai semua notifikasi penerima sebagai dibaca |
-
-Route privat membutuhkan autentikasi. Guest yang membuka route privat diarahkan ke `/login`; pengguna yang sudah login tetapi rolenya tidak sesuai menerima HTTP 403. Route publik tetap dapat diakses semua role.
-
-### Pengguna — `auth` + `EnsureAccountActive` + `role:pengguna`
-| Method | URI | Nama | Catatan |
-|---|---|---|---|
-| GET | `/reservasi` | `reservasi.index` | riwayat + status milik sendiri |
-| GET | `/reservasi/baru?facility_id=&date=` | `reservasi.create` | form + slot picker |
-| POST | `/reservasi` | `reservasi.store` | simpan (status `pending`) |
-| GET | `/reservasi/{reservation}` | `reservasi.show` | detail lengkap (pemilik saja — Policy) |
-| DELETE | `/reservasi/{reservation}` | `reservasi.destroy` | batalkan milik sendiri (BR-8) |
-| GET | `/laporan` | `laporan.index` | daftar laporan milik sendiri |
-| GET | `/laporan/baru` | `laporan.create` | form lapor kerusakan |
-| POST | `/laporan` | `laporan.store` | simpan + upload foto |
-| GET | `/laporan/{report}/foto` | `laporan.photo` | foto dari storage private setelah policy authorize |
-| GET | `/laporan/{report}` | `laporan.show` | detail + status + riwayat |
-
-### Petugas — `auth` + `EnsureAccountActive` + `role:petugas` (prefix `petugas`)
-
-Semua route berikut eksklusif untuk `petugas`. `admin` tidak dapat membaca halaman maupun menjalankan aksi pada endpoint ini.
-
-| Method | URI | Nama | Catatan |
-|---|---|---|---|
-| GET | `/petugas` | `petugas.dashboard` | jumlah antrian reservasi & laporan `pending`/`baru` |
-| GET | `/petugas/reservasi?status=&date=` | `petugas.reservasi.index` | antrian + filter |
-| GET | `/petugas/reservasi/data` | `petugas.reservasi.ajax` | data antrian untuk pemuatan dinamis |
-| GET | `/petugas/reservasi/{reservation}` | `petugas.reservasi.show` | detail reservasi operasional |
-| POST | `/petugas/reservasi/{id}/approve` | `petugas.reservasi.approve` | cek bentrok (BR-7) |
-| POST | `/petugas/reservasi/{id}/reject` | `petugas.reservasi.reject` | wajib `reason` |
-| POST | `/petugas/reservasi/{id}/cancel` | `petugas.reservasi.cancel` | wajib `cancel_reason` (BR-9) |
-| GET | `/petugas/laporan?status=` | `petugas.laporan.index` | antrian laporan |
-| GET | `/petugas/laporan/{report}/foto` | `petugas.laporan.photo` | foto laporan dari storage private |
-| PATCH | `/petugas/laporan/{id}/status` | `petugas.laporan.status` | transisi status + catatan (BR-10) |
-| PATCH | `/petugas/laporan/{report}/fasilitas-status` | `petugas.laporan.fasilitas-status` | set `perbaikan` / kembali `aktif` dari alur laporan (BR-11) |
-
-
-### Admin — `auth` + `role:admin` (prefix `admin`)
-
-Route admin eksklusif untuk `admin`. Dashboard admin hanya boleh memuat ringkasan operasional read-only; detail dan aksi antrian tetap berada pada route `petugas`.
-
-| Method | URI | Nama | Catatan |
-|---|---|---|---|
-| GET | `/admin` | `admin.dashboard` | ringkasan: antrian, fasilitas perbaikan, akun pending |
-| GET/POST | `/admin/petugas`, `/admin/petugas/create` | `admin.petugas.*` | daftar & buat akun petugas (US-13); TIDAK ada registrasi mandiri petugas |
-| GET/POST | `/admin/pengguna`, `/admin/pengguna/create` | `admin.pengguna.*` | daftar & buat akun pengguna langsung (US-14) |
-| GET/POST | `/admin/admin`, `/admin/admin/create` | `admin.admin.*` | daftar & buat akun admin; tidak ada registrasi mandiri admin |
-| GET | `/admin/pengguna/verifikasi` | `admin.pengguna.verifikasi` | daftar akun `pending` |
-| PATCH | `/admin/pengguna/{id}/verifikasi` | `admin.pengguna.verify` | set `aktif` |
-| PATCH | `/admin/pengguna/{id}/tolak` | `admin.pengguna.reject` | set `ditolak` |
-| PATCH | `/admin/pengguna/{id}/pulihkan` | `admin.pengguna.restore` | kembalikan akun `ditolak` ke `pending` |
-| GET | `/admin/fasilitas` | `admin.fasilitas.index` | daftar fasilitas |
-| GET | `/admin/fasilitas/create` | `admin.fasilitas.create` | formulir fasilitas baru |
-| POST | `/admin/fasilitas` | `admin.fasilitas.store` | simpan fasilitas |
-| GET | `/admin/fasilitas/{facility}/edit` | `admin.fasilitas.edit` | formulir edit |
-| PUT | `/admin/fasilitas/{facility}` | `admin.fasilitas.update` | simpan perubahan |
-| PATCH | `/admin/fasilitas/{facility}/nonaktifkan` | `admin.fasilitas.deactivate` | set status `nonaktif` |
-| PATCH | `/admin/fasilitas/{facility}/aktifkan` | `admin.fasilitas.activate` | set status `aktif` |
-| GET | `/admin/rekap/okupansi?start_date=&end_date=` | `admin.rekap.occupancy` | halaman rekap okupansi |
-| GET | `/admin/rekap/okupansi/export/csv?start_date=&end_date=` | `admin.rekap.occupancy.export.csv` | ekspor okupansi CSV |
-| GET | `/admin/rekap/okupansi/export/pdf?start_date=&end_date=` | `admin.rekap.occupancy.export.pdf` | ekspor okupansi PDF |
-| GET | `/admin/rekap/kerusakan?start_date=&end_date=` | `admin.rekap.damage` | halaman rekap kerusakan |
-| GET | `/admin/rekap/kerusakan/export/csv?start_date=&end_date=` | `admin.rekap.damage.export.csv` | ekspor kerusakan CSV |
-| GET | `/admin/rekap/kerusakan/export/pdf?start_date=&end_date=` | `admin.rekap.damage.export.pdf` | ekspor kerusakan PDF |
-
-Belum ada route XLSX saat ini; ekspor XLSX tetap menjadi deliverable yang harus ditambahkan pada milestone implementasinya.
-
-Middleware group ringkas:
-
-```php
-Route::middleware('guest')->group(function () {
-    // auth routes custom: register, login
-});
-Route::middleware(['auth', 'active', 'role:pengguna'])->group(function () {
-    // /reservasi, /laporan (pengguna)
-});
-Route::middleware(['auth', 'active', 'role:petugas'])->prefix('petugas')->group(/* antrian */);
-Route::middleware(['auth', 'active', 'role:admin'])->prefix('admin')->group(/* master data + ringkasan read-only */);
-```
+Route privat mengarahkan guest ke login dan mengembalikan HTTP 403 untuk role yang tidak sesuai. Kepemilikan data diperiksa oleh Policy atau Service. Admin tidak memperoleh hak operasional petugas.
 
 ## 7. Controller & Validasi (Server + Client)
 
@@ -453,40 +322,29 @@ Tanggal pada halaman form dibatasi dari hari ini sampai 365 hari ke depan. Batas
 ### 7.2 Validasi sisi CLIENT (wajib, untuk form penting)
 
 - Atribut HTML5: `required`, `minlength`, `maxlength`, `min`, `type=email`, `pattern`, `accept=".jpg,.jpeg,.png"`.
-- `resources/js/validation.js` (dimuat layout) berisi mirror aturan utama:
-  - Form reservasi: slot picker grid hanya mengizinkan kombinasi slot valid; JS mengecek rentang 07.00–20.00, kelipatan 30 menit, end > start, maks 4 jam — tampilkan pesan inline sebelum submit.
-  - Form laporan: cek ukuran file foto <= 2MB client-side; pratinjau gambar.
-  - Form registrasi/admin: cek kecocokan password & format email sebelum submit.
-  - Nonaktifkan submit ganda melalui event listener JS eksternal (`resources/js/reservation-form.js`), bukan inline handler.
+- `resources/js/reservation-form.js` menangani slot picker dan pencegahan submit ganda pada form reservasi.
+- `resources/js/app.js` memuat progressive enhancement yang dipakai bersama.
+- Form penting menampilkan kesalahan inline sebelum submit bila browser dapat mendeteksinya.
 - Prinsip: validasi client hanya untuk UX; **server tetap sumber kebenaran** (uji ulang semua aturan di server).
 
-### 7.3 Daftar Controller & Tanggung Jawab
+### 7.3 Kepemilikan Logika Aplikasi
 
-| Controller | Method | Logika |
-|---|---|---|
-| `FacilityController` | index, jadwal, show | daftar + filter; grid 26 slot/hari (07:00–19:30 mulai) via proyeksi publik `ReservationAvailability::publicScheduleSlots`; slot `booked` jika overlap dengan `approved` |
-| `ReservationController` | index, create, store, show, destroy | store → `ReservationService::create()`; grid/opsi waktu via proyeksi booking `ReservationAvailability::bookingSlots`; destroy → cek pemilik + BR-8 |
-| `ReportController` | index, create, store, show | store → `ReportService::createReport()`; foto disimpan private + status `baru` |
-| `ReportPhotoController` | `__invoke` | policy authorize lalu stream foto laporan dari disk private |
-| `Officer\DashboardController` | index | hitung antrian: reservasi `pending`, laporan `baru`/`diproses`; hanya untuk petugas |
-| `Officer\ReservationController` | index, approve, reject, cancel | approve/reject/cancel via `ReservationService` (transaksi + lock) |
-| `Officer\ReportController` | index, show, updateStatus, toggleFacilityStatus | transisi via `ReportService` + tulis `report_updates`; status fasilitas mengikuti alur laporan |
-| `Admin\AdminAccountController` | index, create, store | buat akun admin |
-| `Admin\OfficerAccountController` | index, create, store | buat akun petugas |
-| `Admin\AccountVerificationController` | index, verifikasi, tolak, pulihkan | delegasikan verifikasi akun `pending` ke `AccountVerificationService` (transaksi + `lockForUpdate`, guard role `pengguna`, audit `verified_by/at` & `rejected_by/at`) |
-| `Admin\UserAccountController` | index, create, store | buat akun pengguna langsung aktif oleh admin |
-| `Admin\FacilityController` | resource (tanpa destroy fisik) | nonaktifkan/aktifkan |
-| `Admin\RecapController` | occupancy, damage, export CSV/PDF | agregasi okupansi/kerusakan via `RecapService`; XLSX belum memiliki route |
-| `Admin\DashboardController` | index | kartu ringkasan operasional read-only + grafik sederhana (opsional); tanpa detail/aksi antrian |
+| Modul | Keputusan yang dimiliki |
+|---|---|
+| `ReservationAvailability` | validitas dan ketersediaan slot reservasi |
+| `ReservationService` | mutasi reservasi di dalam transaksi dan row lock |
+| `ReportService` | transisi laporan, audit perubahan, dan kaitannya dengan status fasilitas |
+| `AccountVerificationService` / `AccountStatusGate` | transisi dan akses berdasarkan status akun |
+| `RecapService` | agregasi dan ekspor rekap |
 
-Catatan implementasi: `Admin\AdminAccountController`, `Admin\OfficerAccountController`, dan `Admin\UserAccountController` berbagi base `BaseAccountController` (alur daftar-formulir-simpan + penguncian `role`/`aktif` hidup di satu tempat). Keputusan `pending`/`ditolak` vs `aktif` (BR-14) dimiliki satu modul `AccountStatusGate`; middleware `active` dan login hanya menjadi adapter.
+Controller menerjemahkan request dan response. Policy memutuskan otorisasi objek. Service di atas menjadi satu tempat untuk keputusan bisnis yang dipakai beberapa endpoint.
 
 ### 7.4 Policy
 
 - `ReservationPolicy`: `view` (pemilik pada alur pengguna ATAU role petugas pada alur operasional), `cancel` (pemilik + BR-8).
 - `ReportPolicy`: `view` (pemilik pada alur pengguna ATAU role petugas pada alur operasional).
 - Admin hanya menerima agregat read-only di dashboard admin; akses ini tidak diberikan melalui Policy operasional petugas.
-- Otomatis dipakai via route model binding (`authorizeResource`).
+- Policy dipanggil melalui pemeriksaan Gate atau kemampuan user pada titik akses. Service memeriksa ulang aturan saat melakukan mutasi.
 
 
 ## 8. Aturan Bisnis (Business Rules) — WAJIB diimplementasikan di server
@@ -730,15 +588,6 @@ Test memanggil interface `ReservationAvailability` (`isValidSlot`, `hasBlockingO
 - [ ] Seeder akun demo berjalan: `php artisan migrate:fresh --seed`
 - [ ] README berisi setup + informasi login
 
-## 17. Lampiran — Template Isi Laporan UTS (file Word)
-
-1. Nama & NIM anggota kelompok.
-2. Pembagian tugas (sesuaikan; contoh pembagian modul): (a) Auth & manajemen akun admin; (b) Fasilitas + jadwal publik + reservasi pengguna; (c) Alur petugas (antrian, approve/reject/cancel, laporan, status fasilitas); (d) Rekap/ekspor, testing, dokumentasi.
-3. Link Google Drive: source code (zip/repo), file SQL dump (`mysqldump reservasi_kampus > reservasi_kampus.sql`), serta foto contoh.
-4. Setting yang diperlukan: PHP 8.3+, Composer, MySQL 8, Node 20; import SQL atau `php artisan migrate --seed`; `php artisan storage:link`; `php artisan serve`.
-5. Informasi login tiap aktor: lihat tabel akun demo (§5.3).
-6. Screenshot tiap halaman + penjelasan singkat fitur (gunakan checklist §16 sebagai daftar fitur).
-
 ---
 
-*Akhir dokumen — versi 1.1, diperbarui 27 September 2026. Perubahan apa pun terhadap keputusan teknis di atas wajib diperbarui di dokumen ini dan dikomunikasikan ke tim.*
+*Perubahan terhadap requirement wajib memperbarui dokumen ini bersama implementasi dan pengujiannya.*
