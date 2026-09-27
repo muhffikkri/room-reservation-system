@@ -8,22 +8,19 @@ use App\Services\ReservationAvailability;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
 /**
- * Landing page publik (home) — daftar fasilitas + pratinjau ketersediaan slot.
+ * Landing page publik dan endpoint data fasilitas.
  *
- * Menampilkan katalog fasilitas dengan filter pencarian dan grid slot 30 menit
- * (BR-1). Hanya reservasi approved yang memblokir slot (BR-6, BR-12), dan
- * identitas pemohon/tujuan tidak pernah dikirim ke halaman publik (BR-13).
- * Grid pratinjau memakai proyeksi booking dari ReservationAvailability agar
- * lewatnya lead time (BR-3) konsisten dengan formulir pemesanan.
+ * Halaman utama menampilkan sejumlah fasilitas unggulan. Jadwal penuh ditampilkan
+ * pada halaman fasilitas tersendiri.
  *
  * Fitur baru:
  * - Live search filter via AJAX (tanpa reload halaman)
- * - Grid fasilitas maksimal 9 kartu + tombol View All
+ * - Grid fasilitas maksimal 9 kartu
  * - Filter kombinasi: query + jenis + lokasi + kapasitas
- * - Pilih tanggal untuk pratinjau jadwal
  */
 class HomeController extends Controller
 {
@@ -40,8 +37,6 @@ class HomeController extends Controller
         '40_100' => [40, 100],
         'gt_100' => [101, PHP_INT_MAX],
     ];
-
-    private const MAX_PUBLIC_FACILITIES = 50;
 
     private const GRID_MAX_FACILITIES = 9;
 
@@ -71,36 +66,14 @@ class HomeController extends Controller
             ->orderBy('name');
 
         $totalFacilities = $facilitiesQuery->count();
-        $facilities = $facilitiesQuery->limit(self::MAX_PUBLIC_FACILITIES)->get();
-
-        $dayStart = $this->availability->dayStart(now());
-        $dayEnd = $this->availability->dayEnd(now());
-        $approvedByFacility = collect();
-
-        if ($facilities->isNotEmpty()) {
-            $approvedByFacility = Reservation::approved()
-                ->whereIn('facility_id', $facilities->modelKeys())
-                ->where('start_time', '<', $dayEnd)
-                ->where('end_time', '>', $dayStart)
-                ->get(['facility_id', 'start_time', 'end_time'])
-                ->groupBy('facility_id');
-        }
+        $facilities = $facilitiesQuery->limit(self::GRID_MAX_FACILITIES)->get();
 
         return view('landing.index', [
             'facilities' => $facilities,
-            'grids' => $facilities->mapWithKeys(fn (Facility $facility) => [
-                $facility->id => $this->availability->bookingSlots(
-                    $facility,
-                    now(),
-                    $approvedByFacility->get($facility->id, collect()),
-                ),
-            ]),
             'filters' => $filters,
             'typeLabels' => self::TYPE_LABELS,
-            'locationOptions' => Facility::query()->orderBy('location')->distinct()->limit(self::MAX_PUBLIC_FACILITIES)->pluck('location'),
+            'locationOptions' => Facility::query()->orderBy('location')->distinct()->pluck('location'),
             'totalFacilities' => $totalFacilities,
-            'today' => now(),
-            'maxGridFacilities' => self::GRID_MAX_FACILITIES,
         ]);
     }
 
