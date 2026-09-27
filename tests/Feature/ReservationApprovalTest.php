@@ -39,7 +39,7 @@ it('generates factory data that always passes slot validation', function () {
     expect($reservations)->not->toBeEmpty();
 
     foreach ($reservations as $reservation) {
-        expect($availability->isValidSlot($reservation->start_time, $reservation->end_time))->toBeTrue();
+        expect($availability->slotTimeErrors($reservation->start_time, $reservation->end_time))->toBeEmpty();
     }
 });
 
