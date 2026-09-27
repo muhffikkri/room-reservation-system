@@ -187,6 +187,29 @@ it('does not allow cancelling an already rejected reservation', function () {
     expect($reservation->fresh()->status)->toBe('rejected');
 });
 
+it('refuses to let an officer cancel a pending reservation past the approval deadline', function () {
+    [, $reservation, $officer] = makeOfficerReservationActors();
+    $reservation->update([
+        'status' => 'pending',
+        'start_time' => now()->addMinutes(30),
+        'end_time' => now()->addMinutes(90),
+    ]);
+
+    $this->actingAs($officer)
+        ->post(route('petugas.reservasi.cancel', $reservation), ['cancel_reason' => 'Mencoba membatalkan antrean yang sudah kedaluwarsa.'])
+        ->assertRedirect()
+        ->assertSessionHas('error');
+
+    // Officer tidak boleh menuliskan alasan atas keputusan yang sebenarnya
+    // milik sistem; barisnya harus tetap pending agar sapuan berikutnya yang
+    // menandainya cancelled_by_system.
+    $fresh = $reservation->fresh();
+
+    expect($fresh->status)->toBe('pending')
+        ->and($fresh->cancel_reason)->toBeNull()
+        ->and($fresh->decided_by)->toBeNull();
+});
+
 it('sorts the queue by created_at desc, then start time asc, then status priority', function () {
     [$facility, , $officer] = makeOfficerReservationActors();
 

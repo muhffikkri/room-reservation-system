@@ -142,6 +142,8 @@ class ReservationService
                 throw new ConflictHttpException('Hanya reservasi pending yang dapat disetujui.');
             }
 
+            $this->assertNotStalePending($locked);
+
             // Sistem mengunci fasilitas agar perubahan status (misal ke
             // perbaikan, BR-11) tidak menyelinap di tengah persetujuan.
             $facility = Facility::whereKey($locked->facility_id)->lockForUpdate()->firstOrFail();
@@ -225,6 +227,8 @@ class ReservationService
                 throw new ConflictHttpException('Hanya reservasi pending yang dapat ditolak.');
             }
 
+            $this->assertNotStalePending($locked);
+
             $locked->update([
                 'status' => 'rejected',
                 'reject_reason' => $reason,
@@ -252,6 +256,12 @@ class ReservationService
 
             if (! $locked->isCancellable()) {
                 throw new ConflictHttpException('Hanya reservasi pending atau approved yang dapat dibatalkan petugas.');
+            }
+
+            // Hanya pending yang bisa sudah kedaluwarsa: approved yang tinggal
+            // sebentar tetap boleh dibatalkan petugas (BR-16).
+            if ($locked->isPending()) {
+                $this->assertNotStalePending($locked);
             }
 
             $locked->update([
@@ -309,6 +319,28 @@ class ReservationService
 
             return $locked->refresh();
         });
+    }
+
+    /**
+     * Penjaga BR-3 yang dijalankan di dalam lock, setelah baris dikunci.
+     *
+     * Sapuan sebelum approve/reject berjalan sebelum transaksi, jadi batas bisa
+     * saja sudah terlewati ketika lock diperoleh. Tanpa penjaga di sini,
+     * reservasi bisa disetujui kurang dari 60 menit sebelum mulai — tepat hal
+     * yang BR-3 cegah.
+     *
+     * ponytail: jendela balapan ini tidak bisa diuji regresi tanpa celah jam
+     * yang dapat disuntikkan; repo memanggil Carbon::now() langsung, dan
+     * travel() ke depan justru membuat sapuan yang lebih dulu menangkap baris
+     * itu. Butuh seam jam, yaitu refactor tersendiri.
+     *
+     * @param  Reservation  $locked  baris pending yang sudah dikunci
+     */
+    private function assertNotStalePending(Reservation $locked): void
+    {
+        if ($this->availability->isWithinLeadTime($locked->start_time)) {
+            throw new ConflictHttpException('Reservasi sudah melewati batas persetujuan (1 jam sebelum waktu mulai) sehingga tidak dapat diproses.');
+        }
     }
 
     private function assertSlotShape(Carbon $start, Carbon $end): void

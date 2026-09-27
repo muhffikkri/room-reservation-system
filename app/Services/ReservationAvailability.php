@@ -116,7 +116,7 @@ class ReservationAvailability
         return Carbon::now(config('app.timezone'))->addMinutes(self::LEAD_TIME_MINUTES);
     }
 
-    private function isWithinLeadTime(Carbon $start): bool
+    public function isWithinLeadTime(Carbon $start): bool
     {
         return $start->lt($this->leadTimeCutoff());
     }
