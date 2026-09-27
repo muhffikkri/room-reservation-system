@@ -79,6 +79,153 @@ it('rejects cancellation when start time is less than 1 hour away (BR-8)', funct
         ->toThrow(ConflictHttpException::class, 'Reservasi hanya dapat dibatalkan paling lambat 1 jam sebelum waktu mulai.');
 });
 
+it('uses an inclusive one-hour cancellation cutoff across the service and policy', function () {
+    Carbon::setTestNow('2026-09-27 10:00:00');
+
+    $owner = User::factory()->create(['role' => 'pengguna', 'account_status' => 'aktif']);
+    $facility = Facility::factory()->create(['status' => 'aktif']);
+    $service = app(ReservationService::class);
+    $policy = app(ReservationPolicy::class);
+
+    $reservations = collect([
+        '59:59' => Carbon::now()->addMinutes(59)->addSeconds(59),
+        '60:00' => Carbon::now()->addHour(),
+        '60:01' => Carbon::now()->addHour()->addSecond(),
+    ])->map(fn (Carbon $startTime) => Reservation::factory()->create([
+        'user_id' => $owner->id,
+        'facility_id' => $facility->id,
+        'status' => 'approved',
+        'start_time' => $startTime,
+        'end_time' => $startTime->copy()->addHour(),
+    ]));
+
+    expect($service->canCancelByUser($reservations['59:59'], $owner))->toBeFalse()
+        ->and($service->canCancelByUser($reservations['60:00'], $owner))->toBeTrue()
+        ->and($service->canCancelByUser($reservations['60:01'], $owner))->toBeTrue()
+        ->and($policy->cancel($owner, $reservations['59:59']))->toBeFalse()
+        ->and($policy->cancel($owner, $reservations['60:00']))->toBeTrue()
+        ->and($policy->cancel($owner, $reservations['60:01']))->toBeTrue();
+});
+
+it('shows the cancellation action at and beyond the one-hour cutoff', function () {
+    Carbon::setTestNow('2026-09-27 10:00:00');
+
+    $owner = User::factory()->create(['role' => 'pengguna', 'account_status' => 'aktif']);
+    $facility = Facility::factory()->create(['status' => 'aktif']);
+
+    $tooLate = Reservation::factory()->create([
+        'user_id' => $owner->id,
+        'facility_id' => $facility->id,
+        'status' => 'approved',
+        'start_time' => Carbon::now()->addMinutes(59)->addSeconds(59),
+        'end_time' => Carbon::now()->addHours(2),
+    ]);
+    $atCutoff = Reservation::factory()->create([
+        'user_id' => $owner->id,
+        'facility_id' => $facility->id,
+        'status' => 'approved',
+        'start_time' => Carbon::now()->addHour(),
+        'end_time' => Carbon::now()->addHours(2),
+    ]);
+    $beyondCutoff = Reservation::factory()->create([
+        'user_id' => $owner->id,
+        'facility_id' => $facility->id,
+        'status' => 'approved',
+        'start_time' => Carbon::now()->addHour()->addSecond(),
+        'end_time' => Carbon::now()->addHours(2),
+    ]);
+
+    $this->actingAs($owner)
+        ->get(route('reservasi.show', $tooLate))
+        ->assertDontSee('Batalkan Reservasi')
+        ->assertSee('Pembatalan sudah ditutup');
+
+    $this->actingAs($owner)
+        ->get(route('reservasi.show', $atCutoff))
+        ->assertSee('Batalkan Reservasi');
+
+    $this->actingAs($owner)
+        ->get(route('reservasi.show', $beyondCutoff))
+        ->assertSee('Batalkan Reservasi');
+});
+
+it('allows cancellation at exactly one hour before the start time', function () {
+    Carbon::setTestNow('2026-09-27 10:00:00');
+
+    $owner = User::factory()->create(['role' => 'pengguna', 'account_status' => 'aktif']);
+    $facility = Facility::factory()->create(['status' => 'aktif']);
+    $reservation = Reservation::factory()->create([
+        'user_id' => $owner->id,
+        'facility_id' => $facility->id,
+        'status' => 'approved',
+        'start_time' => Carbon::now()->addHour(),
+        'end_time' => Carbon::now()->addHours(2),
+    ]);
+
+    $updated = app(ReservationService::class)->cancelByUser($reservation, $owner, 'Jadwal kegiatan berubah');
+
+    expect($updated->status)->toBe('cancelled_by_user');
+});
+
+it('rechecks the cutoff after a cancellable detail page was rendered', function () {
+    Carbon::setTestNow('2026-09-27 10:00:00');
+
+    $owner = User::factory()->create(['role' => 'pengguna', 'account_status' => 'aktif']);
+    $facility = Facility::factory()->create(['status' => 'aktif']);
+    $reservation = Reservation::factory()->create([
+        'user_id' => $owner->id,
+        'facility_id' => $facility->id,
+        'status' => 'approved',
+        'start_time' => Carbon::now()->addHour()->addSecond(),
+        'end_time' => Carbon::now()->addHours(2),
+    ]);
+
+    $this->actingAs($owner)
+        ->get(route('reservasi.show', $reservation))
+        ->assertSee('Batalkan Reservasi');
+
+    Carbon::setTestNow(Carbon::now()->addSeconds(2));
+
+    $this->actingAs($owner)
+        ->delete(route('reservasi.destroy', $reservation), [
+            'cancel_reason' => 'Jadwal kegiatan berubah',
+        ])
+        ->assertSessionHas('error', 'Reservasi hanya dapat dibatalkan paling lambat 1 jam sebelum waktu mulai.');
+
+    expect($reservation->fresh()->status)->toBe('approved');
+});
+
+it('rechecks the status after a cancellable detail page was rendered', function () {
+    Carbon::setTestNow('2026-09-27 10:00:00');
+
+    $owner = User::factory()->create(['role' => 'pengguna', 'account_status' => 'aktif']);
+    $facility = Facility::factory()->create(['status' => 'aktif']);
+    $reservation = Reservation::factory()->create([
+        'user_id' => $owner->id,
+        'facility_id' => $facility->id,
+        'status' => 'pending',
+        'start_time' => Carbon::now()->addHours(2),
+        'end_time' => Carbon::now()->addHours(3),
+    ]);
+
+    $this->actingAs($owner)
+        ->get(route('reservasi.show', $reservation))
+        ->assertSee('Batalkan Reservasi');
+
+    $reservation->update([
+        'status' => 'rejected',
+        'reject_reason' => 'Ruangan tidak dapat dipinjam.',
+    ]);
+
+    $this->actingAs($owner)
+        ->delete(route('reservasi.destroy', $reservation), [
+            'cancel_reason' => 'Jadwal kegiatan berubah',
+        ])
+        ->assertSessionHas('error', 'Hanya reservasi berstatus pending atau approved yang dapat dibatalkan.');
+
+    expect($reservation->fresh()->status)->toBe('rejected');
+});
+
 it('rejects cancellation of another users reservation', function () {
     $userA = User::factory()->create(['role' => 'pengguna', 'account_status' => 'aktif']);
     $userB = User::factory()->create(['role' => 'pengguna', 'account_status' => 'aktif']);
@@ -124,7 +271,7 @@ it('rejects cancellation when status is not pending or approved', function () {
 });
 
 it('checks ReservationPolicy authorization rules correctly', function () {
-    $policy = new ReservationPolicy;
+    $policy = app(ReservationPolicy::class);
 
     $owner = User::factory()->create(['role' => 'pengguna', 'account_status' => 'aktif']);
     $otherUser = User::factory()->create(['role' => 'pengguna', 'account_status' => 'aktif']);
