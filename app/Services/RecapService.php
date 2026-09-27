@@ -60,6 +60,7 @@ class RecapService
             ->selectRaw('SUM(TIMESTAMPDIFF(MINUTE, start_time, end_time) / 60) as total_hours');
 
         $facilities = Facility::query()
+            ->select('facilities.*')
             ->withCount(['reservations as approved_count' => function ($query) use ($startDate, $endDate) {
                 $query->where('status', 'approved')
                     ->where('start_time', '>=', $startDate)
@@ -71,16 +72,15 @@ class RecapService
                     ->where('start_time', '<=', $endDate);
             }])
             ->withCount(['reservations as rejected_count' => function ($query) use ($startDate, $endDate) {
-                $query->where('status', 'rejected')
+                $query->whereIn('status', ['rejected', 'rejected_by_system'])
                     ->where('start_time', '>=', $startDate)
                     ->where('start_time', '<=', $endDate);
             }])
             ->withCount(['reservations as cancelled_count' => function ($query) use ($startDate, $endDate) {
-                $query->where('status', 'cancelled')
+                $query->whereIn('status', ['cancelled_by_user', 'cancelled_by_officer', 'cancelled_by_system'])
                     ->where('start_time', '>=', $startDate)
                     ->where('start_time', '<=', $endDate);
             }])
-            ->select('facilities.*')
             ->selectSub($hoursSubquery, 'total_approved_hours')
             ->get();
 
