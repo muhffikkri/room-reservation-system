@@ -138,7 +138,7 @@ class ReservationService
             // approve bersamaan tidak meloloskan dua pemenang (BR-7).
             $locked = Reservation::whereKey($reservation->id)->lockForUpdate()->firstOrFail();
 
-            if ($locked->status !== 'pending') {
+            if (! $locked->isPending()) {
                 throw new ConflictHttpException('Hanya reservasi pending yang dapat disetujui.');
             }
 
@@ -221,7 +221,7 @@ class ReservationService
         return DB::transaction(function () use ($reservation, $officer, $reason): Reservation {
             $locked = Reservation::whereKey($reservation->id)->lockForUpdate()->firstOrFail();
 
-            if ($locked->status !== 'pending') {
+            if (! $locked->isPending()) {
                 throw new ConflictHttpException('Hanya reservasi pending yang dapat ditolak.');
             }
 
@@ -250,7 +250,7 @@ class ReservationService
         return DB::transaction(function () use ($reservation, $officer, $reason): Reservation {
             $locked = Reservation::whereKey($reservation->id)->lockForUpdate()->firstOrFail();
 
-            if (! in_array($locked->status, ['pending', 'approved'], true)) {
+            if (! $locked->isCancellable()) {
                 throw new ConflictHttpException('Hanya reservasi pending atau approved yang dapat dibatalkan petugas.');
             }
 
@@ -273,7 +273,7 @@ class ReservationService
         return $user->isActive()
             && $user->isPengguna()
             && $reservation->user_id === $user->id
-            && in_array($reservation->status, ['pending', 'approved'], true)
+            && $reservation->isCancellable()
             && ! $reservation->start_time->isBefore(now()->addHour());
     }
 
@@ -294,7 +294,7 @@ class ReservationService
                 throw new AccessDeniedHttpException('Anda hanya dapat membatalkan reservasi milik Anda sendiri.');
             }
 
-            if (! in_array($locked->status, ['pending', 'approved'], true)) {
+            if (! $locked->isCancellable()) {
                 throw new ConflictHttpException('Hanya reservasi berstatus pending atau approved yang dapat dibatalkan.');
             }
 

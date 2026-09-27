@@ -58,12 +58,12 @@ class RecapService
                     ->where('start_time', '<=', $endDate);
             }])
             ->withCount(['reservations as rejected_count' => function ($query) use ($startDate, $endDate) {
-                $query->whereIn('status', ['rejected', 'rejected_by_system'])
+                $query->whereIn('status', Reservation::REJECTED)
                     ->where('start_time', '>=', $startDate)
                     ->where('start_time', '<=', $endDate);
             }])
             ->withCount(['reservations as cancelled_count' => function ($query) use ($startDate, $endDate) {
-                $query->whereIn('status', ['cancelled_by_user', 'cancelled_by_officer', 'cancelled_by_system'])
+                $query->whereIn('status', Reservation::CANCELLED)
                     ->where('start_time', '>=', $startDate)
                     ->where('start_time', '<=', $endDate);
             }])
