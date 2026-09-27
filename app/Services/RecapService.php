@@ -6,7 +6,6 @@ use App\Models\Facility;
 use App\Models\Report;
 use App\Models\Reservation;
 use Illuminate\Support\Carbon;
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
@@ -14,30 +13,17 @@ class RecapService
 {
     public function __construct(
         protected int $defaultLookbackDays = 30,
-        protected int $cacheTtlSeconds = 300, // 5 minutes
     ) {}
 
     /**
      * Get occupancy recap data for all facilities within date range.
-     *
-     * Entri cache yang tidak berupa struktur array murni (mis. sisa
-     * serialisasi lama berupa __PHP_Incomplete_Class) otomatis dibuang dan
-     * dihitung ulang, sehingga count() tidak pernah menerima input tak valid.
      */
     public function getOccupancyRecap(?Carbon $startDate = null, ?Carbon $endDate = null): array
     {
         $startDate = $startDate ?? Carbon::now()->subDays($this->defaultLookbackDays)->startOfDay();
         $endDate = $endDate ?? Carbon::now()->endOfDay();
 
-        $cacheKey = $this->getCacheKey('occupancy', $startDate, $endDate);
-        $recap = Cache::get($cacheKey);
-
-        if (! $this->isValidRecap($recap)) {
-            $recap = $this->computeOccupancyRecap($startDate, $endDate);
-            Cache::put($cacheKey, $recap, $this->cacheTtlSeconds);
-        }
-
-        return $recap;
+        return $this->computeOccupancyRecap($startDate, $endDate);
     }
 
     /**
@@ -136,24 +122,13 @@ class RecapService
 
     /**
      * Get damage frequency recap data for all facilities within date range.
-     *
-     * Entri cache yang tidak berupa struktur array murni otomatis dibuang dan
-     * dihitung ulang, sehingga count() tidak pernah menerima input tak valid.
      */
     public function getDamageRecap(?Carbon $startDate = null, ?Carbon $endDate = null): array
     {
         $startDate = $startDate ?? Carbon::now()->subDays($this->defaultLookbackDays)->startOfDay();
         $endDate = $endDate ?? Carbon::now()->endOfDay();
 
-        $cacheKey = $this->getCacheKey('damage', $startDate, $endDate);
-        $recap = Cache::get($cacheKey);
-
-        if (! $this->isValidRecap($recap)) {
-            $recap = $this->computeDamageRecap($startDate, $endDate);
-            Cache::put($cacheKey, $recap, $this->cacheTtlSeconds);
-        }
-
-        return $recap;
+        return $this->computeDamageRecap($startDate, $endDate);
     }
 
     /**
@@ -237,37 +212,6 @@ class RecapService
                 'end' => $endDate->toDateString(),
             ],
         ];
-    }
-
-    /**
-     * Validasi struktur hasil rekap: tiga bagian utama wajib array murni
-     * (bukan objek hasil serialisasi rusak), termasuk rincian per kategori
-     * bila ada.
-     */
-    protected function isValidRecap(mixed $recap): bool
-    {
-        return is_array($recap)
-            && is_array($recap['data'] ?? null)
-            && is_array($recap['summary'] ?? null)
-            && is_array($recap['date_range'] ?? null)
-            && is_array($recap['summary']['by_category'] ?? []);
-    }
-
-    /**
-     * Generate cache key for recap data.
-     */
-    protected function getCacheKey(string $type, Carbon $startDate, Carbon $endDate): string
-    {
-        return "recap:{$type}:{$startDate->format('Ymd')}:{$endDate->format('Ymd')}";
-    }
-
-    /**
-     * Invalidate all recap caches (call when reservations/reports change).
-     */
-    public function invalidateCache(): void
-    {
-        Cache::flush(); // Simple approach - could be optimized with tags if using Redis
-        Log::info('RecapService: Cache invalidated');
     }
 
     /**
@@ -427,129 +371,6 @@ class RecapService
         fclose($handle);
 
         return $csv;
-    }
-
-    /**
-     * Stream occupancy CSV directly to output (memory efficient for large datasets).
-     */
-    public function streamOccupancyCsv(?Carbon $startDate = null, ?Carbon $endDate = null): \Generator
-    {
-        $startDate = $startDate ?? Carbon::now()->subDays($this->defaultLookbackDays)->startOfDay();
-        $endDate = $endDate ?? Carbon::now()->endOfDay();
-
-        $recap = $this->getOccupancyRecap($startDate, $endDate);
-
-        $headers = [
-            'Nama Fasilitas',
-            'Tipe',
-            'Lokasi',
-            'Kapasitas',
-            'Status',
-            'Disetujui',
-            'Pending',
-            'Ditolak',
-            'Dibatalkan',
-            'Total Reservasi',
-            'Total Jam (Disetujui)',
-            'Max Jam Operasional',
-            'Tingkat Okupansi (%)',
-        ];
-
-        yield $headers;
-
-        foreach ($recap['data'] as $item) {
-            yield [
-                $item['facility_name'],
-                $item['facility_type'],
-                $item['facility_location'],
-                $item['capacity'],
-                $item['status'],
-                $item['approved_count'],
-                $item['pending_count'],
-                $item['rejected_count'],
-                $item['cancelled_count'],
-                $item['total_reservations'],
-                $item['total_approved_hours'],
-                $item['max_possible_hours'],
-                $item['occupancy_rate'],
-            ];
-        }
-
-        // Summary row
-        yield [
-            'TOTAL',
-            '',
-            '',
-            '',
-            '',
-            $recap['summary']['total_approved'],
-            $recap['summary']['total_pending'],
-            $recap['summary']['total_rejected'],
-            $recap['summary']['total_cancelled'],
-            $recap['summary']['total_reservations'],
-            $recap['summary']['total_approved_hours'],
-            '',
-            $recap['summary']['average_occupancy_rate'],
-        ];
-    }
-
-    /**
-     * Stream damage CSV directly to output (memory efficient for large datasets).
-     */
-    public function streamDamageCsv(?Carbon $startDate = null, ?Carbon $endDate = null): \Generator
-    {
-        $startDate = $startDate ?? Carbon::now()->subDays($this->defaultLookbackDays)->startOfDay();
-        $endDate = $endDate ?? Carbon::now()->endOfDay();
-
-        $recap = $this->getDamageRecap($startDate, $endDate);
-
-        $headers = [
-            'Nama Fasilitas',
-            'Tipe',
-            'Lokasi',
-            'Status',
-            'Baru',
-            'Diproses',
-            'Selesai',
-            'Ditolak',
-            'Total Laporan',
-        ];
-
-        yield $headers;
-
-        foreach ($recap['data'] as $item) {
-            yield [
-                $item['facility_name'],
-                $item['facility_type'],
-                $item['facility_location'],
-                $item['status'],
-                $item['baru_count'],
-                $item['diproses_count'],
-                $item['selesai_count'],
-                $item['ditolak_count'],
-                $item['total_reports'],
-            ];
-        }
-
-        // Summary row
-        yield [
-            'TOTAL',
-            '',
-            '',
-            '',
-            $recap['summary']['total_baru'],
-            $recap['summary']['total_diproses'],
-            $recap['summary']['total_selesai'],
-            $recap['summary']['total_ditolak'],
-            $recap['summary']['total_reports'],
-        ];
-
-        // Category breakdown
-        yield ['', '', '', '', '', '', '', '', ''];
-        yield ['Kategori Kerusakan', 'Jumlah', '', '', '', '', '', '', ''];
-        foreach ($recap['summary']['by_category'] as $category => $count) {
-            yield [$category, $count, '', '', '', '', '', '', ''];
-        }
     }
 
     /**
