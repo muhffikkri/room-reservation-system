@@ -6,7 +6,6 @@ use App\Models\Facility;
 use App\Models\Report;
 use App\Models\Reservation;
 use Illuminate\Support\Carbon;
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
@@ -14,30 +13,17 @@ class RecapService
 {
     public function __construct(
         protected int $defaultLookbackDays = 30,
-        protected int $cacheTtlSeconds = 300, // 5 minutes
     ) {}
 
     /**
      * Get occupancy recap data for all facilities within date range.
-     *
-     * Entri cache yang tidak berupa struktur array murni (mis. sisa
-     * serialisasi lama berupa __PHP_Incomplete_Class) otomatis dibuang dan
-     * dihitung ulang, sehingga count() tidak pernah menerima input tak valid.
      */
     public function getOccupancyRecap(?Carbon $startDate = null, ?Carbon $endDate = null): array
     {
         $startDate = $startDate ?? Carbon::now()->subDays($this->defaultLookbackDays)->startOfDay();
         $endDate = $endDate ?? Carbon::now()->endOfDay();
 
-        $cacheKey = $this->getCacheKey('occupancy', $startDate, $endDate);
-        $recap = Cache::get($cacheKey);
-
-        if (! $this->isValidRecap($recap)) {
-            $recap = $this->computeOccupancyRecap($startDate, $endDate);
-            Cache::put($cacheKey, $recap, $this->cacheTtlSeconds);
-        }
-
-        return $recap;
+        return $this->computeOccupancyRecap($startDate, $endDate);
     }
 
     /**
@@ -136,24 +122,13 @@ class RecapService
 
     /**
      * Get damage frequency recap data for all facilities within date range.
-     *
-     * Entri cache yang tidak berupa struktur array murni otomatis dibuang dan
-     * dihitung ulang, sehingga count() tidak pernah menerima input tak valid.
      */
     public function getDamageRecap(?Carbon $startDate = null, ?Carbon $endDate = null): array
     {
         $startDate = $startDate ?? Carbon::now()->subDays($this->defaultLookbackDays)->startOfDay();
         $endDate = $endDate ?? Carbon::now()->endOfDay();
 
-        $cacheKey = $this->getCacheKey('damage', $startDate, $endDate);
-        $recap = Cache::get($cacheKey);
-
-        if (! $this->isValidRecap($recap)) {
-            $recap = $this->computeDamageRecap($startDate, $endDate);
-            Cache::put($cacheKey, $recap, $this->cacheTtlSeconds);
-        }
-
-        return $recap;
+        return $this->computeDamageRecap($startDate, $endDate);
     }
 
     /**
@@ -237,37 +212,6 @@ class RecapService
                 'end' => $endDate->toDateString(),
             ],
         ];
-    }
-
-    /**
-     * Validasi struktur hasil rekap: tiga bagian utama wajib array murni
-     * (bukan objek hasil serialisasi rusak), termasuk rincian per kategori
-     * bila ada.
-     */
-    protected function isValidRecap(mixed $recap): bool
-    {
-        return is_array($recap)
-            && is_array($recap['data'] ?? null)
-            && is_array($recap['summary'] ?? null)
-            && is_array($recap['date_range'] ?? null)
-            && is_array($recap['summary']['by_category'] ?? []);
-    }
-
-    /**
-     * Generate cache key for recap data.
-     */
-    protected function getCacheKey(string $type, Carbon $startDate, Carbon $endDate): string
-    {
-        return "recap:{$type}:{$startDate->format('Ymd')}:{$endDate->format('Ymd')}";
-    }
-
-    /**
-     * Invalidate all recap caches (call when reservations/reports change).
-     */
-    public function invalidateCache(): void
-    {
-        Cache::flush(); // Simple approach - could be optimized with tags if using Redis
-        Log::info('RecapService: Cache invalidated');
     }
 
     /**
