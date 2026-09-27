@@ -144,12 +144,11 @@ class ReservationController extends Controller
     public function approve(Request $request, Reservation $reservation): RedirectResponse
     {
         try {
-            $this->reservations->approve($reservation->fresh() ?? $reservation, $request->user());
+            $autoRejected = $this->reservations->approve($reservation->fresh() ?? $reservation, $request->user());
         } catch (ConflictHttpException $exception) {
             return back()->with('error', $exception->getMessage());
         }
 
-        $autoRejected = $this->reservations->autoRejectedOnApprove();
         $message = $autoRejected > 0
             ? "Reservasi disetujui dan slot terkunci. {$autoRejected} reservasi lain otomatis ditolak karena overlap."
             : 'Reservasi disetujui dan slot terkunci.';

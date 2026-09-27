@@ -96,7 +96,7 @@ it('auto-rejects identical-time pending reservations when one is approved', func
     $winner = overlapPending($facility, $owner, '2030-05-06', '09:00', '11:00');
     $loser = overlapPending($facility, $rival, '2030-05-06', '09:00', '11:00');
 
-    $service->approve($winner, $officer);
+    $autoRejected = $service->approve($winner, $officer);
 
     $fresh = $loser->fresh();
 
@@ -105,7 +105,7 @@ it('auto-rejects identical-time pending reservations when one is approved', func
         ->and($fresh->reject_reason)->toContain('Otomatis ditolak sistem')
         ->and($fresh->decided_at)->not->toBeNull()
         ->and($fresh->decided_by)->toBeNull()
-        ->and($service->autoRejectedOnApprove())->toBe(1);
+        ->and($autoRejected)->toBe(1);
 });
 
 it('keeps an adjacent-time pending reservation when its neighbour is approved', function () {
@@ -116,10 +116,10 @@ it('keeps an adjacent-time pending reservation when its neighbour is approved', 
     $winner = overlapPending($facility, $owner, '2030-05-07', '09:00', '11:00');
     $loser = overlapPending($facility, $rival, '2030-05-07', '11:00', '12:00');
 
-    $service->approve($winner, $officer);
+    $autoRejected = $service->approve($winner, $officer);
 
     expect($loser->fresh()->status)->toBe('pending')
-        ->and($service->autoRejectedOnApprove())->toBe(0);
+        ->and($autoRejected)->toBe(0);
 });
 
 it('sends an in-app database notification with the required feedback message', function () {
@@ -216,9 +216,9 @@ it('leaves adjacent and other-facility pendings untouched without notifications'
     $adjacentPending = overlapPending($facility, $rival, '2030-05-12', '11:00', '12:00');
     $otherFacilityPending = overlapPending($otherFacility, $rival, '2030-05-12', '09:00', '11:00');
 
-    $service->approve($winner, $officer);
+    $autoRejected = $service->approve($winner, $officer);
 
-    expect($service->autoRejectedOnApprove())->toBe(0)
+    expect($autoRejected)->toBe(0)
         ->and($adjacentPending->fresh()->status)->toBe('pending')
         ->and($otherFacilityPending->fresh()->status)->toBe('pending');
 
