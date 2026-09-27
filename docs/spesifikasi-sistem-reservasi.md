@@ -311,7 +311,7 @@ Tanggal pada halaman form dibatasi dari hari ini sampai 365 hari ke depan. Batas
 ```
 
 **Form admin/petugas lainnya:**
-- `CreateAdminRequest` / `CreateOfficerRequest` / `CreateUserByAdminRequest`: `name`, `identity`, dan `phone` wajib; `identity` dan `phone` unique; `email` wajib+unique, di-trim lalu dinormalisasi lowercase; `password` wajib `min:8 confirmed`; input telepon `08...` atau `+62...` dinormalisasi ke `+62...`; langsung set `role` & `account_status = 'aktif'`. Request berbagi aturan dasar akun.
+- `AdminAccountRequest`: `name`, `identity`, dan `phone` wajib; `identity` dan `phone` unique; `email` wajib+unique, di-trim lalu dinormalisasi lowercase; `password` wajib `min:8 confirmed`; input telepon `08...` atau `+62...` dinormalisasi ke `+62...`; controller mengunci `role` sesuai route dan `account_status = 'aktif'`.
 - `FacilityRequest`: `name`, `type` in enum, `location`, `capacity` integer min 1, `description` nullable, `photo` nullable image <= 2 MB dan maksimal 6000 x 6000 piksel.
 - `RejectReservationRequest` / `CancelReservationOfficerRequest`: `reason`/`cancel_reason` wajib `min:10`.
 - Pembatalan oleh pengguna juga mewajibkan `cancel_reason` 5–255 karakter (BR-8).

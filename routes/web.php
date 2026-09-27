@@ -1,12 +1,10 @@
 <?php
 
+use App\Http\Controllers\Admin\AccountController;
 use App\Http\Controllers\Admin\AccountVerificationController;
-use App\Http\Controllers\Admin\AdminAccountController;
 use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
 use App\Http\Controllers\Admin\FacilityController as AdminFacilityController;
-use App\Http\Controllers\Admin\OfficerAccountController;
 use App\Http\Controllers\Admin\RecapController;
-use App\Http\Controllers\Admin\UserAccountController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\LogoutController;
 use App\Http\Controllers\Auth\RegisterController;
@@ -97,23 +95,32 @@ Route::middleware(['auth', 'active', 'role:admin'])->prefix('admin')->group(func
         ->name('admin.pengguna.reject');
     Route::patch('/pengguna/{user}/pulihkan', [AccountVerificationController::class, 'restore'])
         ->name('admin.pengguna.restore');
-    Route::get('/pengguna', [UserAccountController::class, 'index'])
+    Route::get('/pengguna', [AccountController::class, 'index'])
+        ->defaults('accountType', 'pengguna')
         ->name('admin.pengguna.index');
-    Route::get('/pengguna/create', [UserAccountController::class, 'create'])
+    Route::get('/pengguna/create', [AccountController::class, 'create'])
+        ->defaults('accountType', 'pengguna')
         ->name('admin.pengguna.create');
-    Route::post('/pengguna', [UserAccountController::class, 'store'])
+    Route::post('/pengguna', [AccountController::class, 'store'])
+        ->defaults('accountType', 'pengguna')
         ->name('admin.pengguna.store');
-    Route::get('/petugas', [OfficerAccountController::class, 'index'])
+    Route::get('/petugas', [AccountController::class, 'index'])
+        ->defaults('accountType', 'petugas')
         ->name('admin.petugas.index');
-    Route::get('/petugas/create', [OfficerAccountController::class, 'create'])
+    Route::get('/petugas/create', [AccountController::class, 'create'])
+        ->defaults('accountType', 'petugas')
         ->name('admin.petugas.create');
-    Route::post('/petugas', [OfficerAccountController::class, 'store'])
+    Route::post('/petugas', [AccountController::class, 'store'])
+        ->defaults('accountType', 'petugas')
         ->name('admin.petugas.store');
-    Route::get('/admin', [AdminAccountController::class, 'index'])
+    Route::get('/admin', [AccountController::class, 'index'])
+        ->defaults('accountType', 'admin')
         ->name('admin.admin.index');
-    Route::get('/admin/create', [AdminAccountController::class, 'create'])
+    Route::get('/admin/create', [AccountController::class, 'create'])
+        ->defaults('accountType', 'admin')
         ->name('admin.admin.create');
-    Route::post('/admin', [AdminAccountController::class, 'store'])
+    Route::post('/admin', [AccountController::class, 'store'])
+        ->defaults('accountType', 'admin')
         ->name('admin.admin.store');
     Route::get('/fasilitas', [AdminFacilityController::class, 'index'])
         ->name('admin.fasilitas.index');
