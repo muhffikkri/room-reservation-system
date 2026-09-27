@@ -35,8 +35,11 @@ class RecapService
     {
         $queryStart = microtime(true);
 
-        $operationalDays = $startDate->diffInDays($endDate) + 1;
-        $maxPossibleHours = $operationalDays * 13; // 13 hours per day (07:00-20:00)
+        // Both ends are normalised to midnight before differencing: diffInDays
+        // already counts the final calendar day when handed an end-of-day
+        // timestamp, so the +1 would count it twice. 13 jam = 07.00-20.00.
+        $operationalDays = $startDate->diffInDays($endDate->copy()->startOfDay()) + 1;
+        $maxPossibleHours = $operationalDays * 13;
 
         // Calculate total approved hours per facility using subquery to avoid N+1
         $hoursSubquery = Reservation::approved()
