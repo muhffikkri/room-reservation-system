@@ -15,9 +15,9 @@ final class AccountAttributes
      * Trim lalu lowercase agar User@Kampus.test dan user@kampus.test
      * dianggap email yang sama oleh unique:users,email.
      */
-    public static function normalizeEmail(?string $email): ?string
+    public static function normalizeEmail(mixed $email): ?string
     {
-        if ($email === null) {
+        if (! is_string($email)) {
             return null;
         }
 
@@ -31,9 +31,9 @@ final class AccountAttributes
      *
      * Menerima 08..., 62..., atau +62... (spasi/strip diabaikan).
      */
-    public static function normalizePhone(?string $phone): ?string
+    public static function normalizePhone(mixed $phone): ?string
     {
-        if ($phone === null) {
+        if (! is_string($phone)) {
             return null;
         }
 
@@ -61,9 +61,9 @@ final class AccountAttributes
     /**
      * Trim penanda identitas (NIM-/NIP-) tanpa mengubah isinya.
      */
-    public static function normalizeIdentity(?string $identity): ?string
+    public static function normalizeIdentity(mixed $identity): ?string
     {
-        if ($identity === null) {
+        if (! is_string($identity)) {
             return null;
         }
 
