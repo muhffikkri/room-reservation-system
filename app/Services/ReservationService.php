@@ -19,24 +19,9 @@ use Symfony\Component\HttpKernel\Exception\ConflictHttpException;
  */
 class ReservationService
 {
-    /**
-     * Jumlah reservasi yang otomatis ditolak oleh approve() terakhir
-     * (overlap dengan reservasi yang baru disetujui) — dipakai controller
-     * untuk flash notifikasi ke petugas.
-     */
-    private int $autoRejectedOnApprove = 0;
-
     public function __construct(
         protected ReservationAvailability $availability,
     ) {}
-
-    /**
-     * Jumlah reservasi yang otomatis ditolak sistem pada approve() terakhir.
-     */
-    public function autoRejectedOnApprove(): int
-    {
-        return $this->autoRejectedOnApprove;
-    }
 
     /**
      * Tandai reservasi pending yang melewati batas persetujuan (BR-3: kurang
@@ -140,7 +125,7 @@ class ReservationService
      * intervalnya overlap (termasuk bersinggungan) otomatis ditolak sistem
      * (rejected_by_system) dan pemiliknya diberi notifikasi in-app.
      */
-    public function approve(Reservation $reservation, User $officer): Reservation
+    public function approve(Reservation $reservation, User $officer): int
     {
         $this->ensureActivePetugas($officer);
 
@@ -148,9 +133,7 @@ class ReservationService
         // sehingga guard status di bawah menjawab 409, bukan menyetujui.
         $this->expireStale();
 
-        $this->autoRejectedOnApprove = 0;
-
-        return DB::transaction(function () use ($reservation, $officer): Reservation {
+        return DB::transaction(function () use ($reservation, $officer): int {
             // Sistem mengunci baris ini agar dua petugas yang menekan
             // approve bersamaan tidak meloloskan dua pemenang (BR-7).
             $locked = Reservation::whereKey($reservation->id)->lockForUpdate()->firstOrFail();
@@ -184,9 +167,7 @@ class ReservationService
                 'decided_at' => now(),
             ]);
 
-            $this->autoRejectedOnApprove = $this->rejectOverlappingPendings($locked);
-
-            return $locked->refresh();
+            return $this->rejectOverlappingPendings($locked);
         });
     }
 
