@@ -5,10 +5,12 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\FacilityRequest;
 use App\Models\Facility;
+use App\Services\FacilityLifecycle;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 use Throwable;
 
@@ -21,6 +23,8 @@ use Throwable;
  */
 class FacilityController extends Controller
 {
+    public function __construct(private readonly FacilityLifecycle $lifecycle) {}
+
     public function index(Request $request): View
     {
         $keyword = $request->string('q')->trim()->toString();
@@ -107,19 +111,13 @@ class FacilityController extends Controller
      */
     public function deactivate(Facility $facility): RedirectResponse
     {
-        $result = DB::transaction(function () use ($facility): array {
-            $locked = Facility::whereKey($facility->id)->lockForUpdate()->firstOrFail();
+        try {
+            $facility = $this->lifecycle->deactivate($facility);
+        } catch (ValidationException $exception) {
+            return back()->with('error', $exception->errors()['status'][0]);
+        }
 
-            if ($locked->status === 'perbaikan') {
-                return ['error', "Fasilitas {$locked->name} sedang dalam perbaikan dan tidak dapat dinonaktifkan sampai penanganannya selesai."];
-            }
-
-            $locked->update(['status' => 'nonaktif']);
-
-            return ['success', "Fasilitas {$locked->name} dinonaktifkan."];
-        });
-
-        return back()->with($result[0], $result[1]);
+        return back()->with('success', "Fasilitas {$facility->name} dinonaktifkan.");
     }
 
     /**
@@ -130,19 +128,13 @@ class FacilityController extends Controller
      */
     public function activate(Facility $facility): RedirectResponse
     {
-        $result = DB::transaction(function () use ($facility): array {
-            $locked = Facility::whereKey($facility->id)->lockForUpdate()->firstOrFail();
+        try {
+            $facility = $this->lifecycle->activate($facility);
+        } catch (ValidationException $exception) {
+            return back()->with('error', $exception->errors()['status'][0]);
+        }
 
-            if ($locked->status === 'perbaikan') {
-                return ['error', "Fasilitas {$locked->name} sedang dalam perbaikan; pengembaliannya ke aktif dilakukan petugas melalui alur laporan."];
-            }
-
-            $locked->update(['status' => 'aktif']);
-
-            return ['success', "Fasilitas {$locked->name} diaktifkan kembali."];
-        });
-
-        return back()->with($result[0], $result[1]);
+        return back()->with('success', "Fasilitas {$facility->name} diaktifkan kembali.");
     }
 
     /**
