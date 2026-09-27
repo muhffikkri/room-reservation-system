@@ -132,6 +132,17 @@ class ReportService
                 ]);
             }
 
+            if ($newStatus === 'ditolak') {
+                $facility = Facility::whereKey($locked->facility_id)->lockForUpdate()->firstOrFail();
+
+                if ($facility->status === 'perbaikan' && (int) $facility->repair_report_id === $locked->id) {
+                    $facility->update([
+                        'status' => 'aktif',
+                        'repair_report_id' => null,
+                    ]);
+                }
+            }
+
             // Ubah status dan catat penangan dalam transaksi yang sama agar tidak berbohong satu sama lain.
             $locked->update([
                 'status' => $newStatus,
