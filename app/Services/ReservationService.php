@@ -315,6 +315,7 @@ class ReservationService
             $locked->update([
                 'status' => 'cancelled_by_user',
                 'cancel_reason' => $reason,
+                'decided_at' => now(),
             ]);
 
             return $locked->refresh();
