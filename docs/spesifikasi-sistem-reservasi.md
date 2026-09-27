@@ -7,7 +7,7 @@
 | Database | MySQL (via XAMPP/Laragon) |
 | Batas pengumpulan | 11 Oktober 2026, 12.00 WIB |
 
-> Dokumen ini adalah **sumber kebenaran tunggal** untuk implementasi. Setiap agen/developer wajib mengikuti spesifikasi ini; jika ada kebutuhan di luar spesifikasi, perbarui dokumen ini lebih dulu dengan commit berpesan jelas.
+> Dokumen ini adalah sumber kebenaran untuk kebutuhan produk, skema domain, business rules, workflow, dan kriteria penerimaan. Migrasi adalah sumber skema database yang dieksekusi, `routes/web.php` adalah sumber route yang dieksekusi, dan test adalah bukti perilaku. Jika kebutuhan berubah, perbarui spesifikasi bersama implementasinya.
 
 ## 1. Ikhtisar
 

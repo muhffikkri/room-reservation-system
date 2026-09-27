@@ -1,3 +1,31 @@
+# PROYEK: Sistem Reservasi Fasilitas Kampus — WAJIB BACA DULU
+
+Gunakan pemilik informasi berikut; jangan menyalin status dinamis ke dokumen lain:
+
+| Informasi | Sumber kebenaran |
+|---|---|
+| Kebutuhan, skema domain, business rules BR-1..BR-20, workflow | `docs/spesifikasi-sistem-reservasi.md` |
+| Skema database yang dieksekusi | `database/migrations/` |
+| Route yang dieksekusi | `routes/web.php` |
+| Perilaku yang dapat diverifikasi | `tests/` |
+| Setup lokal | `README.md` |
+| Status pekerjaan | GitHub Issues dan Pull Requests |
+| Riwayat rilis | `CHANGELOG.md` dan Git tags |
+
+**Skill proyek (workflow user) di `skills/` — wajib dibaca sebelum mengerjakan apa pun:**
+
+| Skill | Kapan |
+|---|---|
+| [`skills/project-workflow/SKILL.md`](skills/project-workflow/SKILL.md) | SELALU — siklus: rencana → verifikasi user → eksekusi → bukti → PR |
+| [`skills/git-conventions/SKILL.md`](skills/git-conventions/SKILL.md) | Saat branch/commit/push/PR |
+| [`skills/quality-verification/SKILL.md`](skills/quality-verification/SKILL.md) | Sebelum menyatakan selesai |
+| [`skills/environment-setup/SKILL.md`](skills/environment-setup/SKILL.md) | Setup/debug environment |
+
+Aturan keras: user bekerja per-milestone dengan verifikasi; jangan push tanpa persetujuan;
+branch baru per fitur; commit conventional English; `.env`/`vendor/`/`node_modules/` jangan di-commit.
+
+---
+
 <laravel-boost-guidelines>
 === foundation rules ===
 
