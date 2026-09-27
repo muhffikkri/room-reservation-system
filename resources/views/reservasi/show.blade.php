@@ -110,13 +110,10 @@
 
             {{-- Tombol Batal untuk Pengguna (BR-8) --}}
             @php
-                $canCancel =
-                    in_array($reservation->status, ['pending', 'approved'], true) &&
-                    $reservation->start_time->isAfter(now()->addHour()) &&
-                    $reservation->user_id === auth()->id();
+                $canCancel = auth()->user()->can('cancel', $reservation);
                 $isTooLate =
                     in_array($reservation->status, ['pending', 'approved'], true) &&
-                    !$reservation->start_time->isAfter(now()->addHour()) &&
+                    !$canCancel &&
                     $reservation->user_id === auth()->id();
             @endphp
 

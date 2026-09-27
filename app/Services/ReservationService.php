@@ -285,6 +285,18 @@ class ReservationService
     }
 
     /**
+     * Determine whether a user may cancel a reservation under BR-8.
+     */
+    public function canCancelByUser(Reservation $reservation, User $user): bool
+    {
+        return $user->isActive()
+            && $user->isPengguna()
+            && $reservation->user_id === $user->id
+            && in_array($reservation->status, ['pending', 'approved'], true)
+            && ! $reservation->start_time->isBefore(now()->addHour());
+    }
+
+    /**
      * Batalkan reservasi oleh pengguna pemilik (BR-8).
      *
      * Hanya pemilik yang dapat membatalkan reservasi miliknya yang berstatus
@@ -305,7 +317,7 @@ class ReservationService
                 throw new ConflictHttpException('Hanya reservasi berstatus pending atau approved yang dapat dibatalkan.');
             }
 
-            if ($locked->start_time->isBefore(now()->addHour())) {
+            if (! $this->canCancelByUser($locked, $user)) {
                 throw new ConflictHttpException('Reservasi hanya dapat dibatalkan paling lambat 1 jam sebelum waktu mulai.');
             }
 
