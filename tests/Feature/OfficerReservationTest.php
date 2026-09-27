@@ -197,7 +197,7 @@ it('sorts the queue by created_at desc, then start time asc, then status priorit
     $rejectedMiddle = User::factory()->create(['name' => 'Urutan Rejected Sesudah', 'role' => 'pengguna', 'account_status' => 'aktif']);
     $pendingOldest = User::factory()->create(['name' => 'Urutan Paling Lama', 'role' => 'pengguna', 'account_status' => 'aktif']);
 
-    // created_at paling baru — start_time menentukan urutan, bukan status.
+    // created_at paling baru ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â start_time menentukan urutan, bukan status.
     Reservation::factory()->create([
         'user_id' => $approvedNewest->id,
         'facility_id' => $facility->id,
@@ -223,7 +223,7 @@ it('sorts the queue by created_at desc, then start time asc, then status priorit
         'end_time' => officerReservationCarbon('2030-03-10', '11:00'),
     ]);
 
-    // created_at sama dan start_time sama — status menentukan urutan.
+    // created_at sama dan start_time sama ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â status menentukan urutan.
     Reservation::factory()->create([
         'user_id' => $rejectedMiddle->id,
         'facility_id' => $facility->id,
@@ -330,4 +330,44 @@ it('shows the submitted at column and an approve confirmation dialog', function 
         ->assertSee('Waktu Diajukan')
         ->assertSee('Setujui reservasi?', false)
         ->assertSee('data-open-dialog="approve-', false);
+});
+
+it('orders the queue by the status vocabulary', function () {
+    $this->travelTo(officerReservationCarbon('2030-02-01', '07:00'));
+
+    [, , $officer] = makeOfficerReservationActors();
+    $facility = Facility::first();
+
+    // Satu slot, satu created_at, satu waktu: satu-satunya pembeda adalah
+    // status, sehingga urutan antrean benar-benar berasal dari kosakata.
+    foreach (array_reverse(Reservation::ORDERED_STATUSES) as $status) {
+        Reservation::factory()->create([
+            'user_id' => User::factory()->create(['role' => 'pengguna', 'account_status' => 'aktif'])->id,
+            'facility_id' => $facility->id,
+            'status' => $status,
+            'start_time' => officerReservationCarbon('2030-02-04', '08:00'),
+            'end_time' => officerReservationCarbon('2030-02-04', '09:00'),
+        ]);
+    }
+
+    $response = $this->actingAs($officer)->get(route('petugas.reservasi.ajax', [
+        'date' => '2030-02-04',
+    ]));
+    $response->assertOk();
+
+    $statuses = collect($response->json('reservations'))->pluck('status')->all();
+
+    expect($statuses)->toBe(Reservation::ORDERED_STATUSES);
+});
+
+it('rejects a status filter outside the vocabulary', function () {
+    [, , $officer] = makeOfficerReservationActors();
+
+    $this->actingAs($officer)
+        ->get(route('petugas.reservasi.index', ['status' => 'made_up_status']))
+        ->assertSessionHasErrors('status');
+
+    $this->actingAs($officer)
+        ->get(route('petugas.reservasi.index', ['tab' => 'made_up_tab']))
+        ->assertSessionHasErrors('tab');
 });

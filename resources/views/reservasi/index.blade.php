@@ -1,5 +1,7 @@
 @extends('layouts.app')
 
+@use('App\Models\Reservation')
+
 @section('title', 'Riwayat Reservasi Saya')
 
 @section('content')
@@ -18,23 +20,17 @@
 
         {{-- Filter Status --}}
         <div class="flex flex-wrap items-center gap-2 border-b border-[#E2E7FF] pb-3">
-            @php
-                $statuses = [
-                    '' => 'Semua',
-                    'pending' => 'Menunggu Persetujuan',
-                    'approved' => 'Disetujui',
-                    'rejected' => 'Ditolak',
-                    'rejected_by_system' => 'Ditolak oleh Sistem',
-                    'cancelled_by_user' => 'Dibatalkan Pengguna',
-                    'cancelled_by_officer' => 'Dibatalkan Petugas',
-                    'cancelled_by_system' => 'Gagal',
-                ];
-            @endphp
-
-            @foreach ($statuses as $key => $label)
-                <a href="{{ route('reservasi.index', $key ? ['status' => $key] : []) }}"
-                    class="rounded-lg px-3 py-1.5 text-xs font-medium transition-colors {{ (string) request('status') === (string) $key ? 'bg-[#F2F3FF] font-semibold text-[#00236f]' : 'text-slate-600 hover:bg-[#F8FAFC]' }}">
-                    {{ $label }}
+            {{-- Halaman pengguna memakai "Gagal" untuk cancelled_by_system;
+                 itu pilihan tampilan, bukan kosakata, jadi label kanonik
+                 Reservation::statusLabel() tetap overridden di sini. --}}
+                <a href="{{ route('reservasi.index') }}"
+                    class="rounded-lg px-3 py-1.5 text-xs font-medium transition-colors {{ (string) request('status') === '' ? 'bg-[#F2F3FF] font-semibold text-[#00236f]' : 'text-slate-600 hover:bg-[#F8FAFC]' }}">
+                    Semua
+                </a>
+            @foreach (Reservation::ORDERED_STATUSES as $status)
+                <a href="{{ route('reservasi.index', ['status' => $status]) }}"
+                    class="rounded-lg px-3 py-1.5 text-xs font-medium transition-colors {{ (string) request('status') === $status ? 'bg-[#F2F3FF] font-semibold text-[#00236f]' : 'text-slate-600 hover:bg-[#F8FAFC]' }}">
+                    {{ $status === 'cancelled_by_system' ? 'Gagal' : Reservation::statusLabel($status) }}
                 </a>
             @endforeach
         </div>
@@ -80,16 +76,10 @@
                                     </td>
                                     <td class="px-6 py-4">
                                         <x-ui.badge :status="$res->status">
-                                            {{ match ($res->status) {
-                                                'pending' => 'Menunggu Persetujuan',
-                                                'approved' => 'Disetujui',
-                                                'rejected' => 'Ditolak',
-                                                'rejected_by_system' => 'Ditolak oleh Sistem',
-                                                'cancelled_by_user' => 'Dibatalkan Pengguna',
-                                                'cancelled_by_officer' => 'Dibatalkan Petugas',
-                                                'cancelled_by_system' => 'Gagal',
-                                                default => ucfirst($res->status),
-                                            } }}
+                                            {{-- "Gagal" di sini adalah pilihan tampilan
+                                                 halaman pengguna; label kanonik ada di
+                                                 Reservation. --}}
+                                            {{ $res->status === 'cancelled_by_system' ? 'Gagal' : Reservation::statusLabel($res->status) }}
                                         </x-ui.badge>
                                     </td>
                                     <td class="px-6 py-4 text-right">

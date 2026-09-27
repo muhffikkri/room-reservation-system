@@ -27,6 +27,75 @@ class Reservation extends Model
     use HasFactory;
 
     /**
+     * Seluruh status reservasi, urut dari antrean ke status terminal.
+     *
+     * Satu-satunya sumber kebenaran untuk urutan antrean petugas, tab
+     * rekapitulasi, dan daftar filter status. Menambah status baru cukup
+     * di sini; tidak ada lagi salinan daftar di controller maupun view.
+     *
+     * @var list<string>
+     */
+    public const ORDERED_STATUSES = [
+        'pending',
+        'approved',
+        'rejected',
+        'rejected_by_system',
+        'cancelled_by_user',
+        'cancelled_by_officer',
+        'cancelled_by_system',
+    ];
+
+    /**
+     * Status reservasi yang masih dapat dibatalkan, baik oleh pemilik
+     * maupun oleh petugas (BR-8, BR-9).
+     *
+     * @var list<string>
+     */
+    public const PENDING_APPROVED = ['pending', 'approved'];
+
+    /**
+     * Status penolakan, baik oleh petugas maupun otomatis oleh sistem.
+     *
+     * @var list<string>
+     */
+    public const REJECTED = ['rejected', 'rejected_by_system'];
+
+    /**
+     * Status pembatalan, oleh pengguna, petugas, atau sistem.
+     *
+     * @var list<string>
+     */
+    public const CANCELLED = ['cancelled_by_user', 'cancelled_by_officer', 'cancelled_by_system'];
+
+    /**
+     * Label kanonik per status, dipakai seluruh halaman petugas, notifikasi,
+     * dan rekap.
+     *
+     * Halaman pengguna sengaja menampilkan "Gagal" untuk cancelled_by_system
+     * alih-alih label kanonik; itu keputusan tampilan, bukan domain, jadi
+     * override-nya tetap di view.
+     *
+     * @var array<string, string>
+     */
+    public const LABELS = [
+        'pending' => 'Menunggu Persetujuan',
+        'approved' => 'Disetujui',
+        'rejected' => 'Ditolak',
+        'rejected_by_system' => 'Ditolak oleh Sistem',
+        'cancelled_by_user' => 'Dibatalkan Pengguna',
+        'cancelled_by_officer' => 'Dibatalkan Petugas',
+        'cancelled_by_system' => 'Dibatalkan oleh Sistem',
+    ];
+
+    /**
+     * Label kanonik sebuah status.
+     */
+    public static function statusLabel(string $status): string
+    {
+        return self::LABELS[$status] ?? ucfirst(str_replace('_', ' ', $status));
+    }
+
+    /**
      * Get the attributes that should be cast.
      *
      * @return array<string, string>
@@ -63,6 +132,24 @@ class Reservation extends Model
     public function scopePending(Builder $query): Builder
     {
         return $query->where('status', 'pending');
+    }
+
+    /**
+     * Reservasi masih menunggu keputusan petugas, sehingga aksi setujui dan
+     * tolak tersedia.
+     */
+    public function isPending(): bool
+    {
+        return $this->status === 'pending';
+    }
+
+    /**
+     * Reservasi berstatus pending atau approved, sehingga aksi batalkan
+     * tersedia. Permission tetap diperiksa terpisah oleh ReservationPolicy.
+     */
+    public function isCancellable(): bool
+    {
+        return in_array($this->status, self::PENDING_APPROVED, true);
     }
 
     /**

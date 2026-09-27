@@ -1,5 +1,7 @@
 @extends('layouts.app')
 
+@use('App\Models\Reservation')
+
 @section('title', 'Antrian Reservasi')
 
 @section('content')
@@ -38,14 +40,8 @@
                 <select id="status" name="status"
                         class="h-10 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm text-slate-900 transition focus:border-[#0051d5] focus:outline-none focus:ring-4 focus:ring-[#E2E7FF]"
                         data-debounce="300">
-                    <option value="">Semua status</option>
-                    <option value="pending" @selected(($filters['status'] ?? '') === 'pending')>Menunggu Persetujuan</option>
-                    <option value="approved" @selected(($filters['status'] ?? '') === 'approved')>Disetujui</option>
-                    <option value="rejected" @selected(($filters['status'] ?? '') === 'rejected')>Ditolak</option>
-                    <option value="rejected_by_system" @selected(($filters['status'] ?? '') === 'rejected_by_system')>Ditolak oleh Sistem</option>
-                    <option value="cancelled_by_user" @selected(($filters['status'] ?? '') === 'cancelled_by_user')>Dibatalkan Pengguna</option>
-                    <option value="cancelled_by_officer" @selected(($filters['status'] ?? '') === 'cancelled_by_officer')>Dibatalkan Petugas</option>
-                    <option value="cancelled_by_system" @selected(($filters['status'] ?? '') === 'cancelled_by_system')>Dibatalkan oleh Sistem</option>
+                    <option value="">Semua status</option>@foreach (Reservation::ORDERED_STATUSES as $status)
+                    <option value="{{ $status }}" @selected(($filters['status'] ?? '') === $status)>{{ Reservation::statusLabel($status) }}</option>@endforeach
                 </select>
             </div>
             <div>
@@ -103,21 +99,7 @@
                                 </span>
                             </td>
                             <td class="px-6 py-3">
-                                @if ($reservation->status === 'pending')
-                                    <span class="inline-flex items-center rounded-full bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-700 ring-1 ring-inset ring-amber-200">Menunggu Persetujuan</span>
-                                @elseif ($reservation->status === 'approved')
-                                    <span class="inline-flex items-center rounded-full bg-green-50 px-2.5 py-1 text-xs font-semibold text-green-700 ring-1 ring-inset ring-green-200">Disetujui</span>
-                                @elseif ($reservation->status === 'rejected')
-                                    <span class="inline-flex items-center rounded-full bg-red-50 px-2.5 py-1 text-xs font-semibold text-red-700 ring-1 ring-inset ring-red-200">Ditolak</span>
-                                @elseif ($reservation->status === 'cancelled_by_user')
-                                    <span class="inline-flex items-center rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-600 ring-1 ring-inset ring-slate-200">Dibatalkan Pengguna</span>
-                                @elseif ($reservation->status === 'cancelled_by_system')
-                                    <span class="inline-flex items-center rounded-full bg-violet-50 px-2.5 py-1 text-xs font-semibold text-violet-700 ring-1 ring-inset ring-violet-200">Dibatalkan oleh Sistem</span>
-                                @elseif ($reservation->status === 'rejected_by_system')
-                                    <span class="inline-flex items-center rounded-full bg-violet-50 px-2.5 py-1 text-xs font-semibold text-violet-700 ring-1 ring-inset ring-violet-200">Ditolak oleh Sistem</span>
-                                @else
-                                    <span class="inline-flex items-center rounded-full bg-orange-50 px-2.5 py-1 text-xs font-semibold text-orange-700 ring-1 ring-inset ring-orange-200">Dibatalkan Petugas</span>
-                                @endif
+                                <x-reservation.status-pill :status="$reservation->status" />
                             </td>
                             <td class="px-6 py-3 text-slate-600 text-xs whitespace-nowrap">
                                 {{ $reservation->created_at->format('d M Y, H.i') }}
@@ -128,7 +110,7 @@
                                        class="inline-flex h-8 items-center rounded-lg border border-[#D6DDF8] bg-white px-3 text-xs font-semibold text-[#00236f] transition-colors hover:bg-[#F2F3FF]">
                                         Detail
                                     </a>
-                                    @if ($reservation->status === 'pending')
+                                    @if ($reservation->isPending())
                                         <button type="button" data-open-dialog="approve-{{ $reservation->id }}"
                                                 class="inline-flex h-8 items-center rounded-lg bg-[#0051d5] px-3 text-xs font-semibold text-white transition-colors hover:bg-[#00236f]">
                                             Setujui
@@ -138,7 +120,7 @@
                                             Tolak
                                         </button>
                                     @endif
-                                    @if (in_array($reservation->status, ['pending', 'approved'], true))
+                                    @if ($reservation->isCancellable())
                                         <button type="button" data-open-dialog="cancel-{{ $reservation->id }}"
                                                 class="inline-flex h-8 items-center rounded-lg bg-red-600 px-3 text-xs font-semibold text-white transition-colors hover:bg-red-700">
                                             Batalkan
