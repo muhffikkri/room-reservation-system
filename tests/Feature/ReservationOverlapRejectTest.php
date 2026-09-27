@@ -38,7 +38,7 @@ function overlapPending(Facility $facility, User $owner, string $date, string $s
     );
 }
 
-it('rejects a new submission that touches an approved reservation (BR-6 interval tertutup)', function () {
+it('accepts a new submission that starts when an approved reservation ends', function () {
     [$facility, $owner] = overlapActors();
     $day = now()->addDays(2)->toDateString();
 
@@ -61,11 +61,15 @@ it('rejects a new submission that touches an approved reservation (BR-6 interval
             'purpose' => 'Pengajuan kedua yang bersinggungan dengan reservasi 09.00-11.00.',
         ])
         ->assertRedirect()
-        ->assertSessionHasErrors([
-            'facility_id' => 'Maaf, fasilitas ini sudah dipesan pada jam yang sama (atau overlap). Permohonan Anda ditolak.',
-        ]);
+        ->assertSessionHasNoErrors();
 
-    $this->assertDatabaseCount('reservations', 1);
+    $this->assertDatabaseHas('reservations', [
+        'facility_id' => $facility->id,
+        'user_id' => $other->id,
+        'status' => 'pending',
+        'start_time' => "{$day} 11:00:00",
+        'end_time' => "{$day} 12:00:00",
+    ]);
 });
 
 it('still accepts a reservation with a gap after an approved one', function () {
@@ -104,7 +108,7 @@ it('auto-rejects identical-time pending reservations when one is approved', func
         ->and($service->autoRejectedOnApprove())->toBe(1);
 });
 
-it('auto-rejects an adjacent-time pending reservation when its neighbour is approved', function () {
+it('keeps an adjacent-time pending reservation when its neighbour is approved', function () {
     [$facility, $owner, $officer] = overlapActors();
     $rival = User::factory()->create(['role' => 'pengguna', 'account_status' => 'aktif']);
     $service = app(ReservationService::class);
@@ -114,8 +118,8 @@ it('auto-rejects an adjacent-time pending reservation when its neighbour is appr
 
     $service->approve($winner, $officer);
 
-    expect($loser->fresh()->status)->toBe('rejected_by_system')
-        ->and($service->autoRejectedOnApprove())->toBe(1);
+    expect($loser->fresh()->status)->toBe('pending')
+        ->and($service->autoRejectedOnApprove())->toBe(0);
 });
 
 it('sends an in-app database notification with the required feedback message', function () {
@@ -202,20 +206,20 @@ it('flashes the auto-rejected count to the officer after approving', function ()
         );
 });
 
-it('leaves non-overlapping pendings untouched and sends no notification', function () {
+it('leaves adjacent and other-facility pendings untouched without notifications', function () {
     [$facility, $owner, $officer] = overlapActors();
     $rival = User::factory()->create(['role' => 'pengguna', 'account_status' => 'aktif']);
     $otherFacility = Facility::factory()->create(['status' => 'aktif']);
     $service = app(ReservationService::class);
 
     $winner = overlapPending($facility, $owner, '2030-05-12', '09:00', '11:00');
-    $gapPendings = overlapPending($facility, $rival, '2030-05-12', '13:00', '14:00');
+    $adjacentPending = overlapPending($facility, $rival, '2030-05-12', '11:00', '12:00');
     $otherFacilityPending = overlapPending($otherFacility, $rival, '2030-05-12', '09:00', '11:00');
 
     $service->approve($winner, $officer);
 
     expect($service->autoRejectedOnApprove())->toBe(0)
-        ->and($gapPendings->fresh()->status)->toBe('pending')
+        ->and($adjacentPending->fresh()->status)->toBe('pending')
         ->and($otherFacilityPending->fresh()->status)->toBe('pending');
 
     $this->assertDatabaseCount('notifications', 0);

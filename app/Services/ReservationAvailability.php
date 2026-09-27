@@ -228,15 +228,15 @@ class ReservationAvailability
 
     /**
      * Definisi overlap tunggal (BR-6): slot dianggap terisi bila ada reservasi
-     * approved pada fasilitas sama dengan start_time <= end_baru AND
-     * end_time >= start_baru — interval yang bersinggungan ikut terhitung.
+     * approved pada fasilitas sama dengan start_time < end_baru AND
+     * end_time > start_baru. Interval yang hanya bersinggungan boleh berurutan.
      *
      * @param  iterable<int, Reservation>  $approved
      */
     public function hasApprovedOverlap(iterable $approved, Carbon $start, Carbon $end): bool
     {
         foreach ($approved as $reservation) {
-            if ($reservation->start_time->lte($end) && $reservation->end_time->gte($start)) {
+            if ($reservation->start_time->lt($end) && $reservation->end_time->gt($start)) {
                 return true;
             }
         }
