@@ -4,9 +4,12 @@ namespace App\Policies;
 
 use App\Models\Reservation;
 use App\Models\User;
+use App\Services\ReservationService;
 
 class ReservationPolicy
 {
+    public function __construct(private readonly ReservationService $reservations) {}
+
     /**
      * Tentukan apakah pengguna dapat melihat daftar reservasi.
      */
@@ -43,15 +46,7 @@ class ReservationPolicy
      */
     public function cancel(User $user, Reservation $reservation): bool
     {
-        if (! $user->isActive() || ! $user->isPengguna() || $user->id !== $reservation->user_id) {
-            return false;
-        }
-
-        if (! in_array($reservation->status, ['pending', 'approved'], true)) {
-            return false;
-        }
-
-        return $reservation->start_time->isAfter(now()->addHour());
+        return $this->reservations->canCancelByUser($reservation, $user);
     }
 
     /**
