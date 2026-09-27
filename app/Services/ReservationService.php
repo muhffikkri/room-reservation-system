@@ -122,8 +122,9 @@ class ReservationService
      * setelah fasilitas rusak melanggar BR-12.
      *
      * Setelah disetujui, seluruh reservasi pending pada fasilitas sama yang
-     * intervalnya overlap (termasuk bersinggungan) otomatis ditolak sistem
-     * (rejected_by_system) dan pemiliknya diberi notifikasi in-app.
+     * intervalnya overlap (interval setengah terbuka — yang hanya bersinggungan
+     * boleh berurutan) otomatis ditolak sistem (rejected_by_system) dan
+     * pemiliknya diberi notifikasi in-app.
      */
     public function approve(Reservation $reservation, User $officer): int
     {
@@ -175,8 +176,8 @@ class ReservationService
 
     /**
      * Tolak otomatis seluruh reservasi pending pada fasilitas sama yang
-     * intervalnya overlap (interval tertutup — termasuk yang bersinggungan)
-     * dengan reservasi yang baru disetujui.
+     * intervalnya overlap (interval setengah terbuka — yang hanya bersinggungan
+     * boleh berurutan) dengan reservasi yang baru disetujui.
      *
      * Berjalan di dalam transaksi approve(); pemilik tiap reservasi yang
      * ditolak menerima notifikasi in-app "Maaf, fasilitas ini sudah
