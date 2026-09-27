@@ -29,6 +29,30 @@ it('creates a pending pengguna account and ignores role input', function () {
     ]);
 });
 
+it('rejects array-shaped account fields during registration', function () {
+    $response = $this->post('/register', [
+        'name' => 'Malformed User',
+        'email' => ['malformed@student.kampus.test'],
+        'password' => 'rahasia123',
+        'password_confirmation' => 'rahasia123',
+        'identity' => ['2110512199'],
+        'phone' => ['081200000199'],
+    ]);
+
+    $response->assertSessionHasErrors(['email', 'identity', 'phone']);
+    $this->assertDatabaseCount('users', 0);
+});
+
+it('rejects an array-shaped email during login', function () {
+    $response = $this->post('/login', [
+        'email' => ['user@student.kampus.test'],
+        'password' => 'rahasia123',
+    ]);
+
+    $response->assertSessionHasErrors('email');
+    $this->assertGuest();
+});
+
 it('allows active pengguna to access dashboard', function () {
     $user = User::factory()->create([
         'account_status' => 'aktif',

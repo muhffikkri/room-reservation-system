@@ -60,6 +60,28 @@ it('creates an active pengguna account by admin', function () {
         ->and(Hash::check('user12345', $user->password))->toBeTrue();
 });
 
+it('rejects array-shaped fields on every admin account creation endpoint', function () {
+    $admin = User::factory()->create([
+        'role' => 'admin',
+        'account_status' => 'aktif',
+    ]);
+
+    foreach (['/admin/pengguna', '/admin/petugas', '/admin/admin'] as $endpoint) {
+        $response = $this->actingAs($admin)->post($endpoint, [
+            'name' => 'Malformed Account',
+            'email' => ['malformed@kampus.test'],
+            'password' => 'password123',
+            'password_confirmation' => 'password123',
+            'identity' => ['NIP-199001010001'],
+            'phone' => ['081100001999'],
+        ]);
+
+        $response->assertSessionHasErrors(['email', 'identity', 'phone']);
+    }
+
+    $this->assertDatabaseCount('users', 1);
+});
+
 it('lets the new pengguna log in immediately without verification', function () {
     $admin = User::factory()->create([
         'role' => 'admin',
