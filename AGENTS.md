@@ -17,12 +17,18 @@ Gunakan pemilik informasi berikut; jangan menyalin status dinamis ke dokumen lai
 | Skill | Kapan |
 |---|---|
 | [`skills/project-workflow/SKILL.md`](skills/project-workflow/SKILL.md) | SELALU — siklus: rencana → verifikasi user → eksekusi → bukti → PR |
+| [`skills/consolidation-check/SKILL.md`](skills/consolidation-check/SKILL.md) | SELALU saat menulis/mengubah kode — cek pemilik nilai yang sudah ada sebelum menulis, dan cek duplikasi ulang **setelah** fitur selesai |
 | [`skills/git-conventions/SKILL.md`](skills/git-conventions/SKILL.md) | Saat branch/commit/push/PR |
 | [`skills/quality-verification/SKILL.md`](skills/quality-verification/SKILL.md) | Sebelum menyatakan selesai |
 | [`skills/environment-setup/SKILL.md`](skills/environment-setup/SKILL.md) | Setup/debug environment |
 
 Aturan keras: user bekerja per-milestone dengan verifikasi; jangan push tanpa persetujuan;
 branch baru per fitur; commit conventional English; `.env`/`vendor/`/`node_modules/` jangan di-commit.
+
+Satu nilai domain, satu pemilik. Sebelum menambah status/label/enum/konstanta/aturan baru,
+cari dulu apakah sudah ada pemiliknya (`skills/consolidation-check/SKILL.md` §2) — jangan
+membuat salinan kedua. Verifikasi setiap klaim dengan pengukuran, bukan penalaran (§3);
+angka di laporan harus baru saja diukur sendiri.
 
 ---
 
