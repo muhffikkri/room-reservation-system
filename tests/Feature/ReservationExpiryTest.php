@@ -92,6 +92,22 @@ it('leaves pending reservations before the deadline untouched', function () {
     expect($reservation->fresh()->status)->toBe('pending');
 });
 
+it('does not expire another user reservation when a pengguna opens a page', function () {
+    [, $owner] = makeExpiryActors();
+    $other = User::factory()->create(['role' => 'pengguna', 'account_status' => 'aktif']);
+
+    $mine = createPendingReservation(Facility::factory()->create(['status' => 'aktif']), $owner, 30);
+    $theirs = createPendingReservation(Facility::factory()->create(['status' => 'aktif']), $other, 30);
+
+    $this->actingAs($owner)
+        ->get(route('dashboard'))
+        ->assertOk()
+        ->assertSessionHas('info');
+
+    expect($mine->fresh()->status)->toBe('cancelled_by_system')
+        ->and($theirs->fresh()->status)->toBe('pending');
+});
+
 it('auto-cancels stale pending reservations on the officer dashboard and queue', function () {
     [, $owner, $officer] = makeExpiryActors();
     $reservation = createPendingReservation(Facility::factory()->create(['status' => 'aktif']), $owner, 30);

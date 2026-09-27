@@ -29,26 +29,25 @@ class ReservationService
      *
      * Dijalankan lazy pada setiap akses antrean/dashboard, saat reservasi baru
      * dibuat, dan sebelum approve/reject — sehingga reservasi yang lewat waktu
-     * tidak dapat lagi disetujui dan tidak memakan kuota pending. Pembaruan
-     * berlaku global agar antrean pengguna maupun petugas konsisten.
+     * tidak dapat lagi disetujui dan tidak memakan kuota pending.
      *
-     * @return int jumlah reservasi kedaluwarsa — milik $viewer bila diberikan,
-     *             seluruhnya bila $viewer null.
+     * Pembaruan hanya menyentuh baris milik $viewer bila diberikan: membuka
+     * halaman satu pengguna tidak boleh membatalkan reservasi pengguna lain.
+     * $viewer null dipakai petugas untuk menyapu seluruh antrean.
+     *
+     * @return int jumlah reservasi kedaluwarsa yang diproses pemanggilan ini.
      */
     public function expireStale(?User $viewer = null): int
     {
         $stale = Reservation::pending()
-            ->where('start_time', '<', $this->availability->leadTimeCutoff());
+            ->where('start_time', '<', $this->availability->leadTimeCutoff())
+            ->when($viewer !== null, fn ($query) => $query->where('user_id', $viewer->id));
 
-        $total = (clone $stale)->count();
+        $expired = (clone $stale)->count();
 
-        if ($total === 0) {
+        if ($expired === 0) {
             return 0;
         }
-
-        $expired = $viewer !== null
-            ? (clone $stale)->where('user_id', $viewer->id)->count()
-            : $total;
 
         $stale->update([
             'status' => 'cancelled_by_system',
