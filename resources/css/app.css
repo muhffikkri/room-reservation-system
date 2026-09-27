@@ -28,6 +28,124 @@ img.img-fade.is-loaded {
     opacity: 1;
 }
 
+.landing-page {
+    background-color: #eaf1fa;
+    background-image: url('/images/landing-cloud-overlay.png'), url('/images/landing-background.png');
+    background-position: center top;
+    background-repeat: no-repeat, no-repeat;
+    background-size: cover, cover;
+    background-attachment: fixed;
+    font-family: 'Plus Jakarta Sans', 'Instrument Sans', ui-sans-serif, system-ui, sans-serif;
+}
+
+.landing-panel {
+    border: 1px solid rgba(255, 255, 255, 0.9);
+    background: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+}
+
+.landing-hero-art::before {
+    position: absolute;
+    inset: -1.5rem;
+    background: url('/images/landing-bubbles.png') center / contain no-repeat;
+    opacity: 0.12;
+    content: '';
+}
+
+.landing-card {
+    background: #fff;
+    box-shadow: 0 10px 30px -5px rgba(186, 215, 248, 0.45), 0 0 0 1px rgba(255, 255, 255, 0.8) inset;
+    transition: transform 180ms ease, box-shadow 180ms ease;
+}
+
+.landing-card:hover,
+.landing-card:focus-within {
+    transform: translateY(-3px);
+    box-shadow: 0 16px 34px -8px rgba(93, 143, 210, 0.3), 0 0 0 1px rgba(255, 255, 255, 0.95) inset;
+}
+
+.landing-button {
+    position: relative;
+    transition: transform 180ms cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 180ms ease, filter 180ms ease;
+    box-shadow: 0 9px 18px rgba(24, 91, 225, 0.24), 0 3px 0 rgba(22, 73, 184, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.62), inset 0 -2px 4px rgba(20, 77, 189, 0.18);
+}
+
+.landing-button:hover,
+.landing-button:focus-visible {
+    transform: translateY(-3px) scale(1.015);
+    filter: saturate(1.08) brightness(1.025);
+    box-shadow: 0 14px 25px rgba(24, 91, 225, 0.3), 0 4px 0 rgba(22, 73, 184, 0.42), inset 0 1px 0 rgba(255, 255, 255, 0.72), inset 0 -2px 4px rgba(20, 77, 189, 0.14);
+}
+
+.landing-button:active {
+    transform: translateY(2px) scale(0.975);
+    filter: brightness(0.96) saturate(0.96);
+    box-shadow: 0 2px 5px rgba(24, 91, 225, 0.2), 0 0 0 rgba(22, 73, 184, 0.35), inset 0 3px 7px rgba(20, 77, 189, 0.26), inset 0 1px 0 rgba(255, 255, 255, 0.24);
+}
+
+.landing-button:focus-visible {
+    outline: 3px solid rgba(37, 99, 235, 0.42);
+    outline-offset: 3px;
+}
+
+.landing-input {
+    border: 1px solid #d9e6f7;
+    background: linear-gradient(145deg, rgba(255, 255, 255, 0.95), rgba(231, 241, 255, 0.88));
+    box-shadow: inset 2px 2px 5px rgba(99, 137, 193, 0.12), inset -2px -2px 5px rgba(255, 255, 255, 0.95), 0 3px 8px rgba(116, 155, 211, 0.1);
+}
+
+.landing-input:focus {
+    border-color: #3b82f6;
+    background: #fff;
+}
+
+.landing-footer::before,
+.landing-footer::after {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    content: '';
+}
+
+.landing-footer::before {
+    background: linear-gradient(115deg, rgba(245, 249, 255, 0.94), rgba(231, 241, 255, 0.88)), url('/images/landing-background-lower.png') center 58% / cover no-repeat;
+    opacity: 0.96;
+}
+
+.landing-footer::after {
+    background: url('/images/landing-cloud-overlay.png') center bottom / cover no-repeat;
+    opacity: 0.34;
+}
+
+.reksa-icon {
+    display: inline-block;
+    flex: none;
+    background-image: url('/images/landing-icons.png');
+    background-repeat: no-repeat;
+    background-size: 400% 200%;
+}
+
+.reksa-icon-calendar,
+.reksa-icon-document,
+.reksa-icon-check {
+    width: 2rem;
+    height: 2rem;
+    border-radius: 9999px;
+    background-color: rgba(219, 234, 254, 0.8);
+    box-shadow: inset 1px 1px 3px rgba(255, 255, 255, 0.95), 0 3px 8px rgba(59, 130, 246, 0.12);
+}
+
+.reksa-icon-calendar { background-position: 33.333% 0; }
+.reksa-icon-document { background-position: 66.666% 0; }
+.reksa-icon-check { background-position: 100% 100%; }
+
+@supports not (backdrop-filter: blur(12px)) {
+    .landing-panel {
+        background: rgba(255, 255, 255, 0.96);
+    }
+}
+
 @media (prefers-reduced-motion: reduce) {
     html {
         scroll-behavior: auto;
