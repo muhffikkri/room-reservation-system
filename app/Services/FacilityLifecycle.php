@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Facility;
+use App\Models\Report;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
@@ -42,6 +43,84 @@ class FacilityLifecycle
             $locked->update(['status' => 'aktif']);
 
             return $locked->refresh();
+        });
+    }
+
+    public function markForRepair(Report $report): Facility
+    {
+        return DB::transaction(function () use ($report): Facility {
+            $lockedReport = Report::whereKey($report->id)->lockForUpdate()->firstOrFail();
+
+            if ($lockedReport->status !== 'diproses') {
+                throw ValidationException::withMessages([
+                    'status' => 'Fasilitas hanya dapat ditandai perbaikan saat laporan sedang diproses.',
+                ]);
+            }
+
+            $facility = Facility::whereKey($lockedReport->facility_id)->lockForUpdate()->firstOrFail();
+
+            if ($facility->status !== 'aktif') {
+                throw ValidationException::withMessages([
+                    'status' => 'Fasilitas harus berstatus aktif sebelum ditandai perbaikan.',
+                ]);
+            }
+
+            $facility->update([
+                'status' => 'perbaikan',
+                'repair_report_id' => $lockedReport->id,
+            ]);
+
+            return $facility->refresh();
+        });
+    }
+
+    public function restoreAfterCompletion(Report $report): Facility
+    {
+        return DB::transaction(function () use ($report): Facility {
+            $lockedReport = Report::whereKey($report->id)->lockForUpdate()->firstOrFail();
+
+            if ($lockedReport->status !== 'selesai') {
+                throw ValidationException::withMessages([
+                    'status' => 'Fasilitas hanya dapat dikembalikan aktif setelah laporannya selesai.',
+                ]);
+            }
+
+            $facility = Facility::whereKey($lockedReport->facility_id)->lockForUpdate()->firstOrFail();
+
+            if ($facility->status !== 'perbaikan' || (int) $facility->repair_report_id !== $lockedReport->id) {
+                throw ValidationException::withMessages([
+                    'status' => 'Fasilitas tidak sedang dalam perbaikan oleh laporan ini.',
+                ]);
+            }
+
+            $facility->update([
+                'status' => 'aktif',
+                'repair_report_id' => null,
+            ]);
+
+            return $facility->refresh();
+        });
+    }
+
+    public function restoreAfterRejection(Report $report): void
+    {
+        DB::transaction(function () use ($report): void {
+            $lockedReport = Report::whereKey($report->id)->lockForUpdate()->firstOrFail();
+
+            if ($lockedReport->status !== 'ditolak') {
+                throw ValidationException::withMessages([
+                    'status' => 'Fasilitas hanya dapat dipulihkan otomatis setelah laporannya ditolak.',
+                ]);
+            }
+
+            $facility = Facility::whereKey($lockedReport->facility_id)->lockForUpdate()->firstOrFail();
+
+            if ($facility->status === 'perbaikan' && (int) $facility->repair_report_id === $lockedReport->id) {
+                $facility->update([
+                    'status' => 'aktif',
+                    'repair_report_id' => null,
+                ]);
+            }
         });
     }
 }
