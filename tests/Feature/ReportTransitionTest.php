@@ -81,6 +81,44 @@ it('rejects closing a report without a resolution note', function () {
     expect($processing->fresh()->status)->toBe('diproses');
 });
 
+it('restores its facility when a repair report is rejected', function () {
+    [$report, $officer] = makeReportActors();
+    $service = app(ReportService::class);
+    $processing = $service->transition($report, $officer, 'diproses', 'Petugas mulai memeriksa proyektor yang mati.');
+
+    $service->markFacilityForRepair($processing, $officer);
+
+    $rejected = $service->transition($processing, $officer, 'ditolak', 'Laporan ternyata untuk fasilitas yang berbeda.');
+    $facility = $rejected->fresh()->facility;
+
+    expect($rejected->status)->toBe('ditolak')
+        ->and($facility->status)->toBe('aktif')
+        ->and($facility->repair_report_id)->toBeNull();
+});
+
+it('does not restore a facility linked to a different repair report', function () {
+    [$report, $officer] = makeReportActors();
+    $service = app(ReportService::class);
+    $processing = $service->transition($report, $officer, 'diproses', 'Petugas memeriksa kerusakan pada fasilitas.');
+    $otherRepairReport = Report::factory()->create([
+        'user_id' => $report->user_id,
+        'facility_id' => $report->facility_id,
+        'status' => 'diproses',
+    ]);
+
+    $report->facility->update([
+        'status' => 'perbaikan',
+        'repair_report_id' => $otherRepairReport->id,
+    ]);
+
+    $rejected = $service->transition($processing, $officer, 'ditolak', 'Laporan ini bukan penyebab perbaikan.');
+    $facility = $rejected->fresh()->facility;
+
+    expect($rejected->status)->toBe('ditolak')
+        ->and($facility->status)->toBe('perbaikan')
+        ->and($facility->repair_report_id)->toBe($otherRepairReport->id);
+});
+
 it('rejects facility actions outside their allowed states', function () {
     [$report, $officer] = makeReportActors();
     $service = app(ReportService::class);
