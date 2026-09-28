@@ -232,6 +232,38 @@ it('sends an already authenticated account to its own dashboard from the login p
     ['admin', 'admin.dashboard'],
 ]);
 
+it('rejects a registration whose phone is not a number', function () {
+    $response = $this->post('/register', [
+        'name' => 'Budi Ngawur',
+        'email' => 'budi-ngawur@student.kampus.test',
+        'password' => 'rahasia123',
+        'password_confirmation' => 'rahasia123',
+        'identity' => '2110512199',
+        'phone' => 'not-a-phone',
+    ]);
+
+    $response->assertSessionHasErrors('phone');
+    expect(User::where('email', 'budi-ngawur@student.kampus.test')->exists())->toBeFalse();
+});
+
+it('accepts the documented Indonesian phone formats at registration', function (string $submitted, string $stored) {
+    $this->post('/register', [
+        'name' => 'Budi Sah',
+        'email' => 'budi-sah@student.kampus.test',
+        'password' => 'rahasia123',
+        'password_confirmation' => 'rahasia123',
+        'identity' => '2110512188',
+        'phone' => $submitted,
+    ])->assertSessionHasNoErrors();
+
+    expect(User::where('email', 'budi-sah@student.kampus.test')->value('phone'))->toBe($stored);
+})->with([
+    ['081234567890', '+6281234567890'],
+    ['62 812 3456 7890', '+6281234567890'],
+    ['+6281234567890', '+6281234567890'],
+    ['0812 3456 789', '+628123456789'],
+]);
+
 it('logs out an authenticated user', function () {
     $user = User::factory()->create([
         'account_status' => 'aktif',
