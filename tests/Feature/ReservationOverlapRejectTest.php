@@ -246,11 +246,38 @@ it('marks a notification as read and redirects to its reservation', function () 
 
     $notification = $rival->notifications()->first();
 
+    // Panel lonceng harus Offered lewat form ber-CSRF, bukan tautan GET.
     $this->actingAs($rival)
-        ->get(route('notifications.read', $notification->id))
+        ->get(route('dashboard'))
+        ->assertOk()
+        ->assertSee('action="'.route('notifications.read', $notification->id).'"', false)
+        ->assertSee('name="_token"', false);
+
+    $this->actingAs($rival)
+        ->post(route('notifications.read', $notification->id))
         ->assertRedirect(route('reservasi.show', $loser));
 
     expect($rival->notifications()->first()->read_at)->not->toBeNull();
+});
+
+it('refuses to mark a notification read over GET', function () {
+    [$facility, $owner, $officer] = overlapActors();
+    $rival = User::factory()->create(['role' => 'pengguna', 'account_status' => 'aktif']);
+
+    $winner = overlapPending($facility, $owner, '2030-05-13', '09:00', '11:00');
+    overlapPending($facility, $rival, '2030-05-13', '10:00', '11:00');
+
+    app(ReservationService::class)->approve($winner, $officer);
+
+    $notification = $rival->notifications()->first();
+
+    // Menandai dibaca adalah perubahan state, jadi tidak boleh dipicu GET:
+    // GET bisa dipicu diam-diam oleh pihak ketiga tanpa token CSRF.
+    $this->actingAs($rival)
+        ->get(route('notifications.read', $notification->id))
+        ->assertStatus(405);
+
+    expect($rival->notifications()->first()->read_at)->toBeNull();
 });
 
 it('marks every notification as read via the bell action', function () {

@@ -72,11 +72,14 @@
                                 <ul class="mt-2 max-h-80 space-y-1 overflow-y-auto">
                                     @forelse (auth()->user()->notifications()->latest()->limit(10)->get() as $notification)
                                         <li>
-                                            <a href="{{ route('notifications.read', $notification->id) }}"
-                                                class="block rounded-lg px-3 py-2 text-sm transition hover:bg-[#F8FAFC] {{ $notification->read_at === null ? 'bg-[#F2F3FF]' : '' }}">
-                                                <span class="{{ $notification->read_at === null ? 'font-semibold text-[#00236f]' : 'text-slate-600' }}">{{ $notification->data['message'] ?? '' }}</span>
-                                                <span class="mt-0.5 block text-xs text-slate-400">{{ $notification->created_at->diffForHumans() }}</span>
-                                            </a>
+                                            <form method="POST" action="{{ route('notifications.read', $notification->id) }}">
+                                                @csrf
+                                                <button type="submit"
+                                                    class="block w-full rounded-lg px-3 py-2 text-left text-sm transition hover:bg-[#F8FAFC] {{ $notification->read_at === null ? 'bg-[#F2F3FF]' : '' }}">
+                                                    <span class="{{ $notification->read_at === null ? 'font-semibold text-[#00236f]' : 'text-slate-600' }}">{{ $notification->data['message'] ?? '' }}</span>
+                                                    <span class="mt-0.5 block text-xs text-slate-400">{{ $notification->created_at->diffForHumans() }}</span>
+                                                </button>
+                                            </form>
                                         </li>
                                     @empty
                                         <li class="px-3 py-4 text-center text-sm text-slate-500">Belum ada notifikasi.</li>

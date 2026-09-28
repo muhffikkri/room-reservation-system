@@ -154,7 +154,7 @@ Route::middleware(['auth', 'active', 'role:admin'])->prefix('admin')->group(func
 
 Route::middleware('auth')->group(function (): void {
     Route::post('/logout', LogoutController::class)->name('logout');
-    Route::get('/notifications/{notification}/read', [NotificationController::class, 'markRead'])
+    Route::post('/notifications/{notification}/read', [NotificationController::class, 'markRead'])
         ->name('notifications.read');
     Route::post('/notifications/read-all', [NotificationController::class, 'markAllRead'])
         ->name('notifications.read-all');
