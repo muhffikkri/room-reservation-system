@@ -217,6 +217,21 @@ it('shares the account throttle bucket across accent variants of the same email'
     $this->assertGuest();
 });
 
+it('sends an already authenticated account to its own dashboard from the login page', function (string $role, string $homeRoute) {
+    $user = User::factory()->create(['role' => $role, 'account_status' => 'aktif']);
+
+    $this->actingAs($user)
+        ->get(route('login'))
+        ->assertRedirect(route($homeRoute));
+
+    // Halaman tujuan harus benar-benar bisa dibuka, bukan 403.
+    $this->actingAs($user)->get(route($homeRoute))->assertOk();
+})->with([
+    ['pengguna', 'dashboard'],
+    ['petugas', 'petugas.dashboard'],
+    ['admin', 'admin.dashboard'],
+]);
+
 it('logs out an authenticated user', function () {
     $user = User::factory()->create([
         'account_status' => 'aktif',

@@ -88,14 +88,9 @@ class LoginController extends Controller
 
         // Tiap role mendarat di dashboardnya sendiri (§14.2#10): pengguna ke
         // alur pengguna, petugas ke antrian operasional, admin ke ringkasan.
-        // Tanpa ini admin/petugas nyasar ke halaman pengguna yang bukan haknya.
-        $home = match ($user->role) {
-            'petugas' => route('petugas.dashboard'),
-            'admin' => route('admin.dashboard'),
-            default => route('dashboard'),
-        };
-
-        return redirect()->intended($home);
+        // Peta role ke beranda milik User::homeRoute() supaya middleware guest
+        // memakai tujuan yang sama.
+        return redirect()->intended($user->homeRoute());
     }
 
     private function throttleKey(Request $request, string $canonicalEmail): string
