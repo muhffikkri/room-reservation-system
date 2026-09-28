@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
+use App\Models\User;
 use App\Services\AccountStatusGate;
 use App\Support\AccountAttributes;
 use Illuminate\Http\RedirectResponse;
@@ -40,8 +41,9 @@ class LoginController extends Controller
             'password' => ['required', 'string', 'max:255'],
         ]);
 
-        $throttleKey = $this->throttleKey($request);
-        $accountThrottleKey = $this->accountThrottleKey($request);
+        $canonicalEmail = $this->canonicalEmail($request);
+        $throttleKey = $this->throttleKey($request, $canonicalEmail);
+        $accountThrottleKey = $this->accountThrottleKey($canonicalEmail);
 
         if (RateLimiter::tooManyAttempts($throttleKey, 5)
             || RateLimiter::tooManyAttempts($accountThrottleKey, 10)) {
@@ -96,13 +98,38 @@ class LoginController extends Controller
         return redirect()->intended($home);
     }
 
-    private function throttleKey(Request $request): string
+    private function throttleKey(Request $request, string $canonicalEmail): string
     {
-        return strtolower((string) $request->input('email')).'|'.$request->ip();
+        return $canonicalEmail.'|'.$request->ip();
     }
 
-    private function accountThrottleKey(Request $request): string
+    private function accountThrottleKey(string $canonicalEmail): string
     {
-        return 'login-account:'.hash('sha256', strtolower((string) $request->input('email')));
+        return 'login-account:'.hash('sha256', $canonicalEmail);
+    }
+
+    /**
+     * Email seperti yang database nyatakan sama dengan email kiriman.
+     *
+     * Kolom users.email memakai utf8mb4_unicode_ci, jadi Auth::attempt
+     * menerima ejaan lain dari email yang sama: 'búdí@x' berhasil login
+     * melawan akun yang tersimpan sebagai 'budi@x'.
+     *
+     * Karena itu kunci limiter diturunkan dari jawaban database, bukan dari
+     * tebakan collation di PHP. Yang bocor tanpa ini adalah bucket per-akun
+     * sepuluh percobaan, karena kuncinya di-hash dari email mentah sehingga
+     * ejaan lain dapat jatah sendiri. Bucket email+IP kelihatan aman
+     * sekarang hanya karena cleanRateLimiterKey() milik Laravel merapikan
+     * aksen (htmlentities + '&uacute;' -> 'u') — perilaku turunan yang tidak
+     * dijamin, jadi keduanya dinormalkan di sini.
+     *
+     * Email yang tidak terdaftar tetap memakai input yang sudah dilowercase,
+     * seperti sebelumnya.
+     */
+    private function canonicalEmail(Request $request): string
+    {
+        $submitted = strtolower((string) $request->input('email'));
+
+        return User::where('email', $submitted)->value('email') ?? $submitted;
     }
 }

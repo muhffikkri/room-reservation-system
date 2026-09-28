@@ -2,6 +2,7 @@
 
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\RateLimiter;
 
 uses(RefreshDatabase::class);
@@ -169,6 +170,46 @@ it('throttles repeated failed login attempts', function () {
         'email' => 'throttled-flow@student.kampus.test',
         'password' => 'password-salah',
     ]);
+
+    $response->assertSessionHasErrors('email');
+    expect(collect(session('errors')->get('email'))->implode(' '))
+        ->toContain('Terlalu banyak percobaan login');
+    $this->assertGuest();
+});
+
+it('shares the account throttle bucket across accent variants of the same email', function () {
+    // cleanRateLimiterKey() milik Laravel merapikan aksen untuk kunci
+    // email+IP, jadi bucket lima percobaan tidak bocor. Yang bocor adalah
+    // bucket per-akun: kuncinya di-hash dari email mentah SEBELUM
+    // perapian, jadi ejaan lain mendapat bucket sendiri. Bucket itu baru
+    // terlihat saat IP diputar, sebab limiter email+IP biasanya lebih dulu
+    // menahan.
+    $accented = "b\u{00FA}d\u{00ED}@student.kampus.test";
+
+    User::factory()->create([
+        'email' => 'budi@student.kampus.test',
+        'password' => Hash::make('rahasia-kampus-123'),
+        'role' => 'pengguna',
+        'account_status' => 'aktif',
+    ]);
+
+    // 10 percobaan, dua per IP, sehingga caps email+IP tidak menyentuh
+    // bucket per-akun.
+    foreach (['10.0.0.1', '10.0.0.2', '10.0.0.3', '10.0.0.4', '10.0.0.5'] as $ip) {
+        foreach (range(1, 2) as $attempt) {
+            $this->withServerVariables(['REMOTE_ADDR' => $ip])
+                ->post('/login', [
+                    'email' => 'budi@student.kampus.test',
+                    'password' => 'password-salah',
+                ]);
+        }
+    }
+
+    $response = $this->withServerVariables(['REMOTE_ADDR' => '10.0.0.6'])
+        ->post('/login', [
+            'email' => $accented,
+            'password' => 'password-salah',
+        ]);
 
     $response->assertSessionHasErrors('email');
     expect(collect(session('errors')->get('email'))->implode(' '))
