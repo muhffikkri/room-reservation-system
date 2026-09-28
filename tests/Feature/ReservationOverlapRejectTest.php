@@ -280,6 +280,62 @@ it('refuses to mark a notification read over GET', function () {
     expect($rival->notifications()->first()->read_at)->toBeNull();
 });
 
+it('does not let a pending account mark a notification read', function () {
+    [$facility, $owner, $officer] = overlapActors();
+    $pending = User::factory()->create(['role' => 'pengguna', 'account_status' => 'pending']);
+
+    $winner = overlapPending($facility, $owner, '2030-05-13', '09:00', '11:00');
+
+    // Disisipkan lewat factory, bukan service: create() sendiri menolak akun
+    // yang belum aktif, jadi antrean untuk pending dibuat di luar service.
+    Reservation::factory()->create([
+        'user_id' => $pending->id,
+        'facility_id' => $facility->id,
+        'status' => 'pending',
+        'start_time' => overlapSlot('2030-05-13', '10:00'),
+        'end_time' => overlapSlot('2030-05-13', '11:00'),
+    ]);
+
+    app(ReservationService::class)->approve($winner, $officer);
+
+    $notification = $pending->notifications()->first();
+
+    $this->actingAs($pending)
+        ->post(route('notifications.read', $notification->id))
+        ->assertRedirect(route('login'))
+        ->assertSessionHas('error', 'Akun Anda menunggu verifikasi admin.');
+
+    expect($pending->notifications()->first()->read_at)->toBeNull();
+});
+
+it('still lets an active account mark a notification read', function () {
+    [$facility, $owner, $officer] = overlapActors();
+    $rival = User::factory()->create(['role' => 'pengguna', 'account_status' => 'aktif']);
+
+    $winner = overlapPending($facility, $owner, '2030-05-13', '09:00', '11:00');
+    overlapPending($facility, $rival, '2030-05-13', '10:00', '11:00');
+
+    app(ReservationService::class)->approve($winner, $officer);
+
+    $this->actingAs($rival)
+        ->post(route('notifications.read', $rival->notifications()->first()->id))
+        ->assertRedirect();
+
+    expect($rival->notifications()->first()->read_at)->not->toBeNull();
+});
+
+it('keeps logout usable for an account that is no longer active', function () {
+    // `active` sengaja tidak dipasang pada logout; kalau tidak, akun yang
+    // dinonaktifkan akan terkunci tanpa jalan keluar.
+    $pending = User::factory()->create(['role' => 'pengguna', 'account_status' => 'pending']);
+
+    $this->actingAs($pending)
+        ->post(route('logout'))
+        ->assertRedirect(route('login'));
+
+    $this->assertGuest();
+});
+
 it('marks every notification as read via the bell action', function () {
     [$facility, $owner, $officer] = overlapActors();
     $rival = User::factory()->create(['role' => 'pengguna', 'account_status' => 'aktif']);
