@@ -135,6 +135,31 @@ it('menolak nilai filter yang tidak dikenal pada endpoint ajax', function (): vo
         ->assertJsonValidationErrors('type');
 });
 
+it('menolak filter tanggal di luar jendela yang sama dengan jadwal publik', function (): void {
+    $today = Carbon::now(config('app.timezone'))->startOfDay();
+    $facility = Facility::factory()->create(['status' => 'aktif']);
+
+    // Kedua tepi jendela harus tetap diterima: +365 dan -365.
+    foreach ([$today->copy()->addDays(365), $today->copy()->subDays(365)] as $edge) {
+        $this->getJson(route('home.facilities.ajax', [
+            'facility_id' => $facility->id,
+            'date' => $edge->toDateString(),
+        ]))->assertOk();
+    }
+
+    // Setelah itu ditolak. Sebelumnya tidak ada batas sama sekali, jadi
+    // tanggal berapa pun diterima di kedua arah.
+    $this->getJson(route('home.facilities.ajax', [
+        'facility_id' => $facility->id,
+        'date' => $today->copy()->addDays(366)->toDateString(),
+    ]))->assertStatus(422)->assertJsonValidationErrors('date');
+
+    $this->getJson(route('home.facilities.ajax', [
+        'facility_id' => $facility->id,
+        'date' => $today->copy()->subDays(366)->toDateString(),
+    ]))->assertStatus(422)->assertJsonValidationErrors('date');
+});
+
 it('mengirim url foto absolut pada endpoint ajax agar kartu hasil pencarian tidak rusak', function (): void {
     $withPhoto = Facility::factory()->create(['name' => 'Aula Terpadu']);
     $withPhoto->forceFill(['photo' => 'fasilitas/aula-terpadu.jpg'])->save();
