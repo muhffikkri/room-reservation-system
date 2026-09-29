@@ -102,6 +102,12 @@ class RecapService
             ];
         });
 
+        // Rata-rata hanya menghitung fasilitas yang bisa dipakai. Fasilitas
+        // nonaktif/perbaikan tidak punya kemungkinan okupansi, jadi
+        // menyertakannya di penyebut menurunkan rata-rata tanpa alasan.
+        $bookable = $data->where('status', 'aktif');
+        $averageOccupancy = $bookable->avg('occupancy_rate');
+
         $summary = [
             'total_facilities' => $facilities->count(),
             'total_reservations' => $data->sum('total_reservations'),
@@ -110,7 +116,7 @@ class RecapService
             'total_rejected' => $data->sum('rejected_count'),
             'total_cancelled' => $data->sum('cancelled_count'),
             'total_approved_hours' => round($data->sum('total_approved_hours'), 2),
-            'average_occupancy_rate' => $data->avg('occupancy_rate') ? round($data->avg('occupancy_rate'), 2) : 0,
+            'average_occupancy_rate' => $averageOccupancy ? round($averageOccupancy, 2) : 0,
         ];
 
         return [

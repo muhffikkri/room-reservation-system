@@ -172,6 +172,49 @@ it('rejects a recap date range that is only half given', function (): void {
         ->assertSessionHasErrors('end_date');
 });
 
+it('excludes inactive facilities from the average occupancy rate', function (): void {
+    $admin = User::factory()->create(['role' => 'admin', 'account_status' => 'aktif']);
+
+    $bookable = Facility::factory()->create(['status' => 'aktif']);
+    Facility::factory()->create(['status' => 'perbaikan']);
+
+    // 13 jam operasional per hari, jadi 3 jam = 3/13 = 23.08% untuk satu hari.
+    Reservation::factory()->approved()->create([
+        'user_id' => $admin->id,
+        'facility_id' => $bookable->id,
+        'start_time' => Carbon::parse('2026-09-01 08:00', config('app.timezone')),
+        'end_time' => Carbon::parse('2026-09-01 11:00', config('app.timezone')),
+    ]);
+
+    $recap = app(RecapService::class)->getOccupancyRecap(
+        Carbon::parse('2026-09-01', config('app.timezone'))->startOfDay(),
+        Carbon::parse('2026-09-01', config('app.timezone'))->endOfDay(),
+    );
+
+    // Fasilitas yang bisa dipakai: 23.08%. Jika nonaktif ikut dihitung,
+    // rata-rata turun jadi 11.54% karena penyebut bertambah tanpa
+    // kemungkinan okupansi.
+    expect($recap['summary']['average_occupancy_rate'])->toBe(23.08)
+        ->and($recap['summary']['total_facilities'])->toBe(2);
+});
+
+it('still reports every facility in the per-facility rows', function (): void {
+    $admin = User::factory()->create(['role' => 'admin', 'account_status' => 'aktif']);
+    $bookable = Facility::factory()->create(['status' => 'aktif', 'name' => 'Ruang Aktif']);
+    Facility::factory()->create(['status' => 'perbaikan', 'name' => 'Ruang Perbaikan']);
+
+    $recap = app(RecapService::class)->getOccupancyRecap(
+        Carbon::parse('2026-09-01', config('app.timezone'))->startOfDay(),
+        Carbon::parse('2026-09-01', config('app.timezone'))->endOfDay(),
+    );
+
+    $names = array_column($recap['data'], 'facility_name');
+
+    expect($names)->toContain('Ruang Aktif')
+        ->and($names)->toContain('Ruang Perbaikan')
+        ->and($recap['data'])->toHaveCount(2);
+});
+
 it('still accepts a complete range and no range at all', function (): void {
     $admin = User::factory()->create(['role' => 'admin', 'account_status' => 'aktif']);
     Facility::factory()->create();
