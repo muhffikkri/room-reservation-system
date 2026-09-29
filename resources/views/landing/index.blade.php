@@ -45,7 +45,7 @@
         </nav>
         <div class="flex shrink-0 items-center gap-1 sm:gap-2">
             @auth
-                <a href="{{ route('dashboard') }}" class="landing-button rounded-full bg-gradient-to-r from-blue-600 to-blue-500 px-4 py-2.5 text-xs font-semibold text-white shadow-[0_4px_14px_rgba(37,99,235,0.25)] transition hover:from-blue-700 hover:to-blue-600 sm:text-sm">Dashboard</a>
+                <a href="{{ auth()->user()->homeRoute() }}" class="landing-button rounded-full bg-gradient-to-r from-blue-600 to-blue-500 px-4 py-2.5 text-xs font-semibold text-white shadow-[0_4px_14px_rgba(37,99,235,0.25)] transition hover:from-blue-700 hover:to-blue-600 sm:text-sm">Dashboard</a>
             @else
                 <a href="{{ route('login') }}" class="landing-button rounded-full px-3 py-2 text-xs font-medium text-slate-700 transition hover:bg-white/60 hover:text-blue-600 sm:px-5 sm:text-sm">Masuk</a>
                 <a href="{{ route('register') }}" class="landing-button inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-blue-600 to-blue-500 px-3 py-2.5 text-xs font-semibold text-white shadow-[0_4px_14px_rgba(37,99,235,0.25)] transition hover:from-blue-700 hover:to-blue-600 sm:px-5 sm:text-sm">

@@ -21,6 +21,7 @@ Perubahan penting pada setiap rilis dicatat di sini. Detail commit dan pull requ
 - Pulihkan fasilitas terkait ketika laporan kerusakan ditolak.
 - Batasi lagi opsi lokasi pada filter publik dan endpoint AJAX ke 50 nilai unik.
 - Sediakan `Facility::photo_url` sebagai URL absolut agar kartu hasil pencarian langsung dan halaman publik tidak lagi memakai path relatif yang rusak.
+- Arahkan tombol Dashboard pada halaman publik ke beranda milik role masing-masing lewat `User::homeRoute()` supaya admin dan petugas tidak lagi mendarat di 403.
 
 ## v1.2.3 — 2026-09-23
 
