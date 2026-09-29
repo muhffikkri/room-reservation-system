@@ -349,7 +349,7 @@ class RecapService
         $rows[] = ['', '', '', '', '', '', '', '', ''];
         $rows[] = ['Kategori Kerusakan', 'Jumlah', '', '', '', '', '', '', ''];
         foreach ($recapData['summary']['by_category'] as $category => $count) {
-            $rows[] = [$category, $count, '', '', '', '', '', '', ''];
+            $rows[] = [Report::labelForCategory($category), $count, '', '', '', '', '', '', ''];
         }
 
         $csv = $this->buildCsv($headers, $rows);
@@ -616,7 +616,7 @@ HTML;
             $categoryHtml = '<tr><td colspan="9" style="border: none; padding-top: 20px;"><strong>Rincian per Kategori Kerusakan:</strong></td></tr>';
             $categoryHtml .= '<tr><th>Kategori</th><th>Jumlah</th><th colspan="7"></th></tr>';
             foreach ($summary['by_category'] as $category => $count) {
-                $categoryHtml .= '<tr><td>'.e($category).'</td><td>'.$count.'</td><td colspan="7"></td></tr>';
+                $categoryHtml .= '<tr><td>'.e(Report::labelForCategory($category)).'</td><td>'.$count.'</td><td colspan="7"></td></tr>';
             }
         }
 

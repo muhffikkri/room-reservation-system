@@ -440,6 +440,47 @@ it('names an export after the selected range rather than today', function (): vo
         );
 });
 
+it('shows the category label, not the stored slug, everywhere the breakdown appears', function (): void {
+    $admin = User::factory()->create(['role' => 'admin', 'account_status' => 'aktif']);
+    $facility = Facility::factory()->create(['status' => 'aktif']);
+    $user = User::factory()->create(['account_status' => 'aktif']);
+    Report::factory()->create([
+        'facility_id' => $facility->id,
+        'user_id' => $user->id,
+        'category' => 'sarana_prasarana',
+        'status' => 'baru',
+        'created_at' => '2026-09-05 09:00:00',
+    ]);
+
+    $query = ['start_date' => '2026-09-01', 'end_date' => '2026-09-10'];
+    $label = Report::CATEGORIES['sarana_prasarana'];
+
+    // Halaman rekap.
+    $this->actingAs($admin)
+        ->get(route('admin.rekap.damage', $query))
+        ->assertOk()
+        ->assertSee($label)
+        ->assertDontSee('sarana_prasarana');
+
+    // Ekspor CSV.
+    $csv = $this->actingAs($admin)
+        ->get(route('admin.rekap.damage.export.csv', $query))
+        ->streamedContent();
+
+    expect($csv)->toContain($label)->not->toContain('sarana_prasarana');
+
+    // Ekspor PDF, lewat HTML yang sama persis dengan yang dicetak. Di sini
+    // label ikut di-escape, jadi "&" menjadi "&amp;".
+    $html = app(RecapService::class)->exportDamageHtml(
+        app(RecapService::class)->getDamageRecap(
+            Carbon::parse($query['start_date'], config('app.timezone'))->startOfDay(),
+            Carbon::parse($query['end_date'], config('app.timezone'))->endOfDay(),
+        )
+    );
+
+    expect($html)->toContain(e($label))->not->toContain('sarana_prasarana');
+});
+
 it('gives the two report types different filenames for the same range', function (): void {
     $admin = User::factory()->create(['role' => 'admin', 'account_status' => 'aktif']);
     Facility::factory()->create();
