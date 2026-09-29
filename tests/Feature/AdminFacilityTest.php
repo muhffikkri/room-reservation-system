@@ -98,6 +98,34 @@ it('requires name, type, location, and capacity when creating', function () {
     expect(Facility::query()->count())->toBe(0);
 });
 
+it('accepts a description at the word limit and rejects one word beyond it', function () {
+    $admin = User::factory()->create([
+        'role' => 'admin',
+        'account_status' => 'aktif',
+    ]);
+
+    $payload = fn (string $description): array => [
+        'name' => 'Aula Batas Kata',
+        'type' => 'aula',
+        'location' => 'Gedung A Lantai 1',
+        'capacity' => 120,
+        'description' => $description,
+    ];
+
+    $atLimit = implode(' ', array_fill(0, Facility::MAX_DESCRIPTION_WORDS, 'kata'));
+    $overLimit = implode(' ', array_fill(0, Facility::MAX_DESCRIPTION_WORDS + 1, 'kata'));
+
+    $this->actingAs($admin)->post('/admin/fasilitas', $payload($atLimit))
+        ->assertSessionHasNoErrors()
+        ->assertRedirect(route('admin.fasilitas.index'));
+
+    $this->actingAs($admin)->post('/admin/fasilitas', $payload($overLimit))
+        ->assertSessionHasErrors('description');
+
+    // Batas kata diuji dari Facility, bukan angka yang ditulis ulang di test.
+    expect(Facility::query()->count())->toBe(1);
+});
+
 it('rejects an unknown type and a non-image photo', function () {
     $admin = User::factory()->create([
         'role' => 'admin',

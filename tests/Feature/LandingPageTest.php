@@ -5,6 +5,7 @@ use App\Models\Reservation;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Str;
 
 uses(RefreshDatabase::class);
 
@@ -148,4 +149,69 @@ it('mengirim url foto absolut pada endpoint ajax agar kartu hasil pencarian tida
     expect($facilities[0]['photo_url'])->toBe(url('/storage/fasilitas/aula-terpadu.jpg'));
     expect($facilities[0]['photo_url'])->not->toBe($facilities[0]['photo']);
     expect($facilities[1]['photo_url'])->toBe('');
+});
+
+it('memakai satu batas kata pada card grid dan menautkan ke halaman detail', function () {
+    $words = array_map(
+        fn (int $index): string => "kata{$index}",
+        range(1, Facility::MAX_DESCRIPTION_WORDS + 5),
+    );
+    $facility = Facility::factory()->create(['description' => implode(' ', $words)]);
+
+    // Accessor model adalah satu-satunya tempat pemotongan kata.
+    expect(Str::wordCount($facility->short_description))->toBe(Facility::MAX_DESCRIPTION_WORDS);
+
+    $html = $this->get('/')->assertOk()->getContent();
+
+    expect($html)
+        ->toContain('Lihat Deskripsi Lengkap')
+        ->toContain('href="'.route('fasilitas.show', $facility).'"')
+        ->toContain('kata'.Facility::MAX_DESCRIPTION_WORDS)
+        ->not->toContain('kata'.(Facility::MAX_DESCRIPTION_WORDS + 1));
+});
+
+it('menahan tinggi card dan tinggi grid agar hasil kosong tidak menggeser komponen', function () {
+    Facility::factory()->create(['name' => 'Aula Terpadu']);
+
+    $withResults = $this->get('/')->assertOk()->getContent();
+    $empty = $this->get('/?q=tidak-ada-fasilitas')->assertOk()->getContent();
+
+    // min-height mencegah grid menyusut jadi nol saat tidak ada hasil.
+    expect($withResults)->toContain('min-h-[24rem]')->toContain('min-h-[5rem]');
+    expect($empty)->toContain('min-h-[24rem]');
+
+    // Pesan kosong harus berada DI DALAM container grid, bukan sibling di atasnya.
+    $containerPosition = strpos($empty, 'id="landing-grid-container"');
+    $emptyMessagePosition = strpos($empty, 'Fasilitas tidak ditemukan');
+
+    expect($containerPosition)->toBeInt();
+    expect($emptyMessagePosition)->toBeInt()
+        ->toBeGreaterThan($containerPosition);
+});
+
+it('mengirim card ter-render dari server agar hasil pencarian sama dengan render awal', function () {
+    $facility = Facility::factory()->create([
+        'name' => 'Aula Terpadu',
+        'description' => 'Aula untuk kegiatan besar.',
+    ]);
+
+    $html = $this->getJson(route('home.facilities.ajax'))->assertOk()->json('html');
+
+    // app.js hanya menuliskan innerHTML, jadi markup card tidak boleh disusun
+    // ulang di JavaScript.
+    expect($html)
+        ->toContain($facility->name)
+        ->toContain('Lihat Deskripsi Lengkap')
+        ->toContain('Lihat Jadwal')
+        ->toContain(route('fasilitas.show', $facility));
+});
+
+it('mengirim pesan kosong dari server agar bentuknya sama dengan render awal', function () {
+    Facility::factory()->create(['name' => 'Aula Terpadu']);
+
+    $html = $this->getJson(route('home.facilities.ajax', ['q' => 'tidak-ada-fasilitas']))
+        ->assertOk()
+        ->json('html');
+
+    expect($html)->toContain('Fasilitas tidak ditemukan')->toContain('col-span-full');
 });

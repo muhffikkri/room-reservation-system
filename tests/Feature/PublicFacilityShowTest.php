@@ -74,3 +74,31 @@ it('displays appropriate status banner for facility under repair', function () {
 it('returns 404 for non-existent facility id', function () {
     $this->get('/fasilitas/999999')->assertNotFound();
 });
+
+it('shows the full description on the detail page and still keeps the length bounded', function () {
+    $words = array_map(
+        fn (int $index): string => "kata{$index}",
+        range(1, Facility::MAX_DESCRIPTION_WORDS),
+    );
+
+    $facility = Facility::factory()->create(['description' => implode(' ', $words)]);
+
+    // Semua kata yang lolos validasi admin harus tampil utuh di halaman detail.
+    $this->get("/fasilitas/{$facility->id}")
+        ->assertOk()
+        ->assertSee(implode(' ', $words));
+});
+
+it('bounds the description of facilities created before the word limit existed', function () {
+    $words = array_map(
+        fn (int $index): string => "kata{$index}",
+        range(1, Facility::MAX_DESCRIPTION_WORDS + 20),
+    );
+
+    $facility = Facility::factory()->create(['description' => implode(' ', $words)]);
+
+    $this->get("/fasilitas/{$facility->id}")
+        ->assertOk()
+        ->assertSee('kata'.Facility::MAX_DESCRIPTION_WORDS)
+        ->assertDontSee('kata'.(Facility::MAX_DESCRIPTION_WORDS + 1));
+});

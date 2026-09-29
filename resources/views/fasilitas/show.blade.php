@@ -118,7 +118,7 @@
                         <h2 class="text-sm font-semibold uppercase tracking-wider text-[#00236f]">Deskripsi & Fasilitas</h2>
                         <div class="prose prose-slate max-w-none text-sm leading-relaxed text-slate-600">
                             @if ($facility->description)
-                                <p class="whitespace-pre-line">{{ $facility->description }}</p>
+                                <p class="whitespace-pre-line">{{ $facility->short_description }}</p>
                             @else
                                 <p class="italic text-slate-400">Belum ada deskripsi tambahan untuk fasilitas ini.</p>
                             @endif

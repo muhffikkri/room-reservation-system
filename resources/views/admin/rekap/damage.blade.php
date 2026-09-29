@@ -108,16 +108,7 @@
                                 <p class="font-semibold text-[#00236f]">{{ $item['facility_name'] }}</p>
                             </td>
                             <td class="px-6 py-3 text-slate-700">
-                                @php
-                                    $typeLabels = [
-                                        'ruang_kelas' => 'Ruang Kelas',
-                                        'aula' => 'Aula',
-                                        'laboratorium' => 'Laboratorium',
-                                        'alat' => 'Alat',
-                                        'lapangan' => 'Lapangan',
-                                    ];
-                                @endphp
-                                {{ $typeLabels[$item['facility_type']] ?? $item['facility_type'] }}
+                                {{ \App\Models\Facility::TYPE_LABELS[$item['facility_type']] ?? $item['facility_type'] }}
                             </td>
                             <td class="px-6 py-3 text-slate-700">{{ $item['facility_location'] }}</td>
                             <td class="px-6 py-3">

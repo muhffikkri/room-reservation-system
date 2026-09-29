@@ -8,6 +8,7 @@ use App\Services\ReservationAvailability;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Collection;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
@@ -24,14 +25,6 @@ use Illuminate\View\View;
  */
 class HomeController extends Controller
 {
-    private const TYPE_LABELS = [
-        'ruang_kelas' => 'Ruang Kelas',
-        'aula' => 'Aula',
-        'laboratorium' => 'Laboratorium',
-        'alat' => 'Alat',
-        'lapangan' => 'Lapangan',
-    ];
-
     private const CAPACITY_RANGES = [
         'lt_40' => [1, 39],
         '40_100' => [40, 100],
@@ -71,7 +64,7 @@ class HomeController extends Controller
         return view('landing.index', [
             'facilities' => $facilities,
             'filters' => $filters,
-            'typeLabels' => self::TYPE_LABELS,
+            'typeLabels' => Facility::TYPE_LABELS,
             'locationOptions' => Facility::query()->publicLocationOptions()->pluck('location'),
             'totalFacilities' => $totalFacilities,
         ]);
@@ -81,7 +74,7 @@ class HomeController extends Controller
     {
         $filters = $request->validate([
             'q' => ['nullable', 'string', 'max:120'],
-            'type' => ['nullable', 'string', Rule::in(array_keys(self::TYPE_LABELS))],
+            'type' => ['nullable', 'string', Rule::in(array_keys(Facility::TYPE_LABELS))],
             'location' => ['nullable', 'string', 'max:120'],
             'capacity' => ['nullable', 'string', Rule::in(array_keys(self::CAPACITY_RANGES))],
             'facility_id' => ['nullable', 'integer'],
@@ -117,6 +110,7 @@ class HomeController extends Controller
                 'facilities' => [$facility],
                 'grids' => $grids,
                 'total' => 1,
+                'html' => $this->renderGrid(collect([$facility])),
             ]);
         }
 
@@ -158,6 +152,20 @@ class HomeController extends Controller
             'facilities' => $facilities,
             'grids' => $grids,
             'total' => $facilities->count(),
+            'html' => $this->renderGrid($facilities),
         ]);
+    }
+
+    /**
+     * Render isi grid fasilitas memakai partial yang sama dengan render awal.
+     *
+     * Pencarian langsung menuliskan hasilnya lewat innerHTML, sehingga markup
+     * card tidak boleh disusun ulang di JavaScript. Dengan HTML dari server,
+     * batas kata deskripsi, tinggi card, dan pesan kosong tidak punya dua
+     * pemilik.
+     */
+    private function renderGrid(Collection $facilities): string
+    {
+        return view('landing._facility-grid', ['facilities' => $facilities])->render();
     }
 }
