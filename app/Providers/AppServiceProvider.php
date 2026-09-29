@@ -26,6 +26,12 @@ class AppServiceProvider extends ServiceProvider
     {
         User::observe(UserObserver::class);
 
+        // Kuota harian laporan milik ReportService::createReport(): satu hari
+        // kalender, satu pesan galat. Limiter di sini hanya menahan lonjakan
+        // singkat, tidak mengulang kuota harian dengan jendela sendiri.
+        // Jendela 24 jam berputar berbeda dari hari kalender tepat setelah
+        // tengah malam: middleware menolak permintaan yang service izinkan,
+        // dengan pesan yang berbeda.
         RateLimiter::for('report-submissions', function (Request $request): array {
             $user = $request->user();
             $key = $user === null
@@ -34,7 +40,6 @@ class AppServiceProvider extends ServiceProvider
 
             return [
                 Limit::perMinute(5)->by($key),
-                Limit::perDay(20)->by($key),
             ];
         });
 

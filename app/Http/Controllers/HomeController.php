@@ -33,6 +33,12 @@ class HomeController extends Controller
 
     private const GRID_MAX_FACILITIES = 9;
 
+    /**
+     * Rentang hari yang boleh ditanyakan pada filter tanggal landing, sama
+     * dengan yang dipakai jadwal publik (±365 hari).
+     */
+    private const MAX_SCHEDULE_WINDOW_DAYS = 365;
+
     public function __construct(
         protected ReservationAvailability $availability,
     ) {}
@@ -72,13 +78,23 @@ class HomeController extends Controller
 
     public function ajaxFacilities(Request $request): JsonResponse
     {
+        // Jendela yang sama dengan jadwal publik di FacilityController::jadwal
+        // (±365 hari), supaya kedua halaman tidak menerima rentang berbeda
+        // untuk hal yang sama.
+        $today = Carbon::now(config('app.timezone'))->startOfDay();
+
         $filters = $request->validate([
             'q' => ['nullable', 'string', 'max:120'],
             'type' => ['nullable', 'string', Rule::in(array_keys(Facility::TYPE_LABELS))],
             'location' => ['nullable', 'string', 'max:120'],
             'capacity' => ['nullable', 'string', Rule::in(array_keys(self::CAPACITY_RANGES))],
             'facility_id' => ['nullable', 'integer'],
-            'date' => ['nullable', 'date'],
+            'date' => [
+                'nullable',
+                'date_format:Y-m-d',
+                'after_or_equal:'.$today->copy()->subDays(self::MAX_SCHEDULE_WINDOW_DAYS)->toDateString(),
+                'before_or_equal:'.$today->copy()->addDays(self::MAX_SCHEDULE_WINDOW_DAYS)->toDateString(),
+            ],
         ]);
 
         [$minCapacity, $maxCapacity] = self::CAPACITY_RANGES[$filters['capacity'] ?? ''] ?? [null, null];

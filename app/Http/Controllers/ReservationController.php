@@ -150,6 +150,14 @@ class ReservationController extends Controller
             abort(403, 'Anda tidak memiliki akses untuk membatalkan reservasi ini.');
         }
 
+        // Bersihkan sebelum validasi: min:5 dihitung atas masukan mentah,
+        // sehingga '<b></b><i></i>' (14 karakter) lolos lalu menjadi kosong
+        // setelah strip_tags dan tersimpan sebagai pembatalan tanpa alasan.
+        $rawReason = $request->input('cancel_reason');
+        $request->merge([
+            'cancel_reason' => is_string($rawReason) ? strip_tags($rawReason) : $rawReason,
+        ]);
+
         $validated = $request->validate([
             'cancel_reason' => ['required', 'string', 'min:5', 'max:255'],
         ], [
@@ -157,7 +165,7 @@ class ReservationController extends Controller
             'cancel_reason.min' => 'Alasan pembatalan minimal 5 karakter.',
         ]);
 
-        $cancelReason = strip_tags($validated['cancel_reason']);
+        $cancelReason = $validated['cancel_reason'];
 
         try {
             $this->reservationService->cancelByUser($reservation, auth()->user(), $cancelReason);

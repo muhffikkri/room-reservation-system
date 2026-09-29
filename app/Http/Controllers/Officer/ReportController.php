@@ -56,14 +56,15 @@ class ReportController extends Controller
             ->paginate(10)
             ->withQueryString();
 
+        // Hanya lima angka yang dirender kartu ringkasan. 'menunggu' dan
+        // 'selesai_count' pernah dihitung di sini tanpa pernah dipakai, jadi
+        // dua kueri berjalan sia-sia di setiap buka halaman.
         $counts = [
             'total' => Report::count(),
             'baru' => Report::where('status', 'baru')->count(),
             'diproses' => Report::where('status', 'diproses')->count(),
             'selesai' => Report::where('status', 'selesai')->count(),
             'ditolak' => Report::where('status', 'ditolak')->count(),
-            'menunggu' => Report::whereIn('status', ['baru', 'diproses'])->count(),
-            'selesai_count' => Report::whereIn('status', ['selesai', 'ditolak'])->count(),
         ];
 
         return view('petugas.laporan.index', compact('reports', 'status', 'counts', 'tab'));
