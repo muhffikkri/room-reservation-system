@@ -231,6 +231,35 @@ it('still accepts a complete range and no range at all', function (): void {
         ->assertSessionHasNoErrors();
 });
 
+it('rate limits recap exports per admin', function (): void {
+    $admin = User::factory()->create(['role' => 'admin', 'account_status' => 'aktif']);
+    Facility::factory()->create();
+
+    $query = ['start_date' => '2026-09-01', 'end_date' => '2026-09-10'];
+
+    // Enam ekspor per menit lolos, ketujuh ditolak.
+    foreach (range(1, 6) as $ignored) {
+        $this->actingAs($admin)
+            ->get(route('admin.rekap.occupancy.export.pdf', $query))
+            ->assertOk();
+    }
+
+    $this->actingAs($admin)
+        ->get(route('admin.rekap.occupancy.export.pdf', $query))
+        ->assertStatus(429);
+});
+
+it('still serves the recap pages themselves without the export limit', function (): void {
+    $admin = User::factory()->create(['role' => 'admin', 'account_status' => 'aktif']);
+    Facility::factory()->create();
+
+    // Halaman rekap murah dan harus tetap bisa dibuka berulang; yang dibatasi
+    // hanya ekspor.
+    foreach (range(1, 8) as $ignored) {
+        $this->actingAs($admin)->get(route('admin.rekap.occupancy'))->assertOk();
+    }
+});
+
 it('names an export after the selected range rather than today', function (): void {
     $admin = User::factory()->create(['role' => 'admin', 'account_status' => 'aktif']);
     Facility::factory()->create();
