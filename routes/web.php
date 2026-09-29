@@ -153,9 +153,16 @@ Route::middleware(['auth', 'active', 'role:admin'])->prefix('admin')->group(func
 });
 
 Route::middleware('auth')->group(function (): void {
+    // Keluar sengaja di luar `active`: akun yang dinonaktifkan tetap harus
+    // bisa menutup sesinya sendiri.
     Route::post('/logout', LogoutController::class)->name('logout');
-    Route::get('/notifications/{notification}/read', [NotificationController::class, 'markRead'])
-        ->name('notifications.read');
-    Route::post('/notifications/read-all', [NotificationController::class, 'markAllRead'])
-        ->name('notifications.read-all');
+
+    // Notifikasi tetap butuh `active`, sama seperti seluruh grup terotentikasi
+    // lain, supaya grup ini sendiri yang menegakkan invarian (BR-14).
+    Route::middleware('active')->group(function (): void {
+        Route::post('/notifications/{notification}/read', [NotificationController::class, 'markRead'])
+            ->name('notifications.read');
+        Route::post('/notifications/read-all', [NotificationController::class, 'markAllRead'])
+            ->name('notifications.read-all');
+    });
 });

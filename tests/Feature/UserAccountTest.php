@@ -12,6 +12,25 @@ it('forbids guests from the user account pages', function () {
     $this->post('/admin/pengguna')->assertRedirect(route('login'));
 });
 
+it('rejects an admin-created account whose phone is not a number', function () {
+    $admin = User::factory()->create([
+        'role' => 'admin',
+        'account_status' => 'aktif',
+    ]);
+
+    $response = $this->actingAs($admin)->post('/admin/pengguna', [
+        'name' => 'Mahasiswa Ngawur',
+        'email' => 'ngawur@student.kampus.test',
+        'password' => 'user12345',
+        'password_confirmation' => 'user12345',
+        'identity' => '2110512199',
+        'phone' => 'not-a-phone',
+    ]);
+
+    $response->assertSessionHasErrors('phone');
+    expect(User::where('email', 'ngawur@student.kampus.test')->exists())->toBeFalse();
+});
+
 it('forbids pengguna and petugas from the user account pages', function () {
     foreach (['pengguna', 'petugas'] as $role) {
         $user = User::factory()->create([

@@ -356,3 +356,28 @@ it('allows cancellation through HTTP delete endpoint with required reason', func
     expect($reservation->status)->toBe('cancelled_by_user')
         ->and($reservation->cancel_reason)->toBe('Perubahan mendadak pada susunan panitia');
 });
+
+it('records decided_at when a reservation is cancelled by its owner', function () {
+    $user = User::factory()->create(['role' => 'pengguna', 'account_status' => 'aktif']);
+    $facility = Facility::factory()->create(['status' => 'aktif']);
+
+    $startTime = Carbon::now()->addHours(5);
+    $endTime = $startTime->copy()->addHour();
+
+    $reservation = Reservation::factory()->create([
+        'user_id' => $user->id,
+        'facility_id' => $facility->id,
+        'status' => 'approved',
+        'start_time' => $startTime,
+        'end_time' => $endTime,
+    ]);
+
+    $updated = app(ReservationService::class)->cancelByUser($reservation, $user);
+
+    // decided_at harus terisi pada setiap jalur keputusan, termasuk pembatalan
+    // oleh pengguna; kalau tidak, rekap "keputusan bulan ini" diam-diam
+    // menghitung nol pembatalan pengguna.
+    expect($updated->decided_at)->not->toBeNull()
+        ->and($reservation->fresh()->decided_at)->not->toBeNull()
+        ->and($reservation->fresh()->decided_by)->toBeNull();
+});

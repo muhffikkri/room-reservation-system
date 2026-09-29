@@ -130,4 +130,21 @@ class User extends Authenticatable
     {
         return $this->account_status === 'aktif';
     }
+
+    /**
+     * Halaman utama sesuai role (§14.2#10).
+     *
+     * Satu-satunya peta role ke beranda: dipakai setelah login sukses dan
+     * oleh middleware guest ketika pengguna yang sudah masuk membuka /login.
+     * Dua peta terpisah akan membuat salah satu meleset dan mengirim admin
+     * atau petugas ke /dashboard yang role-nya pengguna, lalu 403.
+     */
+    public function homeRoute(): string
+    {
+        return match ($this->role) {
+            'petugas' => route('petugas.dashboard'),
+            'admin' => route('admin.dashboard'),
+            default => route('dashboard'),
+        };
+    }
 }

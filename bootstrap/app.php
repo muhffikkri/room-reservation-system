@@ -25,6 +25,14 @@ return Application::configure(basePath: dirname(__DIR__))
             'role' => EnsureRole::class,
         ]);
 
+        // Middleware guest mengirim pengguna yang sudah login ke /dashboard
+        // secara bawaan, dan /dashboard milik role pengguna — sehingga admin
+        // dan petugas mendarat di 403. Beranda per role milik
+        // User::homeRoute(), sama dengan yang dipakai setelah login sukses.
+        $middleware->redirectUsersTo(
+            fn (Request $request) => $request->user()?->homeRoute() ?? route('login'),
+        );
+
         $trustedProxies = array_values(array_filter(array_map(
             trim(...),
             explode(',', (string) env('TRUSTED_PROXIES', '')),
