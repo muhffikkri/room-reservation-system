@@ -301,6 +301,28 @@ it('emits a CSV without the fputcsv deprecation', function (): void {
         ->and(array_filter($deprecations, fn ($m) => str_contains($m, 'fputcsv')))->toBeEmpty();
 });
 
+it('separates CSV columns with a semicolon', function (): void {
+    $admin = User::factory()->create(['role' => 'admin', 'account_status' => 'aktif']);
+    Facility::factory()->create(['name' => 'Ruang Kimia', 'location' => 'Gedung B Lantai 2']);
+
+    $response = $this->actingAs($admin)->get(route('admin.rekap.occupancy.export.csv', [
+        'start_date' => '2026-09-01',
+        'end_date' => '2026-09-10',
+    ]));
+
+    $csv = $response->streamedContent();
+
+    // Excel Indonesia memakai koma sebagai pemisah desimal, jadi koma juga
+    // memecah kolom. Spesifikasi §13 mewajibkan titik koma.
+    $headerLine = strtok($csv, "\n");
+
+    expect($headerLine)->toContain('"Nama Fasilitas";')
+        ->and($headerLine)->not->toContain('"Nama Fasilitas",')
+        // BOM UTF-8 tetap ada agar karakter non-ASCII terbaca.
+        ->and($csv)->toStartWith("\xEF\xBB\xBF")
+        ->and($csv)->toContain('Gedung B Lantai 2');
+});
+
 it('rate limits recap exports per admin', function (): void {
     $admin = User::factory()->create(['role' => 'admin', 'account_status' => 'aktif']);
     Facility::factory()->create();
