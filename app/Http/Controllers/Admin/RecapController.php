@@ -137,10 +137,13 @@ class RecapController extends Controller
         $filename = 'rekap-okupansi-'.Carbon::now()->format('Y-m-d').'.pdf';
 
         try {
+            // isRemoteEnabled sengaja dibiarkan mengikuti config/dompdf.php
+            // (false). Fassilitas berasal dari database, jadi HTML yang
+            // dirakit di sini bisa memuat URL pilihan pihak lain; mengaktifkan
+            // akses remote membuat server pendukung mengunduhnya.
             $pdf = Pdf::loadHTML($html)
                 ->setPaper('A4', 'landscape')
-                ->setOption('isHtml5ParserEnabled', true)
-                ->setOption('isRemoteEnabled', true);
+                ->setOption('isHtml5ParserEnabled', true);
 
             Log::info('RecapController: Occupancy PDF generated', [
                 'user_id' => auth()->id(),
@@ -182,10 +185,10 @@ class RecapController extends Controller
         $filename = 'rekap-kerusakan-'.Carbon::now()->format('Y-m-d').'.pdf';
 
         try {
+            // Lihat exportOccupancyPdf(): akses remote mengikuti config.
             $pdf = Pdf::loadHTML($html)
                 ->setPaper('A4', 'landscape')
-                ->setOption('isHtml5ParserEnabled', true)
-                ->setOption('isRemoteEnabled', true);
+                ->setOption('isHtml5ParserEnabled', true);
 
             Log::info('RecapController: Damage PDF generated', [
                 'user_id' => auth()->id(),

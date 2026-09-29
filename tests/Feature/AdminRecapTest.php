@@ -127,3 +127,25 @@ it('serves the damage PDF export as a real PDF document', function (): void {
 
     expect($response->getContent())->toStartWith('%PDF');
 });
+
+it('keeps remote resource loading off while still producing a PDF', function (): void {
+    $admin = User::factory()->create(['role' => 'admin', 'account_status' => 'aktif']);
+    Facility::factory()->create();
+
+    $response = $this->actingAs($admin)
+        ->get(route('admin.rekap.occupancy.export.pdf', [
+            'start_date' => '2026-09-01',
+            'end_date' => '2026-09-10',
+        ]));
+
+    // Config harus tetap menolak akses remote. Override di controller tidak
+    // bisa diuji dari sini: dompdf.wrapper di-bind dengan bind(), bukan
+    // singleton(), jadi mutasi option tidak terlihat dari container.
+    // Yang diuji di sini: config-nya salah, dan PDF tetap berhasil dibuat.
+    expect(config('dompdf.options.enable_remote'))->toBeFalse();
+
+    $response->assertOk()
+        ->assertHeader('Content-Type', 'application/pdf');
+
+    expect($response->getContent())->toStartWith('%PDF');
+});
