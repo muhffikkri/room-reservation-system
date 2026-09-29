@@ -8,6 +8,7 @@ use App\Models\Reservation;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use InvalidArgumentException;
 
 class RecapService
 {
@@ -275,6 +276,8 @@ class RecapService
      */
     public function exportOccupancyCsv(array $recapData): string
     {
+        $this->assertColumns($recapData, self::OCCUPANCY_COLUMNS, 'exportOccupancyCsv');
+
         $start = microtime(true);
 
         $headers = $this->csvLabels(self::OCCUPANCY_COLUMNS);
@@ -318,6 +321,8 @@ class RecapService
      */
     public function exportDamageCsv(array $recapData): string
     {
+        $this->assertColumns($recapData, self::DAMAGE_COLUMNS, 'exportDamageCsv');
+
         $start = microtime(true);
 
         $headers = $this->csvLabels(self::DAMAGE_COLUMNS);
@@ -379,6 +384,37 @@ class RecapService
 
             return $value;
         }, $row);
+    }
+
+    /**
+     * Pastikan rekap yang masuk sesuai dengan format yang diminta.
+     *
+     * Tanpa ini, `exportOccupancyCsv()` yang menerima rekap kerusakan lolos
+     * secara tipe lalu menghasilkan baris kosong tanpa error: array tidak
+     * membawa jenisnya, dan kedua laporan memang punya bentuk berbeda.
+     *
+     * Hanya baris pertama yang diperiksa karena semua baris dibangun oleh
+     * kode yang sama, jadi cukup satu untuk menangkap ketidakcocokan.
+     *
+     * @param  array<string, mixed>  $recapData
+     * @param  list<array{key: string, label: string, short?: string, suffix?: string}>  $columns
+     */
+    private function assertColumns(array $recapData, array $columns, string $formatter): void
+    {
+        $row = $recapData['data'][0] ?? null;
+
+        if (! is_array($row)) {
+            return;
+        }
+
+        foreach ($columns as $column) {
+            if (! array_key_exists($column['key'], $row)) {
+                throw new InvalidArgumentException(
+                    "{$formatter} menerima rekap tanpa kolom '{$column['key']}'. "
+                    .'Pastikan jenis rekap yang diminta benar.'
+                );
+            }
+        }
     }
 
     /**
@@ -472,6 +508,8 @@ class RecapService
      */
     public function exportOccupancyHtml(array $recapData): string
     {
+        $this->assertColumns($recapData, self::OCCUPANCY_COLUMNS, 'exportOccupancyHtml');
+
         $start = microtime(true);
 
         $dateRange = "{$recapData['date_range']['start']} s/d {$recapData['date_range']['end']}";
@@ -547,6 +585,8 @@ HTML;
      */
     public function exportDamageHtml(array $recapData): string
     {
+        $this->assertColumns($recapData, self::DAMAGE_COLUMNS, 'exportDamageHtml');
+
         $start = microtime(true);
 
         $dateRange = "{$recapData['date_range']['start']} s/d {$recapData['date_range']['end']}";

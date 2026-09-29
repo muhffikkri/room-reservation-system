@@ -231,6 +231,30 @@ it('still accepts a complete range and no range at all', function (): void {
         ->assertSessionHasNoErrors();
 });
 
+it('refuses to format one report type as the other', function (): void {
+    Facility::factory()->create(['status' => 'aktif']);
+
+    $service = app(RecapService::class);
+    $period = [
+        Carbon::parse('2026-09-01', config('app.timezone'))->startOfDay(),
+        Carbon::parse('2026-09-01', config('app.timezone'))->endOfDay(),
+    ];
+
+    $damage = $service->getDamageRecap(...$period);
+
+    // Tanpa penjaga, rekap kerusakan yang diformat sebagai ekspor okupansi
+    // lolos secara tipe dan menghasilkan baris kosong tanpa error.
+    expect(fn () => $service->exportOccupancyCsv($damage))
+        ->toThrow(InvalidArgumentException::class);
+
+    expect(fn () => $service->exportOccupancyHtml($damage))
+        ->toThrow(InvalidArgumentException::class);
+
+    // Arah sebaliknya juga ditolak.
+    expect(fn () => $service->exportDamageCsv($service->getOccupancyRecap(...$period)))
+        ->toThrow(InvalidArgumentException::class);
+});
+
 it('derives CSV and PDF columns from one definition, in the same order', function (): void {
     $admin = User::factory()->create(['role' => 'admin', 'account_status' => 'aktif']);
     Facility::factory()->create(['status' => 'aktif', 'name' => 'Ruang A', 'location' => 'Gedung 1']);
