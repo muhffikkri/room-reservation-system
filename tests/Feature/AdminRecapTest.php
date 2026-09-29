@@ -341,7 +341,7 @@ it('names an export after the selected range rather than today', function (): vo
         ]))
         ->assertHeader(
             'content-disposition',
-            'attachment; filename=rekap-okupansi-2026-09-01-2026-09-10.csv'
+            'attachment; filename=rekap-okupansi-2026-09-01-sd-2026-09-10.csv'
         );
 
     $this->actingAs($admin)
@@ -351,6 +351,25 @@ it('names an export after the selected range rather than today', function (): vo
         ]))
         ->assertHeader(
             'content-disposition',
-            'attachment; filename=rekap-kerusakan-2026-09-01-2026-09-10.pdf'
+            'attachment; filename=rekap-kerusakan-2026-09-01-sd-2026-09-10.pdf'
         );
+});
+
+it('gives the two report types different filenames for the same range', function (): void {
+    $admin = User::factory()->create(['role' => 'admin', 'account_status' => 'aktif']);
+    Facility::factory()->create();
+
+    $query = ['start_date' => '2026-09-01', 'end_date' => '2026-09-10'];
+
+    $occupancy = $this->actingAs($admin)
+        ->get(route('admin.rekap.occupancy.export.csv', $query))
+        ->headers->get('content-disposition');
+
+    $damage = $this->actingAs($admin)
+        ->get(route('admin.rekap.damage.export.csv', $query))
+        ->headers->get('content-disposition');
+
+    // Tanpa segmen jenis keduanya bernama sama dan unduhan kedua menimpa
+    // yang pertama.
+    expect($occupancy)->not->toBe($damage);
 });
