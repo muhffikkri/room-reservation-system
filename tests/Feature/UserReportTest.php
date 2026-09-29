@@ -63,6 +63,34 @@ it('stores a report with photo upload successfully', function () {
         ->and(Storage::disk('local')->size($report->photo))->toBeLessThan(500 * 1024);
 });
 
+it('rejects a report description made only of markup', function () {
+    $user = User::factory()->create(['role' => 'pengguna', 'account_status' => 'aktif']);
+    $facility = Facility::factory()->create(['status' => 'aktif']);
+
+    // 28 karakter, semuanya tag: lolos min:15 apa adanya, lalu kosong
+    // setelah strip_tags.
+    $this->actingAs($user)->post(route('laporan.store'), [
+        'facility_id' => $facility->id,
+        'category' => 'kerusakan_alat',
+        'description' => '<b></b><i></i><u></u><s></s>',
+    ])->assertSessionHasErrors('description');
+
+    expect(Report::count())->toBe(0);
+});
+
+it('stores a report description that carries text alongside markup', function () {
+    $user = User::factory()->create(['role' => 'pengguna', 'account_status' => 'aktif']);
+    $facility = Facility::factory()->create(['status' => 'aktif']);
+
+    $this->actingAs($user)->post(route('laporan.store'), [
+        'facility_id' => $facility->id,
+        'category' => 'kerusakan_alat',
+        'description' => '<b>Proyektor</b> mati total dan <i>kabel</i> VGA putus.',
+    ])->assertSessionHasNoErrors();
+
+    expect(Report::first()->description)->toBe('Proyektor mati total dan kabel VGA putus.');
+});
+
 it('prevents user from viewing reports owned by other users', function () {
     $user1 = User::factory()->create(['role' => 'pengguna', 'account_status' => 'aktif']);
     $user2 = User::factory()->create(['role' => 'pengguna', 'account_status' => 'aktif']);

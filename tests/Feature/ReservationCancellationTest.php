@@ -357,6 +357,31 @@ it('allows cancellation through HTTP delete endpoint with required reason', func
         ->and($reservation->cancel_reason)->toBe('Perubahan mendadak pada susunan panitia');
 });
 
+it('rejects a user cancel reason made only of markup', function () {
+    $user = User::factory()->create(['role' => 'pengguna', 'account_status' => 'aktif']);
+    $facility = Facility::factory()->create(['status' => 'aktif']);
+
+    $startTime = Carbon::now()->addHours(4);
+    $endTime = $startTime->copy()->addHour();
+
+    $reservation = Reservation::factory()->create([
+        'user_id' => $user->id,
+        'facility_id' => $facility->id,
+        'status' => 'pending',
+        'start_time' => $startTime,
+        'end_time' => $endTime,
+    ]);
+
+    // 14 karakter, semuanya tag: lolos min:5 apa adanya, lalu kosong
+    // setelah strip_tags.
+    $this->actingAs($user)->delete(route('reservasi.destroy', $reservation), [
+        'cancel_reason' => '<b></b><i></i>',
+    ])->assertSessionHasErrors('cancel_reason');
+
+    expect($reservation->fresh()->status)->toBe('pending')
+        ->and($reservation->fresh()->cancel_reason)->toBeNull();
+});
+
 it('records decided_at when a reservation is cancelled by its owner', function () {
     $user = User::factory()->create(['role' => 'pengguna', 'account_status' => 'aktif']);
     $facility = Facility::factory()->create(['status' => 'aktif']);

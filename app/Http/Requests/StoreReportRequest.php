@@ -43,6 +43,23 @@ class StoreReportRequest extends FormRequest
     }
 
     /**
+     * Normalisasi SEBELUM validasi.
+     *
+     * min:15 dihitung atas masukan mentah, sehingga '<b></b><i></i><u></u>'
+     * (28 karakter) lolos dan baru menjadi kosong setelah strip_tags di
+     * ReportService. Bersihkan lebih dulu agar aturannya mengukur teks yang
+     * benar-benar akan disimpan.
+     */
+    protected function prepareForValidation(): void
+    {
+        $description = $this->input('description');
+
+        $this->merge([
+            'description' => is_string($description) ? strip_tags($description) : $description,
+        ]);
+    }
+
+    /**
      * Custom messages for validation errors.
      *
      * @return array<string, string>
