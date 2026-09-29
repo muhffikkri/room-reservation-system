@@ -78,7 +78,7 @@ class RecapController extends Controller
         $recap = $this->recapService->getOccupancyRecap($startDate, $endDate);
         $csv = $this->recapService->exportOccupancyCsv($recap);
 
-        $filename = $this->exportFilename('rekap-okupansi', $recap, 'csv');
+        $filename = $this->exportFilename('okupansi', $recap, 'csv');
 
         Log::info('RecapController: Occupancy CSV downloaded', [
             'user_id' => auth()->id(),
@@ -106,7 +106,7 @@ class RecapController extends Controller
         $recap = $this->recapService->getDamageRecap($startDate, $endDate);
         $csv = $this->recapService->exportDamageCsv($recap);
 
-        $filename = $this->exportFilename('rekap-kerusakan', $recap, 'csv');
+        $filename = $this->exportFilename('kerusakan', $recap, 'csv');
 
         Log::info('RecapController: Damage CSV downloaded', [
             'user_id' => auth()->id(),
@@ -134,7 +134,7 @@ class RecapController extends Controller
         $recap = $this->recapService->getOccupancyRecap($startDate, $endDate);
         $html = $this->recapService->exportOccupancyHtml($recap);
 
-        $filename = $this->exportFilename('rekap-okupansi', $recap, 'pdf');
+        $filename = $this->exportFilename('okupansi', $recap, 'pdf');
 
         try {
             // isRemoteEnabled sengaja dibiarkan mengikuti config/dompdf.php
@@ -161,7 +161,7 @@ class RecapController extends Controller
             ]);
 
             // Fallback to HTML download
-            $htmlFilename = $this->exportFilename('rekap-okupansi', $recap, 'html');
+            $htmlFilename = $this->exportFilename('okupansi', $recap, 'html');
 
             return response()->streamDownload(
                 fn () => print ($html),
@@ -182,7 +182,7 @@ class RecapController extends Controller
         $recap = $this->recapService->getDamageRecap($startDate, $endDate);
         $html = $this->recapService->exportDamageHtml($recap);
 
-        $filename = $this->exportFilename('rekap-kerusakan', $recap, 'pdf');
+        $filename = $this->exportFilename('kerusakan', $recap, 'pdf');
 
         try {
             // Lihat exportOccupancyPdf(): akses remote mengikuti config.
@@ -206,7 +206,7 @@ class RecapController extends Controller
             ]);
 
             // Fallback to HTML download
-            $htmlFilename = $this->exportFilename('rekap-kerusakan', $recap, 'html');
+            $htmlFilename = $this->exportFilename('kerusakan', $recap, 'html');
 
             return response()->streamDownload(
                 fn () => print ($html),
@@ -217,17 +217,23 @@ class RecapController extends Controller
     }
 
     /**
-     * Nama berkas ekspor mencerminkan rentang yang dipilih, bukan hari
-     * unduhan: rekap 1-10 September tidak boleh bernama tanggal hari ini.
+     * Nama berkas ekspor mengikuti format spesifikasi:
+     * rekap-{jenis}-{start_date}-sd-{end_date}.{ekstensi}.
+     *
+     * Segmen jenis ada karena spesifikasi aslinya hanya menyebut
+     * rekap-{start}-sd-{end}: tanpa itu, ekspor okupansi dan kerusakan untuk
+     * rentang yang sama menghasilkan nama berkas yang identik dan unduhan
+     * kedua menimpa yang pertama. Spesifikasi telah diperbarui untuk
+     * mencatat penyimpangan ini.
      *
      * @param  array<string, mixed>  $recap
      */
-    private function exportFilename(string $prefix, array $recap, string $extension): string
+    private function exportFilename(string $type, array $recap, string $extension): string
     {
         $start = $recap['date_range']['start'] ?? Carbon::now()->toDateString();
         $end = $recap['date_range']['end'] ?? $start;
 
-        return $prefix.'-'.$start.'-'.$end.'.'.$extension;
+        return 'rekap-'.$type.'-'.$start.'-sd-'.$end.'.'.$extension;
     }
 
     /**

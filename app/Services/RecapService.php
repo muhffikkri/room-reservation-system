@@ -384,6 +384,11 @@ class RecapService
 
     /**
      * Build CSV string from headers and rows.
+     *
+     * Delimiter `;` sesuai spesifikasi §13: Excel dengan koma desimal
+     * membaca koma sebagai pemisah kolom dan salah membelah angka, sedangkan
+     * titik koma langsung terbaca sebagai kolom. BOM UTF-8 di depan
+     * memastikan karakter non-ASCII terbaca di Excel.
      */
     protected function buildCsv(array $headers, array $rows): string
     {
@@ -392,11 +397,11 @@ class RecapService
         // Add BOM for UTF-8
         fwrite($handle, "\xEF\xBB\xBF");
 
-        // escape wajib Passed pada PHP 8.4+: tanpa itu fputcsv() memunculkan
+        // escape wajib passed pada PHP 8.4+: tanpa itu fputcsv() memunculkan
         // deprecation pada setiap ekspor.
-        fputcsv($handle, $headers, ',', '"', '');
+        fputcsv($handle, $headers, ';', '"', '');
         foreach ($rows as $row) {
-            fputcsv($handle, $this->neutraliseFormulas($row), ',', '"', '');
+            fputcsv($handle, $this->neutraliseFormulas($row), ';', '"', '');
         }
 
         rewind($handle);
