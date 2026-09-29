@@ -46,21 +46,7 @@
                     <div class="grid grid-cols-1 gap-1 py-4 sm:grid-cols-3">
                         <dt class="text-sm font-medium text-slate-600">Status</dt>
                         <dd class="sm:col-span-2">
-                            @if ($reservation->status === 'pending')
-                                <span class="inline-flex items-center rounded-full bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-700 ring-1 ring-inset ring-amber-200">Menunggu Persetujuan</span>
-                            @elseif ($reservation->status === 'approved')
-                                <span class="inline-flex items-center rounded-full bg-green-50 px-2.5 py-1 text-xs font-semibold text-green-700 ring-1 ring-inset ring-green-200">Disetujui</span>
-                            @elseif ($reservation->status === 'rejected')
-                                <span class="inline-flex items-center rounded-full bg-red-50 px-2.5 py-1 text-xs font-semibold text-red-700 ring-1 ring-inset ring-red-200">Ditolak</span>
-                            @elseif ($reservation->status === 'cancelled_by_user')
-                                <span class="inline-flex items-center rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-600 ring-1 ring-inset ring-slate-200">Dibatalkan Pengguna</span>
-                            @elseif ($reservation->status === 'cancelled_by_system')
-                                <span class="inline-flex items-center rounded-full bg-violet-50 px-2.5 py-1 text-xs font-semibold text-violet-700 ring-1 ring-inset ring-violet-200">Dibatalkan oleh Sistem</span>
-                            @elseif ($reservation->status === 'rejected_by_system')
-                                <span class="inline-flex items-center rounded-full bg-violet-50 px-2.5 py-1 text-xs font-semibold text-violet-700 ring-1 ring-inset ring-violet-200">Ditolak oleh Sistem</span>
-                            @else
-                                <span class="inline-flex items-center rounded-full bg-orange-50 px-2.5 py-1 text-xs font-semibold text-orange-700 ring-1 ring-inset ring-orange-200">Dibatalkan Petugas</span>
-                            @endif
+                            <x-reservation.status-pill :status="$reservation->status" />
                         </dd>
                     </div>
                     @if ($reservation->reject_reason !== null)
@@ -119,7 +105,7 @@
                     Menyetujui mengunci slot (dicek bentrok terhadap resevasi approved lainnya).
                 </p>
 
-                @if ($reservation->status === 'pending')
+                @if ($reservation->isPending())
                     <div class="mt-4 flex flex-col gap-3">
                         <form method="POST" action="{{ route('petugas.reservasi.approve', $reservation) }}">
                             @csrf
@@ -135,7 +121,7 @@
                     </div>
                 @endif
 
-                @if (in_array($reservation->status, ['pending', 'approved'], true))
+                @if ($reservation->isCancellable())
                     <button type="button" data-open-dialog="cancel-detail"
                             class="mt-3 inline-flex h-10 w-full items-center justify-center gap-2 rounded-lg bg-red-600 px-4 text-sm font-semibold text-white transition-colors hover:bg-red-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500 focus-visible:ring-offset-2">
                         Batalkan Reservasi

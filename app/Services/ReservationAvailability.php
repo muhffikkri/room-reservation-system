@@ -22,60 +22,23 @@ use Illuminate\Support\Collection;
  */
 class ReservationAvailability
 {
-    public const OPEN_HOUR = 7;
+    private const OPEN_HOUR = 7;
 
-    public const CLOSE_HOUR = 20;
+    private const SLOT_MINUTES = 30;
 
-    public const SLOT_MINUTES = 30;
+    private const SLOT_COUNT = 26;
 
-    public const SLOT_COUNT = 26;
+    private const MAX_DURATION_SLOTS = 8;
 
-    public const MAX_DURATION_SLOTS = 8;
+    private const LEAD_TIME_MINUTES = 60;
 
-    public const MAX_DURATION_MINUTES = 240;
+    private const MAX_LOOKAHEAD_DAYS = 365;
 
-    public const LEAD_TIME_MINUTES = 60;
-
-    public const TIME_FORMAT = 'H:i';
-
-    public function openHour(): int
-    {
-        return self::OPEN_HOUR;
-    }
-
-    public function closeHour(): int
-    {
-        return self::CLOSE_HOUR;
-    }
-
-    public function slotMinutes(): int
-    {
-        return self::SLOT_MINUTES;
-    }
-
-    public function slotCount(): int
-    {
-        return self::SLOT_COUNT;
-    }
+    private const TIME_FORMAT = 'H:i';
 
     public function maxDurationSlots(): int
     {
         return self::MAX_DURATION_SLOTS;
-    }
-
-    public function maxDurationMinutes(): int
-    {
-        return self::MAX_DURATION_MINUTES;
-    }
-
-    public function leadTimeMinutes(): int
-    {
-        return self::LEAD_TIME_MINUTES;
-    }
-
-    public function timeFormat(): string
-    {
-        return self::TIME_FORMAT;
     }
 
     public function dayStart(Carbon $date): Carbon
@@ -91,7 +54,7 @@ class ReservationAvailability
     /**
      * @return array<int, array{start: Carbon, end: Carbon}>
      */
-    public function slotsForDay(Carbon $date): array
+    private function slotsForDay(Carbon $date): array
     {
         $dayStart = $this->dayStart($date);
         $slots = [];
@@ -107,7 +70,7 @@ class ReservationAvailability
         return $slots;
     }
 
-    public function formatTime(Carbon $time): string
+    private function formatTime(Carbon $time): string
     {
         return $time->format(self::TIME_FORMAT);
     }
@@ -130,7 +93,7 @@ class ReservationAvailability
         return $options;
     }
 
-    public function isFacilityBookable(Facility $facility): bool
+    private function isFacilityBookable(Facility $facility): bool
     {
         return $facility->status === 'aktif';
     }
@@ -163,7 +126,32 @@ class ReservationAvailability
         return $this->isWithinLeadTime($start) ? 'Waktu mulai minimal 1 jam dari sekarang.' : null;
     }
 
-    public function isInPast(Carbon $start): bool
+    /**
+     * Hari terakhir yang boleh dipilih di form pemesanan.
+     *
+     * Batas bawah dan atas keduanya dihitung per hari kalender, sehingga
+     * hari ke-365 masih dapat dipilih utuh — bentuk yang sama dipakai
+     * validasi form dan penjaga di service.
+     */
+    public function maxBookingDate(): Carbon
+    {
+        return Carbon::now(config('app.timezone'))->startOfDay()->addDays(self::MAX_LOOKAHEAD_DAYS);
+    }
+
+    /**
+     * Menolak pemesanan yang terlalu jauh ke depan (BR-3).
+     *
+     * Jumlah hari tetap, bukan relatif terhadap waktu pemesanan, supaya
+     * form dan service tidak bisa berbeda pendapat.
+     */
+    public function lookaheadError(Carbon $start): ?string
+    {
+        return $start->gt($this->maxBookingDate()->copy()->endOfDay())
+            ? 'Reservasi hanya dapat dibuat maksimal '.self::MAX_LOOKAHEAD_DAYS.' hari ke depan.'
+            : null;
+    }
+
+    private function isInPast(Carbon $start): bool
     {
         return $start->lt(Carbon::now(config('app.timezone')));
     }
@@ -233,7 +221,7 @@ class ReservationAvailability
      *
      * @param  iterable<int, Reservation>  $approved
      */
-    public function hasApprovedOverlap(iterable $approved, Carbon $start, Carbon $end): bool
+    private function hasApprovedOverlap(iterable $approved, Carbon $start, Carbon $end): bool
     {
         foreach ($approved as $reservation) {
             if ($reservation->start_time->lt($end) && $reservation->end_time->gt($start)) {
@@ -270,11 +258,6 @@ class ReservationAvailability
         return [];
     }
 
-    public function isValidSlot(Carbon $start, Carbon $end): bool
-    {
-        return $this->slotTimeErrors($start, $end) === [];
-    }
-
     /**
      * @return Collection<int, Reservation>
      */
@@ -297,7 +280,7 @@ class ReservationAvailability
             : null;
     }
 
-    public function pendingCountOnDay(int $userId, Carbon $start): int
+    private function pendingCountOnDay(int $userId, Carbon $start): int
     {
         return Reservation::where('user_id', $userId)
             ->pending()

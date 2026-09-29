@@ -40,6 +40,35 @@ it('menampilkan ringkasan aktivitas pengguna dan aktivitas terbaru miliknya', fu
         ->assertDontSee('Laporan pengguna lain yang rahasia');
 });
 
+it('menampilkan label pembatalan milik pengguna dan petugas, bukan nilai mentah', function (): void {
+    $user = User::factory()->create(['role' => 'pengguna', 'account_status' => 'aktif']);
+    $facility = Facility::factory()->create();
+
+    // Kedua status ini pernah salah kunci di peta label dashboard sehingga
+    // nilai mentah database tampil ke pengguna.
+    Reservation::factory()->create([
+        'user_id' => $user->id,
+        'facility_id' => $facility->id,
+        'status' => 'cancelled_by_user',
+        'cancel_reason' => 'Ada keperluan mendadak.',
+    ]);
+    Reservation::factory()->create([
+        'user_id' => $user->id,
+        'facility_id' => $facility->id,
+        'status' => 'cancelled_by_officer',
+        'cancel_reason' => 'Fasilitas masuk perbaikan mendadak.',
+    ]);
+
+    $this->actingAs($user)
+        ->get(route('dashboard'))
+        ->assertOk()
+        ->assertSee('Dibatalkan Pengguna')
+        ->assertSee('Dibatalkan Petugas')
+        ->assertDontSee('Cancelled_by_user')
+        ->assertDontSee('Cancelled_by_officer')
+        ->assertDontSee('Cancelled_by_system');
+});
+
 it('mengharuskan pengguna aktif untuk membuka dashboard', function (): void {
     $user = User::factory()->create(['role' => 'pengguna', 'account_status' => 'pending']);
 

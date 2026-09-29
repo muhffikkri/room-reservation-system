@@ -482,7 +482,7 @@ if (landingFilterForm !== null) {
 
                         card.innerHTML = `
                             <div class="relative aspect-[16/9] w-full overflow-hidden bg-[#f2f3ff]">
-                                ${facility.photo ? `<img src="${facility.photo}" alt="${escapeHtml(facility.name)}" loading="lazy" class="img-fade h-full w-full object-cover transition-transform duration-300 group-hover:scale-105">` :
+                                ${facility.photo_url ? `<img src="${facility.photo_url}" alt="${escapeHtml(facility.name)}" loading="lazy" class="img-fade h-full w-full object-cover transition-transform duration-300 group-hover:scale-105">` :
                                 `<img src="${fallbackImage}" alt="${escapeHtml(facility.name)}" loading="lazy" class="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105">`}
                                 <span class="absolute right-3 top-3 inline-flex items-center gap-1 rounded-full bg-white/95 px-2.5 py-1 text-xs font-medium shadow-sm ring-1 ${badgeClass}">
                                     ${statusIcon}

@@ -5,9 +5,9 @@ namespace App\Http\Controllers;
 use App\Models\Facility;
 use App\Models\Reservation;
 use App\Services\ReservationAvailability;
-use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
@@ -72,7 +72,7 @@ class HomeController extends Controller
             'facilities' => $facilities,
             'filters' => $filters,
             'typeLabels' => self::TYPE_LABELS,
-            'locationOptions' => Facility::query()->orderBy('location')->distinct()->pluck('location'),
+            'locationOptions' => Facility::query()->publicLocationOptions()->pluck('location'),
             'totalFacilities' => $totalFacilities,
         ]);
     }

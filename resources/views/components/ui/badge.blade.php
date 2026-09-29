@@ -5,7 +5,6 @@
 
 @php
     // Mapping terpusat lintas entitas — reservasi, laporan, fasilitas, akun.
-    // Warna diambil dari DESIGN.md §3 & §4 (skema 50/700/200 sesuai contoh kelas siap-pakai §4.1).
     $palette = match ($status) {
         'aktif', 'approved', 'selesai' => [
             'bg' => 'bg-green-50',

@@ -12,6 +12,16 @@ use Symfony\Component\HttpKernel\Exception\ConflictHttpException;
 
 uses(RefreshDatabase::class);
 
+/**
+ * Fixture di file ini memakai tanggal 2030 sebagai "masa depan yang sah".
+ * Karena BR-3 menolak pemesanan lebih dari 365 hari ke depan, jam sistem
+ * dipindahkan ke awal 2030 agar rentang fixture tetap berada di dalam
+ * jendela pemesanan.
+ */
+beforeEach(function () {
+    $this->travelTo(Carbon::parse('2030-01-01 07:00', config('app.timezone')));
+});
+
 function slotCarbon(string $date, string $time): Carbon
 {
     return Carbon::parse("{$date} {$time}", config('app.timezone'));
@@ -39,7 +49,7 @@ it('generates factory data that always passes slot validation', function () {
     expect($reservations)->not->toBeEmpty();
 
     foreach ($reservations as $reservation) {
-        expect($availability->isValidSlot($reservation->start_time, $reservation->end_time))->toBeTrue();
+        expect($availability->slotTimeErrors($reservation->start_time, $reservation->end_time))->toBeEmpty();
     }
 });
 
@@ -58,11 +68,13 @@ it('creates a pending reservation and approves it (kasus 3)', function () {
     expect($reservation->status)->toBe('pending');
     $this->assertDatabaseHas('reservations', ['id' => $reservation->id, 'status' => 'pending']);
 
-    $approved = $service->approve($reservation, $officer);
+    $autoRejected = $service->approve($reservation, $officer);
+    $approved = $reservation->refresh();
 
     expect($approved->status)->toBe('approved')
         ->and($approved->decided_by)->toBe($officer->id)
-        ->and($approved->decided_at)->not->toBeNull();
+        ->and($approved->decided_at)->not->toBeNull()
+        ->and($autoRejected)->toBe(0);
 });
 
 it('auto-rejects the overlapping pending queue once one is approved (kasus 4)', function () {
@@ -75,10 +87,10 @@ it('auto-rejects the overlapping pending queue once one is approved (kasus 4)', 
 
     expect($second->status)->toBe('pending');
 
-    $service->approve($first, $officer);
+    $autoRejected = $service->approve($first, $officer);
 
     expect($second->fresh()->status)->toBe('rejected_by_system')
-        ->and($service->autoRejectedOnApprove())->toBe(1);
+        ->and($autoRejected)->toBe(1);
 
     try {
         $service->approve($second, $officer);

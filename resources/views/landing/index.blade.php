@@ -228,7 +228,7 @@
                     <div class="landing-card group facility-card flex flex-col overflow-hidden rounded-3xl border border-white/80 bg-white shadow-[0_10px_30px_-5px_rgba(186,215,248,0.45),0_0_0_1px_rgba(255,255,255,0.8)_inset] transition-all hover:-translate-y-0.5 hover:shadow-lg" data-facility-id="{{ $facility->id }}">
                         <div class="relative aspect-[16/9] w-full overflow-hidden bg-[#f2f3ff]">
                             @if ($facility->photo)
-                                <img src="{{ Storage::disk('public')->url($facility->photo) }}" alt="{{ $facility->name }}" loading="lazy"
+                                <img src="{{ $facility->photo_url }}" alt="{{ $facility->name }}" loading="lazy"
                                      class="img-fade h-full w-full object-cover transition-transform duration-300 group-hover:scale-105">
                             @else
                                 <img src="{{ $facilityFallbackImages[$facility->type] ?? asset('images/aula.jpg') }}" alt="{{ $facility->name }}" loading="lazy" class="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105">

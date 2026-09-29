@@ -4,6 +4,7 @@ use App\Models\Facility;
 use App\Models\Report;
 use App\Models\ReportUpdate;
 use App\Models\User;
+use App\Services\FacilityLifecycle;
 use App\Services\ReportService;
 use Database\Seeders\ReportSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -94,6 +95,20 @@ it('restores its facility when a repair report is rejected', function () {
     expect($rejected->status)->toBe('ditolak')
         ->and($facility->status)->toBe('aktif')
         ->and($facility->repair_report_id)->toBeNull();
+});
+
+it('does not restore a facility before its repair report is rejected', function () {
+    [$report, $officer] = makeReportActors();
+    $service = app(ReportService::class);
+    $processing = $service->transition($report, $officer, 'diproses', 'Petugas mulai memeriksa proyektor yang mati.');
+
+    $service->markFacilityForRepair($processing, $officer);
+
+    expect(fn () => app(FacilityLifecycle::class)->restoreAfterRejection($processing))
+        ->toThrow(ValidationException::class);
+
+    expect($processing->fresh()->facility->status)->toBe('perbaikan')
+        ->and((int) $processing->facility->repair_report_id)->toBe($processing->id);
 });
 
 it('does not restore a facility linked to a different repair report', function () {

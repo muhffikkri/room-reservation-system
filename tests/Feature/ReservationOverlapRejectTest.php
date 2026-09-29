@@ -10,6 +10,16 @@ use Illuminate\Support\Carbon;
 
 uses(RefreshDatabase::class);
 
+/**
+ * Fixture di file ini memakai tanggal 2030 sebagai "masa depan yang sah".
+ * Karena BR-3 menolak pemesanan lebih dari 365 hari ke depan, jam sistem
+ * dipindahkan ke awal 2030 agar rentang fixture tetap berada di dalam
+ * jendela pemesanan.
+ */
+beforeEach(function () {
+    $this->travelTo(Carbon::parse('2030-01-01 07:00', config('app.timezone')));
+});
+
 function overlapSlot(string $date, string $time): Carbon
 {
     return Carbon::parse("{$date} {$time}", config('app.timezone'));
@@ -96,7 +106,7 @@ it('auto-rejects identical-time pending reservations when one is approved', func
     $winner = overlapPending($facility, $owner, '2030-05-06', '09:00', '11:00');
     $loser = overlapPending($facility, $rival, '2030-05-06', '09:00', '11:00');
 
-    $service->approve($winner, $officer);
+    $autoRejected = $service->approve($winner, $officer);
 
     $fresh = $loser->fresh();
 
@@ -105,7 +115,7 @@ it('auto-rejects identical-time pending reservations when one is approved', func
         ->and($fresh->reject_reason)->toContain('Otomatis ditolak sistem')
         ->and($fresh->decided_at)->not->toBeNull()
         ->and($fresh->decided_by)->toBeNull()
-        ->and($service->autoRejectedOnApprove())->toBe(1);
+        ->and($autoRejected)->toBe(1);
 });
 
 it('keeps an adjacent-time pending reservation when its neighbour is approved', function () {
@@ -116,10 +126,10 @@ it('keeps an adjacent-time pending reservation when its neighbour is approved', 
     $winner = overlapPending($facility, $owner, '2030-05-07', '09:00', '11:00');
     $loser = overlapPending($facility, $rival, '2030-05-07', '11:00', '12:00');
 
-    $service->approve($winner, $officer);
+    $autoRejected = $service->approve($winner, $officer);
 
     expect($loser->fresh()->status)->toBe('pending')
-        ->and($service->autoRejectedOnApprove())->toBe(0);
+        ->and($autoRejected)->toBe(0);
 });
 
 it('sends an in-app database notification with the required feedback message', function () {
@@ -216,9 +226,9 @@ it('leaves adjacent and other-facility pendings untouched without notifications'
     $adjacentPending = overlapPending($facility, $rival, '2030-05-12', '11:00', '12:00');
     $otherFacilityPending = overlapPending($otherFacility, $rival, '2030-05-12', '09:00', '11:00');
 
-    $service->approve($winner, $officer);
+    $autoRejected = $service->approve($winner, $officer);
 
-    expect($service->autoRejectedOnApprove())->toBe(0)
+    expect($autoRejected)->toBe(0)
         ->and($adjacentPending->fresh()->status)->toBe('pending')
         ->and($otherFacilityPending->fresh()->status)->toBe('pending');
 
@@ -236,11 +246,94 @@ it('marks a notification as read and redirects to its reservation', function () 
 
     $notification = $rival->notifications()->first();
 
+    // Panel lonceng harus Offered lewat form ber-CSRF, bukan tautan GET.
     $this->actingAs($rival)
-        ->get(route('notifications.read', $notification->id))
+        ->get(route('dashboard'))
+        ->assertOk()
+        ->assertSee('action="'.route('notifications.read', $notification->id).'"', false)
+        ->assertSee('name="_token"', false);
+
+    $this->actingAs($rival)
+        ->post(route('notifications.read', $notification->id))
         ->assertRedirect(route('reservasi.show', $loser));
 
     expect($rival->notifications()->first()->read_at)->not->toBeNull();
+});
+
+it('refuses to mark a notification read over GET', function () {
+    [$facility, $owner, $officer] = overlapActors();
+    $rival = User::factory()->create(['role' => 'pengguna', 'account_status' => 'aktif']);
+
+    $winner = overlapPending($facility, $owner, '2030-05-13', '09:00', '11:00');
+    overlapPending($facility, $rival, '2030-05-13', '10:00', '11:00');
+
+    app(ReservationService::class)->approve($winner, $officer);
+
+    $notification = $rival->notifications()->first();
+
+    // Menandai dibaca adalah perubahan state, jadi tidak boleh dipicu GET:
+    // GET bisa dipicu diam-diam oleh pihak ketiga tanpa token CSRF.
+    $this->actingAs($rival)
+        ->get(route('notifications.read', $notification->id))
+        ->assertStatus(405);
+
+    expect($rival->notifications()->first()->read_at)->toBeNull();
+});
+
+it('does not let a pending account mark a notification read', function () {
+    [$facility, $owner, $officer] = overlapActors();
+    $pending = User::factory()->create(['role' => 'pengguna', 'account_status' => 'pending']);
+
+    $winner = overlapPending($facility, $owner, '2030-05-13', '09:00', '11:00');
+
+    // Disisipkan lewat factory, bukan service: create() sendiri menolak akun
+    // yang belum aktif, jadi antrean untuk pending dibuat di luar service.
+    Reservation::factory()->create([
+        'user_id' => $pending->id,
+        'facility_id' => $facility->id,
+        'status' => 'pending',
+        'start_time' => overlapSlot('2030-05-13', '10:00'),
+        'end_time' => overlapSlot('2030-05-13', '11:00'),
+    ]);
+
+    app(ReservationService::class)->approve($winner, $officer);
+
+    $notification = $pending->notifications()->first();
+
+    $this->actingAs($pending)
+        ->post(route('notifications.read', $notification->id))
+        ->assertRedirect(route('login'))
+        ->assertSessionHas('error', 'Akun Anda menunggu verifikasi admin.');
+
+    expect($pending->notifications()->first()->read_at)->toBeNull();
+});
+
+it('still lets an active account mark a notification read', function () {
+    [$facility, $owner, $officer] = overlapActors();
+    $rival = User::factory()->create(['role' => 'pengguna', 'account_status' => 'aktif']);
+
+    $winner = overlapPending($facility, $owner, '2030-05-13', '09:00', '11:00');
+    overlapPending($facility, $rival, '2030-05-13', '10:00', '11:00');
+
+    app(ReservationService::class)->approve($winner, $officer);
+
+    $this->actingAs($rival)
+        ->post(route('notifications.read', $rival->notifications()->first()->id))
+        ->assertRedirect();
+
+    expect($rival->notifications()->first()->read_at)->not->toBeNull();
+});
+
+it('keeps logout usable for an account that is no longer active', function () {
+    // `active` sengaja tidak dipasang pada logout; kalau tidak, akun yang
+    // dinonaktifkan akan terkunci tanpa jalan keluar.
+    $pending = User::factory()->create(['role' => 'pengguna', 'account_status' => 'pending']);
+
+    $this->actingAs($pending)
+        ->post(route('logout'))
+        ->assertRedirect(route('login'));
+
+    $this->assertGuest();
 });
 
 it('marks every notification as read via the bell action', function () {

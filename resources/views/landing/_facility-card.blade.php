@@ -9,7 +9,7 @@
 @endphp
 <article class="landing-card group flex flex-col overflow-hidden rounded-3xl border border-white/80" data-facility-id="{{ $facility->id }}">
     <div class="relative aspect-[16/9] overflow-hidden bg-[#f2f3ff]">
-        <img src="{{ $facility->photo ? Storage::disk('public')->url($facility->photo) : asset('images/'.($images[$facility->type] ?? 'aula.jpg')) }}" alt="{{ $facility->name }}" loading="lazy" class="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105">
+        <img src="{{ $facility->photo_url ?: asset('images/'.($images[$facility->type] ?? 'aula.jpg')) }}" alt="{{ $facility->name }}" loading="lazy" class="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105">
         @include('landing._facility-status', ['status' => $facility->status, 'class' => 'absolute right-3 top-3'])
     </div>
     <div class="flex flex-1 flex-col justify-between gap-4 p-4 sm:p-5">

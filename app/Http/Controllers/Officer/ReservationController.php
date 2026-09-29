@@ -23,32 +23,11 @@ use Symfony\Component\HttpKernel\Exception\ConflictHttpException;
  */
 class ReservationController extends Controller
 {
-    public const STATUSES = [
-        'pending',
-        'approved',
-        'rejected',
-        'rejected_by_system',
-        'cancelled_by_user',
-        'cancelled_by_officer',
-        'cancelled_by_system',
-    ];
-
-    public const TABS = [
-        'menunggu' => ['pending'],
-        'selesai' => ['approved', 'rejected', 'rejected_by_system', 'cancelled_by_user', 'cancelled_by_officer', 'cancelled_by_system'],
-    ];
-
-    public const STATUS_ORDER = 'CASE status WHEN "pending" THEN 0 WHEN "approved" THEN 1 WHEN "rejected" THEN 2 WHEN "rejected_by_system" THEN 3 WHEN "cancelled_by_user" THEN 4 WHEN "cancelled_by_officer" THEN 5 WHEN "cancelled_by_system" THEN 6 ELSE 7 END';
-
     public function __construct(private readonly ReservationService $reservations) {}
 
     public function index(Request $request): View
     {
-        $filters = $request->validate([
-            'status' => ['nullable', 'string', 'in:'.implode(',', self::STATUSES)],
-            'date' => ['nullable', 'date'],
-            'tab' => ['nullable', 'string', 'in:'.implode(',', array_keys(self::TABS))],
-        ]);
+        $filters = $this->filters($request);
 
         $expired = $this->reservations->expireStale();
 
@@ -62,7 +41,7 @@ class ReservationController extends Controller
         $reservations = $this->filteredQuery($filters)
             ->orderBy('created_at', 'desc')
             ->orderBy('start_time', 'asc')
-            ->orderByRaw(self::STATUS_ORDER)
+            ->orderByRaw($this->statusOrderSql())
             ->paginate(15)
             ->withQueryString();
 
@@ -75,18 +54,14 @@ class ReservationController extends Controller
 
     public function ajaxIndex(Request $request): JsonResponse
     {
-        $filters = $request->validate([
-            'status' => ['nullable', 'string', 'in:'.implode(',', self::STATUSES)],
-            'date' => ['nullable', 'date'],
-            'tab' => ['nullable', 'string', 'in:'.implode(',', array_keys(self::TABS))],
-        ]);
+        $filters = $this->filters($request);
 
         $this->reservations->expireStale();
 
         $reservations = $this->filteredQuery($filters)
             ->orderBy('created_at', 'desc')
             ->orderBy('start_time', 'asc')
-            ->orderByRaw(self::STATUS_ORDER)
+            ->orderByRaw($this->statusOrderSql())
             ->paginate(15);
 
         return response()->json([
@@ -103,17 +78,62 @@ class ReservationController extends Controller
     }
 
     /**
+     * Filter yang sah untuk antrean: status dari kosakata Reservation dan tab
+     * rekapitulasi.
+     *
+     * @return array<string, mixed>
+     */
+    private function filters(Request $request): array
+    {
+        return $request->validate([
+            'status' => ['nullable', 'string', 'in:'.implode(',', Reservation::ORDERED_STATUSES)],
+            'date' => ['nullable', 'date'],
+            'tab' => ['nullable', 'string', 'in:'.implode(',', array_keys($this->tabs()))],
+        ]);
+    }
+
+    /**
+     * Tab antrean: "menunggu" hanya yang pending, "selesai" seluruh status
+     * lain mengikuti urutan kosakata.
+     *
+     * @return array<string, list<string>>
+     */
+    private function tabs(): array
+    {
+        return [
+            'menunggu' => ['pending'],
+            'selesai' => array_values(array_diff(Reservation::ORDERED_STATUSES, ['pending'])),
+        ];
+    }
+
+    /**
+     * Urutan antrean sebagai SQL, diturunkan dari kosakata Reservation
+     * supaya daftar status tidak pernah ditulis dua kali.
+     */
+    private function statusOrderSql(): string
+    {
+        $arms = [];
+
+        foreach (Reservation::ORDERED_STATUSES as $position => $status) {
+            $arms[] = 'WHEN "'.$status.'" THEN '.$position;
+        }
+
+        return 'CASE status '.implode(' ', $arms).' ELSE '.count(Reservation::ORDERED_STATUSES).' END';
+    }
+
+    /**
      * Query reservasi dengan filter status, tanggal, dan tab.
      * Filter status bersifat menimpa tab agar tidak menghasilkan irisan kosong.
      */
     private function filteredQuery(array $filters): Builder
     {
+        $tabs = $this->tabs();
         $tab = ($filters['status'] ?? null) === null ? ($filters['tab'] ?? null) : null;
 
         return Reservation::query()
             ->with(['user', 'facility', 'decidedBy'])
             ->when($filters['status'] ?? null, fn ($query, string $status) => $query->where('status', $status))
-            ->when($tab !== null, fn ($query) => $query->whereIn('status', self::TABS[$tab]))
+            ->when($tab !== null, fn ($query) => $query->whereIn('status', $tabs[$tab]))
             ->when($filters['date'] ?? null, fn ($query, string $date) => $query->whereDate('start_time', $date));
     }
 
@@ -144,12 +164,11 @@ class ReservationController extends Controller
     public function approve(Request $request, Reservation $reservation): RedirectResponse
     {
         try {
-            $this->reservations->approve($reservation->fresh() ?? $reservation, $request->user());
+            $autoRejected = $this->reservations->approve($reservation->fresh() ?? $reservation, $request->user());
         } catch (ConflictHttpException $exception) {
             return back()->with('error', $exception->getMessage());
         }
 
-        $autoRejected = $this->reservations->autoRejectedOnApprove();
         $message = $autoRejected > 0
             ? "Reservasi disetujui dan slot terkunci. {$autoRejected} reservasi lain otomatis ditolak karena overlap."
             : 'Reservasi disetujui dan slot terkunci.';

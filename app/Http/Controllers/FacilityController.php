@@ -85,9 +85,7 @@ class FacilityController extends Controller
             ->withQueryString();
 
         $locations = Facility::query()
-            ->select('location')
-            ->distinct()
-            ->orderBy('location')
+            ->publicLocationOptions()
             ->pluck('location');
 
         return view('fasilitas.index', [

@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\Facility;
 use App\Services\ReservationAvailability;
 use Illuminate\Support\Carbon;
 use Tests\TestCase;
@@ -15,10 +16,10 @@ function slotIsValid(string $date, string $start, string $end): bool
 {
     $timezone = config('app.timezone');
 
-    return slotAvailability()->isValidSlot(
+    return slotAvailability()->slotTimeErrors(
         Carbon::parse("{$date} {$start}", $timezone),
         Carbon::parse("{$date} {$end}", $timezone),
-    );
+    ) === [];
 }
 
 it('accepts a valid 30-minute slot', function () {
@@ -46,19 +47,6 @@ it('rejects an end that is not after the start', function () {
     expect(slotIsValid('2030-01-06', '09:00', '08:00'))->toBeFalse();
 });
 
-it('exposes the availability interface constants', function () {
-    $availability = slotAvailability();
-
-    expect($availability->openHour())->toBe(7)
-        ->and($availability->closeHour())->toBe(20)
-        ->and($availability->slotMinutes())->toBe(30)
-        ->and($availability->slotCount())->toBe(26)
-        ->and($availability->maxDurationSlots())->toBe(8)
-        ->and($availability->maxDurationMinutes())->toBe(240)
-        ->and($availability->leadTimeMinutes())->toBe(60)
-        ->and($availability->timeFormat())->toBe('H:i');
-});
-
 it('returns slot errors for each violation', function () {
     $availability = slotAvailability();
     $timezone = config('app.timezone');
@@ -79,17 +67,18 @@ it('returns slot errors for each violation', function () {
     ))->toBe(['Durasi reservasi minimal 30 menit dan maksimal 4 jam.']);
 });
 
-it('formats all slot times with the canonical H:i format', function () {
+it('projects all daily slots with canonical times', function () {
     $date = Carbon::parse('2030-01-06', config('app.timezone'));
-    $slots = slotAvailability()->slotsForDay($date);
+    $facility = new Facility(['status' => 'aktif']);
+    $slots = slotAvailability()->publicScheduleSlots($facility, $date, []);
 
     expect($slots)->toHaveCount(26);
 
     foreach ($slots as $slot) {
-        expect($slot['start'])->toBeInstanceOf(Carbon::class);
-        expect(slotAvailability()->formatTime($slot['start']))->toMatch('/^\d{2}:\d{2}$/');
+        expect($slot['start'])->toMatch('/^\d{2}:\d{2}$/')
+            ->and($slot['end'])->toMatch('/^\d{2}:\d{2}$/');
     }
 
-    expect(slotAvailability()->formatTime($slots[0]['start']))->toBe('07:00')
-        ->and(slotAvailability()->formatTime($slots[array_key_last($slots)]['end']))->toBe('20:00');
+    expect($slots[0]['start'])->toBe('07:00')
+        ->and($slots[array_key_last($slots)]['end'])->toBe('20:00');
 });

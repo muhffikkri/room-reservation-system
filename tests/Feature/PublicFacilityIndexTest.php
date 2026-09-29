@@ -25,7 +25,7 @@ it('displays the list of facilities on public catalog index', function () {
     $response = $this->get('/fasilitas');
 
     $response->assertOk()
-        ->assertSee('Katalog Fasilitas Kampus')
+        ->assertSee('Semua Fasilitas Kampus')
         ->assertSee('Aula Terpadu')
         ->assertSee('Lab Multimedia');
 });

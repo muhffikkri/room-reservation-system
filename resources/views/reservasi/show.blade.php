@@ -1,5 +1,7 @@
 @extends('layouts.app')
 
+@use('App\Models\Reservation')
+
 @section('title', 'Detail Reservasi')
 
 @section('content')
@@ -13,16 +15,9 @@
                 <h1 class="text-2xl font-semibold tracking-tight text-[#00236f]">Detail Reservasi #{{ $reservation->id }}</h1>
                 <div>
                     <x-ui.badge :status="$reservation->status">
-                        {{ match ($reservation->status) {
-                            'pending' => 'Menunggu Persetujuan',
-                            'approved' => 'Disetujui',
-                            'rejected' => 'Ditolak',
-                            'rejected_by_system' => 'Ditolak oleh Sistem',
-                            'cancelled_by_user' => 'Dibatalkan Pengguna',
-                            'cancelled_by_officer' => 'Dibatalkan Petugas',
-                            'cancelled_by_system' => 'Gagal',
-                            default => ucfirst($reservation->status),
-                        } }}
+                        {{-- "Gagal" di sini adalah pilihan tampilan halaman
+                             pengguna; label kanonik ada di Reservation. --}}
+                        {{ $reservation->status === 'cancelled_by_system' ? 'Gagal' : Reservation::statusLabel($reservation->status) }}
                     </x-ui.badge>
                 </div>
             </div>
@@ -110,13 +105,10 @@
 
             {{-- Tombol Batal untuk Pengguna (BR-8) --}}
             @php
-                $canCancel =
-                    in_array($reservation->status, ['pending', 'approved'], true) &&
-                    $reservation->start_time->isAfter(now()->addHour()) &&
-                    $reservation->user_id === auth()->id();
+                $canCancel = auth()->user()->can('cancel', $reservation);
                 $isTooLate =
-                    in_array($reservation->status, ['pending', 'approved'], true) &&
-                    !$reservation->start_time->isAfter(now()->addHour()) &&
+                    $reservation->isCancellable() &&
+                    ! $canCancel &&
                     $reservation->user_id === auth()->id();
             @endphp
 

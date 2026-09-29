@@ -225,8 +225,16 @@ it('caps public catalog results and rejects unbounded schedule dates', function 
     Facility::factory()->count(51)->create();
     $facility = Facility::query()->firstOrFail();
 
-    expect($this->get('/')->assertOk()->viewData('facilities')->count())->toBe(50)
-        ->and($this->get('/fasilitas')->assertOk()->viewData('facilities')->count())->toBe(50);
+    // Landing page memakai grid pilihan berbatas keras, katalog publik memakai
+    // paginasi. Keduanya membuat respons publik tidak ikut membesar, sementara
+    // total katalog tetap menjangkau seluruh data sehingga tidak ada yang tersembunyi.
+    $home = $this->get('/')->assertOk();
+    expect($home->viewData('facilities')->count())->toBe(9)
+        ->and($home->viewData('totalFacilities'))->toBe(51);
+
+    $catalog = $this->get('/fasilitas')->assertOk()->viewData('facilities');
+    expect($catalog->count())->toBe(12)
+        ->and($catalog->total())->toBe(51);
 
     $this->get(route('fasilitas.jadwal', [
         'facility' => $facility,
@@ -237,6 +245,17 @@ it('caps public catalog results and rejects unbounded schedule dates', function 
         'facility' => $facility,
         'date' => Carbon::now()->addDays(366)->toDateString(),
     ]))->assertSessionHasErrors('date');
+});
+
+it('caps the public location filter options on landing and catalog', function (): void {
+    foreach (range(1, Facility::MAX_PUBLIC_FILTER_OPTIONS + 10) as $index) {
+        Facility::factory()->create(['location' => 'Gedung Uji '.$index]);
+    }
+
+    expect($this->get('/')->assertOk()->viewData('locationOptions')->count())
+        ->toBe(Facility::MAX_PUBLIC_FILTER_OPTIONS)
+        ->and($this->get('/fasilitas')->assertOk()->viewData('locations')->count())
+        ->toBe(Facility::MAX_PUBLIC_FILTER_OPTIONS);
 });
 
 it('disables browser caching for authenticated responses only', function (): void {

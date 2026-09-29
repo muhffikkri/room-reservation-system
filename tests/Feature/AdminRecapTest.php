@@ -1,16 +1,16 @@
 <?php
 
 use App\Models\Facility;
+use App\Models\Report;
 use App\Models\Reservation;
 use App\Models\User;
 use App\Services\RecapService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
-use Illuminate\Support\Facades\Cache;
 
 uses(RefreshDatabase::class);
 
-it('renders the occupancy recap page and caches plain arrays', function (): void {
+it('renders the occupancy recap page with current facilities', function (): void {
     $admin = User::factory()->create(['role' => 'admin', 'account_status' => 'aktif']);
     $facility = Facility::factory()->create();
 
@@ -18,17 +18,6 @@ it('renders the occupancy recap page and caches plain arrays', function (): void
         'start_date' => '2026-09-01',
         'end_date' => '2026-09-10',
     ]))->assertOk()->assertSee($facility->name);
-
-    $cached = Cache::get('recap:occupancy:20260901:20260910');
-
-    expect(is_array($cached))->toBeTrue()
-        ->and(is_array($cached['data'] ?? null))->toBeTrue()
-        ->and(is_array($cached['summary'] ?? null))->toBeTrue()
-        ->and(is_array($cached['date_range'] ?? null))->toBeTrue();
-
-    foreach ($cached['data'] as $row) {
-        expect(is_array($row))->toBeTrue();
-    }
 });
 
 it('groups every rejection and cancellation status in the occupancy recap', function (): void {
@@ -69,44 +58,30 @@ it('groups every rejection and cancellation status in the occupancy recap', func
         ->and($recap['summary']['total_reservations'])->toBe(7);
 });
 
-it('heals a corrupted occupancy recap cache instead of failing on count()', function (): void {
-    $admin = User::factory()->create(['role' => 'admin', 'account_status' => 'aktif']);
-    Facility::factory()->create();
+it('returns current recap data after reservations and reports change', function (): void {
+    $facility = Facility::factory()->create();
+    $user = User::factory()->create();
+    $start = Carbon::parse('2026-09-01')->startOfDay();
+    $end = Carbon::parse('2026-09-10')->endOfDay();
+    $recaps = app(RecapService::class);
 
-    $key = 'recap:occupancy:20260901:20260910';
-    Cache::put($key, [
-        'data' => unserialize('O:8:"NotAReal":0:{}'),
-        'summary' => [],
-        'date_range' => ['start' => '2026-09-01', 'end' => '2026-09-10'],
-    ], 300);
+    expect($recaps->getOccupancyRecap($start, $end)['summary']['total_reservations'])->toBe(0)
+        ->and($recaps->getDamageRecap($start, $end)['summary']['total_reports'])->toBe(0);
 
-    $this->actingAs($admin)->get(route('admin.rekap.occupancy', [
-        'start_date' => '2026-09-01',
-        'end_date' => '2026-09-10',
-    ]))->assertOk();
+    Reservation::factory()->create([
+        'facility_id' => $facility->id,
+        'user_id' => $user->id,
+        'start_time' => '2026-09-05 09:00:00',
+        'end_time' => '2026-09-05 10:00:00',
+    ]);
+    Report::factory()->create([
+        'facility_id' => $facility->id,
+        'user_id' => $user->id,
+        'created_at' => '2026-09-05 09:00:00',
+    ]);
 
-    $healed = Cache::get($key);
-
-    expect(is_array($healed['data']))->toBeTrue()
-        ->and($healed['data'])->not->toBeEmpty();
-});
-
-it('heals a corrupted damage recap cache instead of failing on count()', function (): void {
-    $admin = User::factory()->create(['role' => 'admin', 'account_status' => 'aktif']);
-    Facility::factory()->create();
-
-    $key = 'recap:damage:20260901:20260910';
-    Cache::put($key, unserialize('O:8:"NotAReal":0:{}'), 300);
-
-    $this->actingAs($admin)->get(route('admin.rekap.damage', [
-        'start_date' => '2026-09-01',
-        'end_date' => '2026-09-10',
-    ]))->assertOk();
-
-    $healed = Cache::get($key);
-
-    expect(is_array($healed['data']))->toBeTrue()
-        ->and(is_array($healed['summary']['by_category'] ?? null))->toBeTrue();
+    expect($recaps->getOccupancyRecap($start, $end)['summary']['total_reservations'])->toBe(1)
+        ->and($recaps->getDamageRecap($start, $end)['summary']['total_reports'])->toBe(1);
 });
 
 it('exports occupancy csv from array-backed recap data', function (): void {
