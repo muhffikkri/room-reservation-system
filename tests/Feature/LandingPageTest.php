@@ -136,6 +136,37 @@ it('menolak nilai filter yang tidak dikenal pada endpoint ajax', function (): vo
         ->assertJsonValidationErrors('type');
 });
 
+it('menyamakan proyeksi slot landing dengan halaman jadwal publik', function (): void {
+    $facility = Facility::factory()->create(['status' => 'aktif']);
+
+    // Now = 10:00. Slot 10:30 masih di masa depan tetapi hanya 30 menit lagi,
+    // jadi berada di dalam lead time 60 menit (BR-3). Proyeksi publik tidak
+    // menerapkan lead time — hanya menolak slot yang sudah lewat — sehingga
+    // kedua halaman publik harus memberi jawaban yang sama.
+    $landing = $this->getJson(route('home.facilities.ajax', [
+        'facility_id' => $facility->id,
+        'date' => '2026-09-09',
+    ]))->assertOk();
+
+    $jadwal = $this->get("/fasilitas/{$facility->id}/jadwal?date=2026-09-09")
+        ->assertOk()
+        ->viewData('slots');
+
+    $landingSlot = collect($landing->json("grids.{$facility->id}"))
+        ->firstWhere('start', '10:30');
+    $jadwalSlot = collect($jadwal)->firstWhere('start', '10:30');
+
+    expect($landingSlot['state'])->toBe('available')
+        ->and($landingSlot['state'])->toBe($jadwalSlot['state']);
+
+    // Slot yang benar-benar lewat tetap 'past' di kedua halaman.
+    $landingPast = collect($landing->json("grids.{$facility->id}"))
+        ->firstWhere('start', '08:00');
+
+    expect($landingPast['state'])->toBe('past')
+        ->and(collect($jadwal)->firstWhere('start', '08:00')['state'])->toBe('past');
+});
+
 it('menolak filter tanggal di luar jendela yang sama dengan jadwal publik', function (): void {
     $today = Carbon::now(config('app.timezone'))->startOfDay();
     $facility = Facility::factory()->create(['status' => 'aktif']);
