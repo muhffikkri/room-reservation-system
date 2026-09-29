@@ -3,6 +3,7 @@
 namespace App\Http\Requests;
 
 use App\Models\Report;
+use App\Services\AccountStatusGate;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -14,8 +15,7 @@ class StoreReportRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return $this->user()?->isPengguna() === true
-            && $this->user()?->isActive() === true;
+        return AccountStatusGate::mayActAs($this->user(), 'pengguna');
     }
 
     /**

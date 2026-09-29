@@ -4,6 +4,7 @@ namespace App\Policies;
 
 use App\Models\Report;
 use App\Models\User;
+use App\Services\AccountStatusGate;
 
 class ReportPolicy
 {
@@ -12,7 +13,7 @@ class ReportPolicy
      */
     public function viewAny(User $user): bool
     {
-        return $user->isActive() && ($user->isPengguna() || $user->isPetugas());
+        return AccountStatusGate::mayActAs($user, 'pengguna', 'petugas');
     }
 
     /**
@@ -22,9 +23,10 @@ class ReportPolicy
      */
     public function view(User $user, Report $report): bool
     {
-        return $user->isActive()
-            && (($user->isPengguna() && $user->id === $report->user_id)
-                || $user->isPetugas());
+        // Petugas boleh membuka laporan siapa pun; pengguna hanya laporan
+        // miliknya sendiri. Syarat "aktif" sudah ditangani mayActAs().
+        return AccountStatusGate::mayActAs($user, 'pengguna', 'petugas')
+            && ($user->isPetugas() || $user->id === $report->user_id);
     }
 
     /**
@@ -32,6 +34,6 @@ class ReportPolicy
      */
     public function create(User $user): bool
     {
-        return $user->isActive() && $user->isPengguna();
+        return AccountStatusGate::mayActAs($user, 'pengguna');
     }
 }
