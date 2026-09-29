@@ -32,7 +32,7 @@
                 </div>
             </div>
             <div class="dashboard-mascot pointer-events-none absolute inset-y-0 right-0 z-0 flex w-32 items-end justify-center sm:w-52 lg:w-72">
-                <img src="{{ asset('images/maskot-greetings.png') }}" alt="Maskot REKSA menyapa pengguna" class="relative z-10 h-full w-full object-contain object-bottom drop-shadow-[0_14px_18px_rgba(37,99,235,0.2)]">
+                <img src="{{ asset('images/maskot-greetings.webp') }}" alt="Maskot REKSA menyapa pengguna" class="relative z-10 h-full w-full object-contain object-bottom drop-shadow-[0_14px_18px_rgba(37,99,235,0.2)]">
             </div>
         </section>
 

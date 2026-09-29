@@ -15,7 +15,7 @@
     <main id="content" class="landing-panel relative mx-auto min-h-[calc(100vh-2rem)] w-full max-w-7xl overflow-hidden rounded-[2rem] p-5 shadow-[0_24px_60px_-20px_rgba(54,111,194,0.24),0_0_0_1px_rgba(255,255,255,0.8)_inset] sm:p-7 lg:min-h-[calc(100vh-3rem)] lg:p-9 xl:p-11">
         <header class="relative z-10 flex flex-wrap items-center justify-between gap-4">
             <a href="{{ route('home') }}" class="flex items-center gap-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2" aria-label="REKSA, kembali ke beranda">
-                <img src="{{ asset('images/reksa-logo.png') }}" alt="" class="h-11 w-11 rounded-xl object-contain shadow-sm">
+                <img src="{{ asset('images/reksa-logo.webp') }}" alt="" class="h-11 w-11 rounded-xl object-contain shadow-sm">
                 <span class="flex flex-col"><span class="text-base font-extrabold tracking-wide text-slate-900">REKSA</span><span class="text-[10px] leading-tight text-slate-600">Reservasi dan Kerusakan Sarana Akademik</span></span>
             </a>
             <a href="{{ route('home') }}" class="landing-button inline-flex items-center gap-2 rounded-full border border-white bg-white/80 px-4 py-2.5 text-xs font-semibold text-blue-700 shadow-[0_6px_16px_rgba(59,130,246,0.12)] transition hover:bg-white sm:text-sm">
@@ -32,7 +32,7 @@
                 </div>
 
                 <div class="landing-hero-art relative mx-auto flex min-h-64 w-full flex-1 items-center justify-center sm:min-h-80 lg:min-h-[min(58vh,580px)]">
-                    <img src="{{ asset('images/reksa-mascot.png') }}" alt="Maskot REKSA menyambut pengguna" class="relative z-10 h-64 w-full object-contain drop-shadow-[0_20px_24px_rgba(37,99,235,0.18)] transition-transform duration-300 hover:-translate-y-1 sm:h-80 lg:h-[min(58vh,580px)]">
+                    <img src="{{ asset('images/reksa-mascot.webp') }}" alt="Maskot REKSA menyambut pengguna" class="relative z-10 h-64 w-full object-contain drop-shadow-[0_20px_24px_rgba(37,99,235,0.18)] transition-transform duration-300 hover:-translate-y-1 sm:h-80 lg:h-[min(58vh,580px)]">
                 </div>
 
                 <div class="grid gap-3 sm:grid-cols-2">

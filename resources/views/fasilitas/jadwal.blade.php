@@ -5,7 +5,7 @@
 @section('content')
     @php
         $typeLabel = $types[$facility->type] ?? ucfirst($facility->type);
-        $facilityImage = $facility->photo_url ?: asset('images/'.(['aula' => 'aula.jpg', 'laboratorium' => 'lab-komputer.jpg', 'lapangan' => 'lapangan-futsal.jpg', 'ruang_kelas' => 'ruang-kelas.jpg', 'alat' => 'proyektor.jpg'][$facility->type] ?? 'aula.jpg'));
+        $facilityImage = $facility->photo_url ?: asset('images/'.(['aula' => 'aula.webp', 'laboratorium' => 'lab-komputer.webp', 'lapangan' => 'lapangan-futsal.webp', 'ruang_kelas' => 'ruang-kelas.webp', 'alat' => 'proyektor.webp'][$facility->type] ?? 'aula.webp'));
         $slotClasses = ['available' => 'border-emerald-200 bg-emerald-50 text-emerald-800', 'booked' => 'border-rose-200 bg-rose-50 text-rose-700', 'past' => 'border-slate-200 bg-slate-100 text-slate-400', 'inactive' => 'border-slate-200 bg-slate-100 text-slate-400'];
         $slotLabels = ['available' => 'Tersedia', 'booked' => 'Sudah direservasi', 'past' => 'Waktu Lewat', 'inactive' => 'Tidak Aktif'];
     @endphp

@@ -15,7 +15,7 @@
             <p class="mt-2 text-sm leading-6 text-slate-600">Pilih fasilitas, tanggal, dan slot waktu yang tersedia untuk mengajukan
                 peminjaman.</p>
             </div>
-            <img src="{{ asset('images/reksa-mascot.png') }}" alt="Maskot REKSA" class="hidden h-36 w-40 object-contain drop-shadow-[0_12px_16px_rgba(37,99,235,0.16)] sm:block">
+            <img src="{{ asset('images/reksa-mascot.webp') }}" alt="Maskot REKSA" class="hidden h-36 w-40 object-contain drop-shadow-[0_12px_16px_rgba(37,99,235,0.16)] sm:block">
         </div>
 
         <div class="landing-panel rounded-[2rem] p-5 shadow-[0_16px_44px_rgba(53,103,175,0.12)] sm:p-7 lg:p-8">

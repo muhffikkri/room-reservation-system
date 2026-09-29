@@ -60,7 +60,7 @@ function drawCursorTail() {
         const tangentY = nextPoint.y - previousPoint.y;
         const tangentLength = Math.hypot(tangentX, tangentY) || 1;
         const taper = 1 - index / points.length;
-        const halfWidth = (1.5 + taper * 9) * point.emerge;
+        const halfWidth = (1.35 + taper * 8.1) * point.emerge;
         const normalX = -tangentY / tangentLength;
         const normalY = tangentX / tangentLength;
 
@@ -100,7 +100,7 @@ function drawCursorTail() {
     tailContext.closePath();
     tailContext.fillStyle = gradient;
     tailContext.shadowColor = 'rgba(44, 149, 255, 0.55)';
-    tailContext.shadowBlur = 11;
+    tailContext.shadowBlur = 10;
     tailContext.fill();
     tailContext.shadowBlur = 0;
 }
@@ -673,12 +673,12 @@ if (landingFilterForm !== null) {
                                 : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="h-3.5 w-3.5" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path stroke-linecap="round" d="m5.6 5.6 12.8 12.8"/></svg>';
                         const typeLabel = typeLabels[facility.type] || facility.type;
                         const fallbackImage = {
-                            aula: '/images/aula.jpg',
-                            laboratorium: '/images/lab-komputer.jpg',
-                            lapangan: '/images/lapangan-futsal.jpg',
-                            ruang_kelas: '/images/ruang-kelas.jpg',
-                            alat: '/images/proyektor.jpg',
-                        }[facility.type] || '/images/aula.jpg';
+                            aula: '/images/aula.webp',
+                            laboratorium: '/images/lab-komputer.webp',
+                            lapangan: '/images/lapangan-futsal.webp',
+                            ruang_kelas: '/images/ruang-kelas.webp',
+                            alat: '/images/proyektor.webp',
+                        }[facility.type] || '/images/aula.webp';
 
                         card.innerHTML = `
                             <div class="relative aspect-[16/9] w-full overflow-hidden bg-[#f2f3ff]">

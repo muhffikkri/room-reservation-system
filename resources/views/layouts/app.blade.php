@@ -20,7 +20,7 @@
         <div class="landing-panel mx-auto rounded-[2rem] px-4 shadow-[8px_8px_20px_rgba(166,195,235,0.35),-8px_-8px_20px_rgba(255,255,255,0.95)] sm:rounded-full sm:px-6">
             <div class="flex min-h-18 items-center justify-between gap-4">
                 <a href="{{ url('/') }}" class="flex shrink-0 items-center gap-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0051d5] focus:ring-offset-2" aria-label="REKSA, kembali ke halaman utama">
-                    <img src="{{ asset('images/reksa-logo.png') }}" alt="" class="h-10 w-10 rounded-xl object-contain">
+                    <img src="{{ asset('images/reksa-logo.webp') }}" alt="" class="h-10 w-10 rounded-xl object-contain">
                     <span class="flex flex-col"><span class="text-sm font-extrabold tracking-wide text-slate-900 sm:text-base">REKSA</span><span class="hidden text-[10px] text-slate-600 xl:inline">Reservasi dan Kerusakan Sarana Akademik</span></span>
                 </a>
 
@@ -86,7 +86,7 @@
                             </div>
                         </div>
                         <span class="flex min-w-0 items-center gap-2 sm:gap-2.5">
-                            <img src="{{ asset('images/reksa-mascot.png') }}" alt="" class="hidden h-9 w-9 shrink-0 rounded-full border border-white bg-blue-50 object-contain shadow-[3px_3px_8px_rgba(135,166,207,0.2),-2px_-2px_6px_rgba(255,255,255,0.9)] sm:inline">
+                            <img src="{{ asset('images/reksa-mascot.webp') }}" alt="" class="hidden h-9 w-9 shrink-0 rounded-full border border-white bg-blue-50 object-contain shadow-[3px_3px_8px_rgba(135,166,207,0.2),-2px_-2px_6px_rgba(255,255,255,0.9)] sm:inline">
                             <span class="hidden max-w-36 truncate text-sm font-semibold text-slate-700 sm:block">{{ auth()->user()->name }}</span>
                         </span>
                         <form method="POST" action="{{ route('logout') }}" class="hidden sm:block sm:ml-1">
@@ -117,7 +117,7 @@
                         @endif
                     </div>
                 <div class="mt-4 flex items-center justify-between gap-4 border-t border-blue-100/80 px-3 pt-4 text-sm sm:hidden">
-                        <span class="flex min-w-0 items-center gap-2.5 text-slate-700"><img src="{{ asset('images/reksa-mascot.png') }}" alt="" class="h-9 w-9 shrink-0 rounded-full border border-white bg-blue-50 object-contain shadow-sm"><span class="max-w-52 truncate font-semibold">{{ auth()->user()->name }}</span></span>
+                        <span class="flex min-w-0 items-center gap-2.5 text-slate-700"><img src="{{ asset('images/reksa-mascot.webp') }}" alt="" class="h-9 w-9 shrink-0 rounded-full border border-white bg-blue-50 object-contain shadow-sm"><span class="max-w-52 truncate font-semibold">{{ auth()->user()->name }}</span></span>
                         <form method="POST" action="{{ route('logout') }}">
                             @csrf
                             <button type="submit" class="clay-button-danger rounded-full px-4 py-2 text-xs font-bold focus:outline-none focus:ring-2 focus:ring-rose-500 focus:ring-offset-2">Keluar</button>

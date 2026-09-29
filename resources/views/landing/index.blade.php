@@ -1,10 +1,10 @@
 @php
     $facilityFallbackImages = [
-        'aula' => asset('images/aula.jpg'),
-        'laboratorium' => asset('images/lab-komputer.jpg'),
-        'lapangan' => asset('images/lapangan-futsal.jpg'),
-        'ruang_kelas' => asset('images/ruang-kelas.jpg'),
-        'alat' => asset('images/proyektor.jpg'),
+        'aula' => asset('images/aula.webp'),
+        'laboratorium' => asset('images/lab-komputer.webp'),
+        'lapangan' => asset('images/lapangan-futsal.webp'),
+        'ruang_kelas' => asset('images/ruang-kelas.webp'),
+        'alat' => asset('images/proyektor.webp'),
     ];
     $navActiveClass = 'landing-button rounded-full bg-blue-600 px-5 py-2 text-sm font-semibold text-white shadow-md transition-all';
     $navInactiveClass = 'landing-button landing-nav-muted rounded-full px-5 py-2 text-sm font-medium transition-colors';
@@ -32,7 +32,7 @@
 <header class="landing-panel sticky top-3 z-50 flex items-center justify-between gap-4 rounded-full px-4 py-3 shadow-[8px_8px_20px_rgba(166,195,235,0.35),-8px_-8px_20px_rgba(255,255,255,0.95)] sm:px-6">
     <div class="flex min-w-0 flex-1 items-center justify-between gap-3 sm:gap-6">
         <a href="#top" data-landing-nav="top" class="flex shrink-0 items-center gap-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0051d5] focus:ring-offset-2" aria-label="Kembali ke Beranda">
-            <img src="{{ asset('images/reksa-logo.png') }}" alt="REKSA" class="h-11 w-11 shrink-0 rounded-xl object-contain" fetchpriority="high">
+            <img src="{{ asset('images/reksa-logo.webp') }}" alt="REKSA" class="h-11 w-11 shrink-0 rounded-xl object-contain" fetchpriority="high">
             <span class="flex min-w-0 flex-col">
                 <span class="text-sm font-extrabold tracking-wide text-slate-900 sm:text-base">REKSA</span>
                 <span class="hidden text-[10px] leading-tight text-slate-600 sm:inline">Reservasi dan Kerusakan Sarana Akademik</span>
@@ -80,7 +80,7 @@
                 </div>
             </div>
             <div class="landing-hero-art relative flex min-h-56 items-center justify-center lg:min-h-[330px]">
-                <img src="{{ asset('images/building-calendar.png') }}" alt="Ilustrasi gedung dan kalender kampus" class="relative z-10 w-full max-h-[320px] object-contain drop-shadow-2xl sm:max-h-[380px]">
+                <img src="{{ asset('images/building-calendar.webp') }}" alt="Ilustrasi gedung dan kalender kampus" class="relative z-10 w-full max-h-[320px] object-contain drop-shadow-2xl sm:max-h-[380px]">
             </div>
         </section>
 
@@ -231,7 +231,7 @@
                                 <img src="{{ $facility->photo_url }}" alt="{{ $facility->name }}" loading="lazy"
                                      class="img-fade h-full w-full object-cover transition-transform duration-300 group-hover:scale-105">
                             @else
-                                <img src="{{ $facilityFallbackImages[$facility->type] ?? asset('images/aula.jpg') }}" alt="{{ $facility->name }}" loading="lazy" class="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105">
+                                <img src="{{ $facilityFallbackImages[$facility->type] ?? asset('images/aula.webp') }}" alt="{{ $facility->name }}" loading="lazy" class="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105">
                             @endif
                             @include('landing._facility-status', ['status' => $facility->status, 'class' => 'absolute right-3 top-3'])
                         </div>
@@ -281,7 +281,7 @@
     <div class="relative z-10">
         <div class="mx-auto grid w-full max-w-7xl gap-8 px-5 sm:px-8 lg:grid-cols-[1.4fr_1fr_1fr] lg:gap-12">
             <div class="flex items-start gap-4">
-                <img src="{{ asset('images/reksa-logo.png') }}" alt="Logo REKSA" class="h-14 w-14 shrink-0 rounded-2xl object-contain" loading="lazy">
+                <img src="{{ asset('images/reksa-logo.webp') }}" alt="Logo REKSA" class="h-14 w-14 shrink-0 rounded-2xl object-contain" loading="lazy">
                 <div>
                     <p class="text-base font-extrabold tracking-wide text-slate-900">REKSA</p>
                     <p class="mt-1 text-xs font-semibold text-blue-900">Reservasi dan Kerusakan Sarana Akademik</p>

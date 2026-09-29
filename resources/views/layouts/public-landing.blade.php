@@ -14,7 +14,7 @@
 <div class="mx-auto w-full max-w-7xl space-y-5 px-4 sm:px-6">
     <header class="landing-panel sticky top-3 z-50 flex items-center justify-between gap-4 rounded-full px-4 py-3 shadow-[8px_8px_20px_rgba(166,195,235,0.35),-8px_-8px_20px_rgba(255,255,255,0.95)] sm:px-6">
         <a href="{{ route('home') }}" class="flex items-center gap-3 rounded-lg" aria-label="Kembali ke beranda">
-            <img src="{{ asset('images/reksa-logo.png') }}" alt="REKSA" class="h-11 w-11 rounded-xl object-contain">
+            <img src="{{ asset('images/reksa-logo.webp') }}" alt="REKSA" class="h-11 w-11 rounded-xl object-contain">
             <span class="flex flex-col"><span class="text-sm font-extrabold tracking-wide text-slate-900 sm:text-base">REKSA</span><span class="hidden text-[10px] text-slate-600 sm:inline">Reservasi dan Kerusakan Sarana Akademik</span></span>
         </a>
         <div class="flex items-center gap-2">
