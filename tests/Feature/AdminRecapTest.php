@@ -157,3 +157,33 @@ it('leaves PDF JavaScript and PHP execution disabled', function (): void {
     expect(config('dompdf.options.enable_javascript'))->toBeFalse()
         ->and(config('dompdf.options.enable_php'))->toBeFalse();
 });
+
+it('rejects a recap date range that is only half given', function (): void {
+    $admin = User::factory()->create(['role' => 'admin', 'account_status' => 'aktif']);
+
+    // end_date saja menghasilkan rentang terbalik: start 2026-09-29 s/d
+    // 2026-09-10, dengan max_possible_hours negatif.
+    $this->actingAs($admin)
+        ->get(route('admin.rekap.occupancy', ['end_date' => '2026-09-10']))
+        ->assertSessionHasErrors('start_date');
+
+    $this->actingAs($admin)
+        ->get(route('admin.rekap.occupancy', ['start_date' => '2026-09-10']))
+        ->assertSessionHasErrors('end_date');
+});
+
+it('still accepts a complete range and no range at all', function (): void {
+    $admin = User::factory()->create(['role' => 'admin', 'account_status' => 'aktif']);
+    Facility::factory()->create();
+
+    $this->actingAs($admin)
+        ->get(route('admin.rekap.occupancy', ['start_date' => '2026-09-01', 'end_date' => '2026-09-10']))
+        ->assertOk()
+        ->assertSessionHasNoErrors();
+
+    // Tanpa filter, rekap memakai rentang bawaan.
+    $this->actingAs($admin)
+        ->get(route('admin.rekap.occupancy'))
+        ->assertOk()
+        ->assertSessionHasNoErrors();
+});
