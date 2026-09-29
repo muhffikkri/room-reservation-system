@@ -187,3 +187,28 @@ it('still accepts a complete range and no range at all', function (): void {
         ->assertOk()
         ->assertSessionHasNoErrors();
 });
+
+it('names an export after the selected range rather than today', function (): void {
+    $admin = User::factory()->create(['role' => 'admin', 'account_status' => 'aktif']);
+    Facility::factory()->create();
+
+    $this->actingAs($admin)
+        ->get(route('admin.rekap.occupancy.export.csv', [
+            'start_date' => '2026-09-01',
+            'end_date' => '2026-09-10',
+        ]))
+        ->assertHeader(
+            'content-disposition',
+            'attachment; filename=rekap-okupansi-2026-09-01-2026-09-10.csv'
+        );
+
+    $this->actingAs($admin)
+        ->get(route('admin.rekap.damage.export.pdf', [
+            'start_date' => '2026-09-01',
+            'end_date' => '2026-09-10',
+        ]))
+        ->assertHeader(
+            'content-disposition',
+            'attachment; filename=rekap-kerusakan-2026-09-01-2026-09-10.pdf'
+        );
+});
