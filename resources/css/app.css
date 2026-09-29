@@ -10,6 +10,39 @@
 
 html {
     scroll-behavior: smooth;
+    cursor: url('/images/cursors/main_cursor.png') 5 3, auto;
+}
+
+a[href],
+button:not(:disabled),
+[role='button']:not([aria-disabled='true']),
+[role='switch'],
+select,
+input[type='button'],
+input[type='submit'],
+input[type='reset'],
+input[type='checkbox'],
+input[type='radio'],
+input[type='file'],
+summary,
+label:has(input[type='checkbox']),
+label:has(input[type='radio']) {
+    cursor: url('/images/cursors/link_cursor.png') 13 3, pointer;
+}
+
+input:not([type='button']):not([type='submit']):not([type='reset']):not([type='checkbox']):not([type='radio']):not([type='range']):not([type='file']),
+textarea,
+[contenteditable='true'],
+[role='textbox'] {
+    cursor: url('/images/cursors/text_cursor.png') 20 20, text;
+}
+
+.cursor-tail-canvas {
+    position: fixed;
+    inset: 0;
+    z-index: 999998;
+    display: block;
+    pointer-events: none;
 }
 
 dialog:modal {

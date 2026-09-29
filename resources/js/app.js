@@ -1,5 +1,205 @@
 import { initializeReservationForm } from './reservation-form';
 
+// =========================================================================
+// Cursor tail spring physics
+// =========================================================================
+const TRAIL_COUNT = 7;
+const SPACING = 28;
+const TENSION = 0.055;
+const DAMPING = 0.75;
+const RETRACT_TENSION = 0.09;
+const RETRACT_DAMPING = 0.72;
+const trailPool = [];
+let mouseX = -200;
+let mouseY = -200;
+let lastMoveTime = 0;
+const tailCanvas = document.createElement('canvas');
+const tailContext = tailCanvas.getContext('2d');
+let tailPixelRatio = Math.min(window.devicePixelRatio || 1, 2);
+
+tailCanvas.className = 'cursor-tail-canvas';
+tailCanvas.setAttribute('aria-hidden', 'true');
+document.body.appendChild(tailCanvas);
+
+function resizeTailCanvas() {
+    tailPixelRatio = Math.min(window.devicePixelRatio || 1, 2);
+    tailCanvas.width = Math.round(window.innerWidth * tailPixelRatio);
+    tailCanvas.height = Math.round(window.innerHeight * tailPixelRatio);
+    tailCanvas.style.width = `${window.innerWidth}px`;
+    tailCanvas.style.height = `${window.innerHeight}px`;
+    tailContext.setTransform(tailPixelRatio, 0, 0, tailPixelRatio, 0, 0);
+}
+
+function drawCursorTail() {
+    tailContext.clearRect(0, 0, window.innerWidth, window.innerHeight);
+
+    if (mouseX < -100) {
+        return;
+    }
+
+    const points = [{ x: mouseX, y: mouseY, emerge: 1 }];
+
+    trailPool.forEach((node) => {
+        if (node.emerge > 0.03) {
+            points.push({ x: node.x, y: node.y, emerge: node.emerge });
+        }
+    });
+
+    if (points.length < 2) {
+        return;
+    }
+
+    const leftEdge = [];
+    const rightEdge = [];
+    const lastPointIndex = points.length - 1;
+
+    points.forEach((point, index) => {
+        const previousPoint = points[Math.max(0, index - 1)];
+        const nextPoint = points[Math.min(lastPointIndex, index + 1)];
+        const tangentX = nextPoint.x - previousPoint.x;
+        const tangentY = nextPoint.y - previousPoint.y;
+        const tangentLength = Math.hypot(tangentX, tangentY) || 1;
+        const taper = 1 - index / points.length;
+        const halfWidth = (1.5 + taper * 9) * point.emerge;
+        const normalX = -tangentY / tangentLength;
+        const normalY = tangentX / tangentLength;
+
+        leftEdge.push({ x: point.x + normalX * halfWidth, y: point.y + normalY * halfWidth });
+        rightEdge.push({ x: point.x - normalX * halfWidth, y: point.y - normalY * halfWidth });
+    });
+
+    const head = points[0];
+    const tail = points[lastPointIndex];
+    const gradient = tailContext.createLinearGradient(head.x, head.y, tail.x, tail.y);
+
+    gradient.addColorStop(0, 'rgba(51, 156, 255, 0.55)');
+    gradient.addColorStop(0.45, 'rgba(65, 158, 255, 0.3)');
+    gradient.addColorStop(1, 'rgba(89, 181, 255, 0.04)');
+
+    tailContext.beginPath();
+    tailContext.moveTo(leftEdge[0].x, leftEdge[0].y);
+
+    for (let index = 1; index < leftEdge.length - 1; index += 1) {
+        const midpointX = (leftEdge[index].x + leftEdge[index + 1].x) / 2;
+        const midpointY = (leftEdge[index].y + leftEdge[index + 1].y) / 2;
+
+        tailContext.quadraticCurveTo(leftEdge[index].x, leftEdge[index].y, midpointX, midpointY);
+    }
+
+    tailContext.lineTo(leftEdge[lastPointIndex].x, leftEdge[lastPointIndex].y);
+    tailContext.lineTo(rightEdge[lastPointIndex].x, rightEdge[lastPointIndex].y);
+
+    for (let index = rightEdge.length - 2; index > 0; index -= 1) {
+        const midpointX = (rightEdge[index].x + rightEdge[index - 1].x) / 2;
+        const midpointY = (rightEdge[index].y + rightEdge[index - 1].y) / 2;
+
+        tailContext.quadraticCurveTo(rightEdge[index].x, rightEdge[index].y, midpointX, midpointY);
+    }
+
+    tailContext.lineTo(rightEdge[0].x, rightEdge[0].y);
+    tailContext.closePath();
+    tailContext.fillStyle = gradient;
+    tailContext.shadowColor = 'rgba(44, 149, 255, 0.55)';
+    tailContext.shadowBlur = 11;
+    tailContext.fill();
+    tailContext.shadowBlur = 0;
+}
+
+window.addEventListener('resize', resizeTailCanvas, { passive: true });
+resizeTailCanvas();
+
+for (let i = 0; i < TRAIL_COUNT; i++) {
+    trailPool.push({ x: -200, y: -200, vx: 0, vy: 0, emerge: 0 });
+}
+
+function animateTrail() {
+    const now = performance.now();
+    const moving = mouseX > -100 && (now - lastMoveTime) < 80;
+
+    drawCursorTail();
+
+    for (let i = 0; i < TRAIL_COUNT; i++) {
+        const node = trailPool[i];
+        const leader = i === 0 ? { x: mouseX, y: mouseY } : trailPool[i - 1];
+
+        // Sequential emerge: each node waits for the previous to be partially emerged
+        if (moving) {
+            const prevEmerge = i === 0 ? 1 : trailPool[i - 1].emerge;
+            if (prevEmerge > 0.35) {
+                node.emerge = Math.min(1, node.emerge + 0.09);
+            }
+        } else {
+            // Sequential retract: last node shrinks first, then next, etc.
+            const nextEmerge = i === TRAIL_COUNT - 1 ? 0 : trailPool[i + 1].emerge;
+            if (nextEmerge < 0.1) {
+                node.emerge = Math.max(0, node.emerge - 0.055);
+            }
+        }
+
+        // Spring physics — retract toward cursor when collapsing, follow chain when emerged
+        const retracting = !moving && node.emerge < 0.5;
+        const tx = retracting ? mouseX : leader.x;
+        const ty = retracting ? mouseY : leader.y;
+        const t = retracting ? RETRACT_TENSION : TENSION;
+        const d = retracting ? RETRACT_DAMPING : DAMPING;
+
+        node.vx += (tx - node.x) * t;
+        node.vy += (ty - node.y) * t;
+        node.vx *= d;
+        node.vy *= d;
+        node.x += node.vx;
+        node.y += node.vy;
+
+        // Spacing from leader (only when visible)
+        if (node.emerge > 0.05 && moving) {
+            const sx = node.x - leader.x;
+            const sy = node.y - leader.y;
+            const sd = Math.hypot(sx, sy);
+            if (sd > 0 && sd < SPACING) {
+                const push = (SPACING - sd) / sd * 0.4;
+                node.x += sx * push;
+                node.y += sy * push;
+            }
+        }
+
+    }
+
+    requestAnimationFrame(animateTrail);
+}
+
+document.addEventListener('mousemove', (event) => {
+    const target = event.target instanceof Element ? event.target : document.documentElement;
+    const cursorStyle = window.getComputedStyle(target).cursor;
+    let offsetX = 15;
+    let offsetY = 17;
+
+    if (cursorStyle.includes('link_cursor')) {
+        offsetX = 7;
+    } else if (cursorStyle.includes('text_cursor')) {
+        offsetX = 0;
+        offsetY = 0;
+    }
+
+    const newX = event.clientX + offsetX;
+    const newY = event.clientY + offsetY;
+
+    if (mouseX < -100) {
+        trailPool.forEach((n) => { n.x = newX; n.y = newY; n.vx = 0; n.vy = 0; n.emerge = 0; });
+    }
+
+    mouseX = newX;
+    mouseY = newY;
+    lastMoveTime = performance.now();
+}, { passive: true });
+
+document.addEventListener('mouseleave', () => {
+    mouseX = -200;
+    mouseY = -200;
+    lastMoveTime = 0;
+});
+
+requestAnimationFrame(animateTrail);
+
 document.addEventListener('click', (event) => {
     const openTrigger = event.target.closest('[data-open-dialog]');
 
