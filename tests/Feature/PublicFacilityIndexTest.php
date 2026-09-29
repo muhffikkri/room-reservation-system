@@ -141,3 +141,19 @@ it('rejects invalid facility tipe with validation error instead of 500', functio
     $response->assertSessionHasErrors(['tipe']);
     $response->assertStatus(302);
 });
+
+it('holds the catalog card to the same word limit as the landing card', function () {
+    $words = array_map(
+        fn (int $index): string => "kata{$index}",
+        range(1, Facility::MAX_DESCRIPTION_WORDS + 5),
+    );
+
+    Facility::factory()->create(['description' => implode(' ', $words)]);
+
+    // Kalau card katalog punya pemotongan sendiri dengan angka berbeda, test
+    // ini gagal karena kata ke-(limit + 1) bocor ke halaman.
+    $this->get('/fasilitas')
+        ->assertOk()
+        ->assertDontSee('kata'.(Facility::MAX_DESCRIPTION_WORDS + 1))
+        ->assertSee('kata'.Facility::MAX_DESCRIPTION_WORDS);
+});

@@ -5,7 +5,7 @@
 @section('content')
     @php
         $typeLabel = $types[$facility->type] ?? ucfirst($facility->type);
-        $facilityImage = $facility->photo_url ?: asset('images/'.(['aula' => 'aula.jpg', 'laboratorium' => 'lab-komputer.jpg', 'lapangan' => 'lapangan-futsal.jpg', 'ruang_kelas' => 'ruang-kelas.jpg', 'alat' => 'proyektor.jpg'][$facility->type] ?? 'aula.jpg'));
+        $facilityImage = $facility->display_image_url;
         $slotClasses = ['available' => 'border-emerald-200 bg-emerald-50 text-emerald-800', 'booked' => 'border-rose-200 bg-rose-50 text-rose-700', 'past' => 'border-slate-200 bg-slate-100 text-slate-400', 'inactive' => 'border-slate-200 bg-slate-100 text-slate-400'];
         $slotLabels = ['available' => 'Tersedia', 'booked' => 'Sudah direservasi', 'past' => 'Waktu Lewat', 'inactive' => 'Tidak Aktif'];
     @endphp
@@ -21,7 +21,7 @@
             <div class="flex flex-wrap items-center gap-2"><span class="rounded-full border border-blue-100 bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-700">{{ $typeLabel }}</span><span class="rounded-full px-3 py-1 text-xs font-semibold {{ $facility->status === 'aktif' ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700' }}">{{ ucfirst($facility->status) }}</span></div>
             <h1 class="text-2xl font-extrabold tracking-tight text-slate-900 sm:text-3xl">{{ $facility->name }}</h1>
             <p class="text-sm text-slate-600">{{ $facility->location }} <span class="px-1 text-blue-300">•</span> Kapasitas {{ $facility->capacity }} orang</p>
-            @if ($facility->description)<p class="max-w-3xl text-sm leading-relaxed text-slate-600">{{ $facility->description }}</p>@endif
+            @if ($facility->description)<p class="line-clamp-4 max-w-3xl text-sm leading-relaxed text-slate-600">{{ $facility->short_description }}</p>@endif
             @if ($facility->status !== 'aktif')<p class="rounded-xl border border-amber-100 bg-amber-50/80 p-3 text-xs text-amber-800">Fasilitas sedang {{ $facility->status }} sehingga slot tidak dapat dipilih untuk reservasi.</p>@endif
         </div>
     </section>
