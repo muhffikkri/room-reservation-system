@@ -7,6 +7,7 @@ use App\Notifications\ReservationOverlapRejected;
 use App\Services\ReservationService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
 
 uses(RefreshDatabase::class);
 
@@ -336,20 +337,36 @@ it('keeps logout usable for an account that is no longer active', function () {
     $this->assertGuest();
 });
 
-it('marks every notification as read via the bell action', function () {
-    [$facility, $owner, $officer] = overlapActors();
+it('marks every notification as read in a single update', function () {
+    [$facility, $owner] = overlapActors();
     $rival = User::factory()->create(['role' => 'pengguna', 'account_status' => 'aktif']);
+    $reservation = overlapPending($facility, $owner, '2030-05-14', '09:00', '11:00');
 
-    $winner = overlapPending($facility, $owner, '2030-05-14', '09:00', '11:00');
-    overlapPending($facility, $rival, '2030-05-14', '10:00', '11:00');
+    // Notifikasi dibuat langsung: yang diuji adalah penandaan, bukan alur
+    // penolakan otomatis yang kebetulan hanya bisa menghasilkan dua.
+    foreach (range(1, 3) as $ignored) {
+        $rival->notify(new ReservationOverlapRejected($reservation));
+    }
 
-    app(ReservationService::class)->approve($winner, $officer);
+    expect($rival->unreadNotifications()->count())->toBe(3);
 
-    expect($rival->unreadNotifications()->count())->toBe(1);
+    $queries = [];
+    DB::listen(function ($query) use (&$queries): void {
+        $queries[] = $query->sql;
+    });
 
     $this->actingAs($rival)
         ->post(route('notifications.read-all'))
         ->assertRedirect();
 
     expect($rival->fresh()->unreadNotifications()->count())->toBe(0);
+
+    // Satu update untuk semua baris. Collection markAsRead() menulis satu
+    // baris satu per notifikasi, jadi mahanya ikut jumlah notifikasi.
+    $updates = array_values(array_filter(
+        $queries,
+        fn (string $sql) => str_starts_with($sql, 'update `notifications`')
+    ));
+
+    expect($updates)->toHaveCount(1);
 });
