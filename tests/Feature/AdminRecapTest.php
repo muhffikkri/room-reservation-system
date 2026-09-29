@@ -97,3 +97,33 @@ it('exports occupancy csv from array-backed recap data', function (): void {
 
     expect($response->streamedContent())->toContain($facility->name);
 });
+
+it('serves the occupancy PDF export as a real PDF document', function (): void {
+    $admin = User::factory()->create(['role' => 'admin', 'account_status' => 'aktif']);
+    Facility::factory()->create();
+
+    $response = $this->actingAs($admin)->get(route('admin.rekap.occupancy.export.pdf', [
+        'start_date' => '2026-09-01',
+        'end_date' => '2026-09-10',
+    ]));
+
+    $response->assertOk()->assertHeader('Content-Type', 'application/pdf');
+
+    // sebelumnya union return type tidak memuat Response, jadi TypeError
+    // tertangkap fallback dan unduhan berisi HTML.
+    expect($response->getContent())->toStartWith('%PDF');
+});
+
+it('serves the damage PDF export as a real PDF document', function (): void {
+    $admin = User::factory()->create(['role' => 'admin', 'account_status' => 'aktif']);
+    Facility::factory()->create();
+
+    $response = $this->actingAs($admin)->get(route('admin.rekap.damage.export.pdf', [
+        'start_date' => '2026-09-01',
+        'end_date' => '2026-09-10',
+    ]));
+
+    $response->assertOk()->assertHeader('Content-Type', 'application/pdf');
+
+    expect($response->getContent())->toStartWith('%PDF');
+});

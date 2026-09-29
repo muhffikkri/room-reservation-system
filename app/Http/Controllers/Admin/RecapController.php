@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\RecapDateRangeRequest;
 use App\Services\RecapService;
 use Barryvdh\DomPDF\Facade\Pdf;
+use Illuminate\Http\Response;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Log;
 use Illuminate\View\View;
@@ -125,7 +126,7 @@ class RecapController extends Controller
     /**
      * Ekspor rekap okupansi ke PDF (using dompdf).
      */
-    public function exportOccupancyPdf(RecapDateRangeRequest $request): BinaryFileResponse|StreamedResponse
+    public function exportOccupancyPdf(RecapDateRangeRequest $request): Response|BinaryFileResponse|StreamedResponse
     {
         $start = microtime(true);
         [$startDate, $endDate] = $request->getValidatedDates();
@@ -170,7 +171,7 @@ class RecapController extends Controller
     /**
      * Ekspor rekap kerusakan ke PDF (using dompdf).
      */
-    public function exportDamagePdf(RecapDateRangeRequest $request): BinaryFileResponse|StreamedResponse
+    public function exportDamagePdf(RecapDateRangeRequest $request): Response|BinaryFileResponse|StreamedResponse
     {
         $start = microtime(true);
         [$startDate, $endDate] = $request->getValidatedDates();
