@@ -393,11 +393,17 @@ class RecapService
 
         $rowsHtml = '';
         foreach ($recapData['data'] as $item) {
+            // Heredoc hanya menginterpolasi {$var}, bukan panggilan fungsi,
+            // jadi nilai dari database di-escape lebih dulu ke variabel.
+            $name = e($item['facility_name']);
+            $type = e($item['facility_type']);
+            $location = e($item['facility_location']);
+
             $rowsHtml .= <<<HTML
 <tr>
-    <td>{$item['facility_name']}</td>
-    <td>{$item['facility_type']}</td>
-    <td>{$item['facility_location']}</td>
+    <td>{$name}</td>
+    <td>{$type}</td>
+    <td>{$location}</td>
     <td>{$item['capacity']}</td>
     <td>{$item['status']}</td>
     <td>{$item['approved_count']}</td>
@@ -498,11 +504,17 @@ HTML;
 
         $rowsHtml = '';
         foreach ($recapData['data'] as $item) {
+            // Heredoc hanya menginterpolasi {$var}, bukan panggilan fungsi,
+            // jadi nilai dari database di-escape lebih dulu ke variabel.
+            $name = e($item['facility_name']);
+            $type = e($item['facility_type']);
+            $location = e($item['facility_location']);
+
             $rowsHtml .= <<<HTML
 <tr>
-    <td>{$item['facility_name']}</td>
-    <td>{$item['facility_type']}</td>
-    <td>{$item['facility_location']}</td>
+    <td>{$name}</td>
+    <td>{$type}</td>
+    <td>{$location}</td>
     <td>{$item['status']}</td>
     <td>{$item['baru_count']}</td>
     <td>{$item['diproses_count']}</td>
@@ -533,7 +545,7 @@ HTML;
             $categoryHtml = '<tr><td colspan="9" style="border: none; padding-top: 20px;"><strong>Rincian per Kategori Kerusakan:</strong></td></tr>';
             $categoryHtml .= '<tr><th>Kategori</th><th>Jumlah</th><th colspan="7"></th></tr>';
             foreach ($summary['by_category'] as $category => $count) {
-                $categoryHtml .= "<tr><td>{$category}</td><td>{$count}</td><td colspan=\"7\"></td></tr>";
+                $categoryHtml .= '<tr><td>'.e($category).'</td><td>'.$count.'</td><td colspan="7"></td></tr>';
             }
         }
 

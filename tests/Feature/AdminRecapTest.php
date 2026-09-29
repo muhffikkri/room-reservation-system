@@ -231,6 +231,29 @@ it('still accepts a complete range and no range at all', function (): void {
         ->assertSessionHasNoErrors();
 });
 
+it('escapes database values in the exported HTML', function (): void {
+    Facility::factory()->create([
+        'name' => '<b>Gedung</b> <script>alert(1)</script>',
+        'type' => 'ruang_kelas',
+        'location' => 'Lantai 3 "A" & B',
+    ]);
+
+    $service = app(RecapService::class);
+    $recap = $service->getOccupancyRecap(
+        Carbon::parse('2026-09-01', config('app.timezone'))->startOfDay(),
+        Carbon::parse('2026-09-01', config('app.timezone'))->endOfDay(),
+    );
+
+    $html = $service->exportOccupancyHtml($recap);
+
+    // Nama dan lokasi fasilitas berasal dari database, jadi harus keluar
+    // sebagai teks, bukan markup yang lolos ke dokumen.
+    expect($html)->not->toContain('<script>alert(1)</script>')
+        ->and($html)->not->toContain('<b>Gedung</b>')
+        ->and($html)->toContain('&lt;script&gt;alert(1)&lt;/script&gt;')
+        ->and($html)->toContain('&amp;');
+});
+
 it('rate limits recap exports per admin', function (): void {
     $admin = User::factory()->create(['role' => 'admin', 'account_status' => 'aktif']);
     Facility::factory()->create();
