@@ -254,6 +254,53 @@ it('escapes database values in the exported HTML', function (): void {
         ->and($html)->toContain('&amp;');
 });
 
+it('neutralises spreadsheet formulas in a CSV export', function (): void {
+    $admin = User::factory()->create(['role' => 'admin', 'account_status' => 'aktif']);
+    Facility::factory()->create(['name' => '=cmd|\' /C calc\'!A1']);
+
+    $response = $this->actingAs($admin)->get(route('admin.rekap.occupancy.export.csv', [
+        'start_date' => '2026-09-01',
+        'end_date' => '2026-09-10',
+    ]));
+
+    $response->assertOk();
+
+    $csv = $response->streamedContent();
+
+    // Sel yang diawali operator rumus harus dibaca sebagai teks, bukan
+    // dieksekusi saat CSV dibuka di Excel/LibreOffice/Sheets. Yang penting
+    // adalah sel tidak diawali '='; teks sel tetap ada setelah kutip
+    // tunggal, jadi '=cmd|' sendiri masih muncul sebagai substring.
+    expect($csv)->not->toContain('"=cmd|')
+        ->and($csv)->toContain("\"'=cmd|");
+});
+
+it('emits a CSV without the fputcsv deprecation', function (): void {
+    $admin = User::factory()->create(['role' => 'admin', 'account_status' => 'aktif']);
+    Facility::factory()->create();
+
+    $deprecations = [];
+    set_error_handler(function (int $level, string $message) use (&$deprecations): bool {
+        $deprecations[] = $message;
+
+        return true;
+    }, E_DEPRECATED | E_USER_DEPRECATED);
+
+    try {
+        $csv = $this->actingAs($admin)
+            ->get(route('admin.rekap.occupancy.export.csv', [
+                'start_date' => '2026-09-01',
+                'end_date' => '2026-09-10',
+            ]))
+            ->streamedContent();
+    } finally {
+        restore_error_handler();
+    }
+
+    expect($csv)->toContain('Nama Fasilitas')
+        ->and(array_filter($deprecations, fn ($m) => str_contains($m, 'fputcsv')))->toBeEmpty();
+});
+
 it('rate limits recap exports per admin', function (): void {
     $admin = User::factory()->create(['role' => 'admin', 'account_status' => 'aktif']);
     Facility::factory()->create();

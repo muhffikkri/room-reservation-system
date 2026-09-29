@@ -361,6 +361,28 @@ class RecapService
     }
 
     /**
+     * Netralkan sel yang akan dieksekusi sebagai rumus saat CSV dibuka.
+     *
+     * Sel yang diawali = + - @ diperlakukan sebagai rumus oleh Excel,
+     * LibreOffice dan Google Sheets, dan nilainya berasal dari database
+     * (nama fasilitas, lokasi, kategori kerusakan). Awalan kutip tunggal
+     * memaksa sel dibaca sebagai teks.
+     *
+     * @param  array<int, mixed>  $row
+     * @return array<int, mixed>
+     */
+    protected function neutraliseFormulas(array $row): array
+    {
+        return array_map(function ($value) {
+            if (is_string($value) && preg_match('/^[=+\-@]/', $value) === 1) {
+                return "'".$value;
+            }
+
+            return $value;
+        }, $row);
+    }
+
+    /**
      * Build CSV string from headers and rows.
      */
     protected function buildCsv(array $headers, array $rows): string
@@ -370,9 +392,11 @@ class RecapService
         // Add BOM for UTF-8
         fwrite($handle, "\xEF\xBB\xBF");
 
-        fputcsv($handle, $headers);
+        // escape wajib Passed pada PHP 8.4+: tanpa itu fputcsv() memunculkan
+        // deprecation pada setiap ekspor.
+        fputcsv($handle, $headers, ',', '"', '');
         foreach ($rows as $row) {
-            fputcsv($handle, $row);
+            fputcsv($handle, $this->neutraliseFormulas($row), ',', '"', '');
         }
 
         rewind($handle);
