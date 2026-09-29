@@ -4,6 +4,13 @@
 
 @section('content')
     @php
+        $facilityFallbackImages = [
+            'aula' => 'aula.webp',
+            'laboratorium' => 'lab-komputer.webp',
+            'lapangan' => 'lapangan-futsal.webp',
+            'ruang_kelas' => 'ruang-kelas.webp',
+            'alat' => 'proyektor.webp',
+        ];
         $reservationStatuses = [
             'pending' => ['label' => 'Menunggu', 'class' => 'bg-amber-50 text-amber-700'],
             'approved' => ['label' => 'Disetujui', 'class' => 'bg-emerald-50 text-emerald-700'],
@@ -21,8 +28,8 @@
         ];
     @endphp
 
-    <div class="space-y-7">
-        <section class="landing-panel relative grid min-h-64 overflow-hidden rounded-[2rem] px-6 py-7 shadow-[8px_10px_24px_rgba(137,171,216,0.2),-7px_-7px_20px_rgba(255,255,255,0.85),inset_1px_1px_2px_rgba(255,255,255,0.95)] sm:px-9 lg:grid-cols-[1fr_18rem] lg:items-center lg:px-11 lg:py-9" aria-labelledby="welcome-heading">
+    <div class="dashboard-page space-y-7">
+        <section class="dashboard-clay-card landing-panel relative grid min-h-64 overflow-hidden rounded-[2rem] px-6 py-7 sm:px-9 lg:grid-cols-[1fr_18rem] lg:items-center lg:px-11 lg:py-9" aria-labelledby="welcome-heading">
             <div class="relative z-10 max-w-3xl pr-32 sm:pr-52 lg:pr-0">
                 <h1 id="welcome-heading" class="text-3xl font-extrabold leading-tight tracking-tight text-[#10264a] sm:text-4xl">Selamat datang, {{ $user->name }}</h1>
                 <p class="mt-3 max-w-2xl text-sm leading-relaxed text-slate-600 sm:text-base">Pantau reservasi fasilitas dan laporan kerusakan Anda dari satu tempat.</p>
@@ -36,22 +43,22 @@
             </div>
         </section>
 
-        <section class="landing-panel rounded-[2rem] p-5 shadow-[8px_10px_24px_rgba(137,171,216,0.2),-7px_-7px_20px_rgba(255,255,255,0.85),inset_1px_1px_2px_rgba(255,255,255,0.95)] sm:p-6" aria-labelledby="summary-heading">
+        <section class="dashboard-clay-card landing-panel rounded-[2rem] p-5 sm:p-6" aria-labelledby="summary-heading">
             <div class="mb-5"><p class="text-[11px] font-bold uppercase tracking-[0.16em] text-blue-600">Aktivitas Anda</p><h2 id="summary-heading" class="mt-1 text-xl font-extrabold tracking-tight text-[#10264a]">Ringkasan saat ini</h2></div>
             <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-                <article class="clay-inset flex items-center gap-4 rounded-2xl p-4 sm:p-5">
+                <article class="dashboard-clay-stat clay-inset flex items-center gap-4 rounded-2xl p-4 sm:p-5">
                     <span class="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-blue-500 text-white shadow-[0_6px_12px_rgba(37,99,235,0.25),inset_0_1px_0_rgba(255,255,255,0.45)]"><svg class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path stroke-linecap="round" d="M12 7v5l3 2"/></svg></span>
                     <div class="min-w-0"><p class="text-xs font-semibold text-slate-600">Reservasi menunggu</p><p class="mt-1 text-3xl font-extrabold leading-none tracking-tight text-slate-900">{{ $reservationCounts->get('pending', 0) }}</p><p class="mt-2 text-[11px] text-slate-500">Menanti keputusan petugas</p></div>
                 </article>
-                <article class="clay-inset flex items-center gap-4 rounded-2xl p-4 sm:p-5">
+                <article class="dashboard-clay-stat clay-inset flex items-center gap-4 rounded-2xl p-4 sm:p-5">
                     <span class="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-emerald-500 text-white shadow-[0_6px_12px_rgba(16,185,129,0.24),inset_0_1px_0_rgba(255,255,255,0.45)]"><svg class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path stroke-linecap="round" stroke-linejoin="round" d="m8 12 2.5 2.5L16 9"/></svg></span>
                     <div class="min-w-0"><p class="text-xs font-semibold text-slate-600">Reservasi disetujui</p><p class="mt-1 text-3xl font-extrabold leading-none tracking-tight text-slate-900">{{ $reservationCounts->get('approved', 0) }}</p><p class="mt-2 text-[11px] text-slate-500">Jadwal sudah dikonfirmasi</p></div>
                 </article>
-                <article class="clay-inset flex items-center gap-4 rounded-2xl p-4 sm:p-5">
+                <article class="dashboard-clay-stat clay-inset flex items-center gap-4 rounded-2xl p-4 sm:p-5">
                     <span class="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-sky-500 text-white shadow-[0_6px_12px_rgba(14,165,233,0.24),inset_0_1px_0_rgba(255,255,255,0.45)]"><svg class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M7 3h7l5 5v13H5V3h2Zm6 1v5h5M8 13h8M8 17h8"/></svg></span>
                     <div class="min-w-0"><p class="text-xs font-semibold text-slate-600">Laporan baru</p><p class="mt-1 text-3xl font-extrabold leading-none tracking-tight text-slate-900">{{ $reportCounts->get('baru', 0) }}</p><p class="mt-2 text-[11px] text-slate-500">Belum ditangani petugas</p></div>
                 </article>
-                <article class="clay-inset flex items-center gap-4 rounded-2xl p-4 sm:p-5">
+                <article class="dashboard-clay-stat clay-inset flex items-center gap-4 rounded-2xl p-4 sm:p-5">
                     <span class="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-amber-500 text-white shadow-[0_6px_12px_rgba(245,158,11,0.25),inset_0_1px_0_rgba(255,255,255,0.45)]"><svg class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M14.7 6.3a5 5 0 0 0-6.4 6.4L3 18l3 3 5.3-5.3a5 5 0 0 0 6.4-6.4L14 13l-3-3 3.7-3.7Z"/></svg></span>
                     <div class="min-w-0"><p class="text-xs font-semibold text-slate-600">Laporan diproses</p><p class="mt-1 text-3xl font-extrabold leading-none tracking-tight text-slate-900">{{ $reportCounts->get('diproses', 0) }}</p><p class="mt-2 text-[11px] text-slate-500">Sedang dalam penanganan</p></div>
                 </article>
@@ -59,13 +66,13 @@
         </section>
 
         <div class="grid gap-5 lg:grid-cols-2">
-            <section class="landing-panel rounded-[1.8rem] p-5 shadow-[0_12px_32px_rgba(53,103,175,0.1)] sm:p-6" aria-labelledby="reservations-heading">
+            <section class="dashboard-clay-card landing-panel rounded-[1.8rem] p-5 sm:p-6" aria-labelledby="reservations-heading">
                 <div class="flex items-center justify-between gap-3"><div><p class="text-[11px] font-bold uppercase tracking-[0.14em] text-blue-600">Jadwal</p><h2 id="reservations-heading" class="mt-1 text-lg font-extrabold text-[#10264a]">Reservasi terbaru</h2></div><a href="{{ route('reservasi.index') }}" class="landing-button inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-blue-600 to-blue-500 px-5 py-2.5 text-sm font-semibold text-white shadow-[0_4px_14px_rgba(37,99,235,0.25)] transition hover:from-blue-700 hover:to-blue-600">Lihat semua <span aria-hidden="true">›</span></a></div>
                 <div class="mt-5 space-y-3">
                     @forelse ($recentReservations as $reservation)
                         @php($status = $reservationStatuses[$reservation->status] ?? ['label' => ucfirst($reservation->status), 'class' => 'bg-slate-100 text-slate-600'])
-                        <a href="{{ route('reservasi.show', $reservation) }}" class="clay-pressable flex items-center justify-between gap-3 rounded-2xl p-4 focus:outline-none focus:ring-2 focus:ring-blue-500">
-                            <span class="flex min-w-0 items-center gap-3"><span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-[10px] font-bold text-blue-700">{{ $reservation->facility?->location ? \Illuminate\Support\Str::limit($reservation->facility->location, 7, '') : 'REKSA' }}</span><span class="min-w-0"><span class="block truncate text-sm font-bold text-slate-800">{{ $reservation->facility?->name ?? 'Fasilitas dihapus' }}</span><span class="mt-1 block text-xs text-slate-500">{{ $reservation->start_time->format('d M Y, H.i') }}–{{ $reservation->end_time->format('H.i') }}</span></span></span>
+                        <a href="{{ route('reservasi.show', $reservation) }}" class="dashboard-clay-list clay-pressable flex items-center justify-between gap-3 rounded-2xl p-4 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <span class="flex min-w-0 items-center gap-3"><span class="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-blue-100 bg-white p-1 shadow-sm"><img src="{{ $reservation->facility?->photo_url ?: asset('images/'.($facilityFallbackImages[$reservation->facility?->type] ?? 'aula.webp')) }}" alt="" class="h-full w-full rounded-lg object-cover"></span><span class="min-w-0"><span class="block truncate text-sm font-bold text-slate-800">{{ $reservation->facility?->name ?? 'Fasilitas dihapus' }}</span><span class="mt-1 block text-xs text-slate-500">{{ $reservation->start_time->format('d M Y, H.i') }}–{{ $reservation->end_time->format('H.i') }}</span></span></span>
                             <span class="shrink-0 rounded-full px-2.5 py-1 text-[10px] font-bold {{ $status['class'] }}">{{ $status['label'] }}</span>
                         </a>
                     @empty
@@ -74,13 +81,13 @@
                 </div>
             </section>
 
-            <section class="landing-panel rounded-[1.8rem] p-5 shadow-[0_12px_32px_rgba(53,103,175,0.1)] sm:p-6" aria-labelledby="reports-heading">
+            <section class="dashboard-clay-card landing-panel rounded-[1.8rem] p-5 sm:p-6" aria-labelledby="reports-heading">
                 <div class="flex items-center justify-between gap-3"><div><p class="text-[11px] font-bold uppercase tracking-[0.14em] text-blue-600">Pelaporan</p><h2 id="reports-heading" class="mt-1 text-lg font-extrabold text-[#10264a]">Laporan terbaru</h2></div><a href="{{ route('laporan.index') }}" class="landing-button inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-blue-600 to-blue-500 px-5 py-2.5 text-sm font-semibold text-white shadow-[0_4px_14px_rgba(37,99,235,0.25)] transition hover:from-blue-700 hover:to-blue-600">Lihat semua <span aria-hidden="true">›</span></a></div>
                 <div class="mt-5 space-y-3">
                     @forelse ($recentReports as $report)
                         @php($status = $reportStatuses[$report->status] ?? ['label' => ucfirst($report->status), 'class' => 'bg-slate-100 text-slate-600'])
-                        <a href="{{ route('laporan.show', $report) }}" class="clay-pressable flex items-center justify-between gap-3 rounded-2xl p-4 focus:outline-none focus:ring-2 focus:ring-blue-500">
-                            <span class="flex min-w-0 items-center gap-3"><span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-sky-50 text-lg font-bold text-sky-600">▤</span><span class="min-w-0"><span class="block truncate text-sm font-bold text-slate-800">{{ $report->facility?->name ?? 'Fasilitas dihapus' }}</span><span class="mt-1 block truncate text-xs text-slate-500">{{ $report->categoryLabel() }} · {{ $report->created_at->format('d M Y') }}</span></span></span>
+                        <a href="{{ route('laporan.show', $report) }}" class="dashboard-clay-list clay-pressable flex items-center justify-between gap-3 rounded-2xl p-4 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <span class="flex min-w-0 items-center gap-3"><span class="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-blue-100 bg-white p-1 shadow-sm"><img src="{{ $report->facility?->photo_url ?: asset('images/'.($facilityFallbackImages[$report->facility?->type] ?? 'aula.webp')) }}" alt="" class="h-full w-full rounded-lg object-cover"></span><span class="min-w-0"><span class="block truncate text-sm font-bold text-slate-800">{{ $report->facility?->name ?? 'Fasilitas dihapus' }}</span><span class="mt-1 block truncate text-xs text-slate-500">{{ $report->categoryLabel() }} · {{ $report->created_at->format('d M Y') }}</span></span></span>
                             <span class="shrink-0 rounded-full px-2.5 py-1 text-[10px] font-bold {{ $status['class'] }}">{{ $status['label'] }}</span>
                         </a>
                     @empty

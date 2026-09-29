@@ -38,7 +38,7 @@
             <p class="text-sm font-semibold text-slate-800">{{ $selectedDate->translatedFormat('l, d F Y') }}</p>
             <div class="inline-flex items-center gap-3 text-xs font-medium text-slate-700">
                 <span>Tampilkan jadwal yang bisa dipilih saja</span>
-                <button type="button" role="switch" aria-checked="false" aria-label="Tampilkan jadwal yang bisa dipilih saja" data-available-filter class="availability-toggle">
+                <button type="button" role="switch" aria-checked="true" aria-label="Tampilkan jadwal yang bisa dipilih saja" data-available-filter class="availability-toggle">
                     <span class="availability-toggle-thumb"></span>
                 </button>
             </div>
