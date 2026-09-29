@@ -7,6 +7,7 @@ use App\Policies\ReservationPolicy;
 use App\Services\ReservationService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
+use Illuminate\Validation\ValidationException;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 use Symfony\Component\HttpKernel\Exception\ConflictHttpException;
 
@@ -29,7 +30,7 @@ it('allows a user to cancel their own pending reservation when more than 1 hour 
     ]);
 
     $service = app(ReservationService::class);
-    $updated = $service->cancelByUser($reservation, $user);
+    $updated = $service->cancelByUser($reservation, $user, 'Jadwal kegiatan berubah');
 
     expect($updated->status)->toBe('cancelled_by_user')
         ->and($reservation->fresh()->status)->toBe('cancelled_by_user');
@@ -51,7 +52,7 @@ it('allows a user to cancel their own approved reservation when more than 1 hour
     ]);
 
     $service = app(ReservationService::class);
-    $updated = $service->cancelByUser($reservation, $user);
+    $updated = $service->cancelByUser($reservation, $user, 'Jadwal kegiatan berubah');
 
     expect($updated->status)->toBe('cancelled_by_user')
         ->and($reservation->fresh()->status)->toBe('cancelled_by_user');
@@ -75,7 +76,7 @@ it('rejects cancellation when start time is less than 1 hour away (BR-8)', funct
 
     $service = app(ReservationService::class);
 
-    expect(fn () => $service->cancelByUser($reservation, $user))
+    expect(fn () => $service->cancelByUser($reservation, $user, 'Jadwal kegiatan berubah'))
         ->toThrow(ConflictHttpException::class, 'Reservasi hanya dapat dibatalkan paling lambat 1 jam sebelum waktu mulai.');
 });
 
@@ -244,7 +245,7 @@ it('rejects cancellation of another users reservation', function () {
 
     $service = app(ReservationService::class);
 
-    expect(fn () => $service->cancelByUser($reservation, $userB))
+    expect(fn () => $service->cancelByUser($reservation, $userB, 'Jadwal kegiatan berubah'))
         ->toThrow(AccessDeniedHttpException::class, 'Anda hanya dapat membatalkan reservasi milik Anda sendiri.');
 });
 
@@ -266,7 +267,7 @@ it('rejects cancellation when status is not pending or approved', function () {
 
     $service = app(ReservationService::class);
 
-    expect(fn () => $service->cancelByUser($reservation, $user))
+    expect(fn () => $service->cancelByUser($reservation, $user, 'Jadwal kegiatan berubah'))
         ->toThrow(ConflictHttpException::class, 'Hanya reservasi berstatus pending atau approved yang dapat dibatalkan.');
 });
 
@@ -382,6 +383,68 @@ it('rejects a user cancel reason made only of markup', function () {
         ->and($reservation->fresh()->cancel_reason)->toBeNull();
 });
 
+it('enforces the user reason floor of five characters on direct service calls', function () {
+    $user = User::factory()->create(['role' => 'pengguna', 'account_status' => 'aktif']);
+    $facility = Facility::factory()->create(['status' => 'aktif']);
+
+    $startTime = Carbon::now()->addHours(6);
+    $endTime = $startTime->copy()->addHour();
+
+    $reservation = Reservation::factory()->create([
+        'user_id' => $user->id,
+        'facility_id' => $facility->id,
+        'status' => 'pending',
+        'start_time' => $startTime,
+        'end_time' => $endTime,
+    ]);
+
+    $service = app(ReservationService::class);
+
+    // §5 memberi pengguna 5 karakter: 'Btl' (3) ditolak, 'Batal' (5) sah.
+    expect(fn () => $service->cancelByUser($reservation, $user, 'Btl'))
+        ->toThrow(ValidationException::class);
+
+    expect($reservation->fresh()->status)->toBe('pending')
+        ->and($reservation->fresh()->cancel_reason)->toBeNull();
+
+    $service->cancelByUser($reservation, $user, 'Batal');
+
+    expect($reservation->fresh()->cancel_reason)->toBe('Batal');
+});
+
+it('enforces the officer reason floor of ten characters on direct service calls', function () {
+    $user = User::factory()->create(['role' => 'pengguna', 'account_status' => 'aktif']);
+    $officer = User::factory()->create(['role' => 'petugas', 'account_status' => 'aktif']);
+    $facility = Facility::factory()->create(['status' => 'aktif']);
+
+    $startTime = Carbon::now()->addHours(6);
+    $endTime = $startTime->copy()->addHour();
+
+    $reservation = Reservation::factory()->create([
+        'user_id' => $user->id,
+        'facility_id' => $facility->id,
+        'status' => 'pending',
+        'start_time' => $startTime,
+        'end_time' => $endTime,
+    ]);
+
+    $service = app(ReservationService::class);
+
+    // BR-9 memberi petugas 10 karakter, jadi 'Alasan' (6) ditolak walau
+    // masih sah untuk pengguna.
+    expect(fn () => $service->cancel($reservation, $officer, 'Alasan'))
+        ->toThrow(ValidationException::class);
+
+    expect(fn () => $service->reject($reservation, $officer, 'Alasan'))
+        ->toThrow(ValidationException::class);
+
+    $fresh = $reservation->fresh();
+
+    expect($fresh->status)->toBe('pending')
+        ->and($fresh->cancel_reason)->toBeNull()
+        ->and($fresh->reject_reason)->toBeNull();
+});
+
 it('records decided_at when a reservation is cancelled by its owner', function () {
     $user = User::factory()->create(['role' => 'pengguna', 'account_status' => 'aktif']);
     $facility = Facility::factory()->create(['status' => 'aktif']);
@@ -397,7 +460,7 @@ it('records decided_at when a reservation is cancelled by its owner', function (
         'end_time' => $endTime,
     ]);
 
-    $updated = app(ReservationService::class)->cancelByUser($reservation, $user);
+    $updated = app(ReservationService::class)->cancelByUser($reservation, $user, 'Jadwal kegiatan berubah');
 
     // decided_at harus terisi pada setiap jalur keputusan, termasuk pembatalan
     // oleh pengguna; kalau tidak, rekap "keputusan bulan ini" diam-diam
