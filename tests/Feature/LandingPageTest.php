@@ -40,6 +40,17 @@ it('menampilkan landing page publik dengan kartu fasilitas dan gerbang ke grid j
         ->assertViewHas('slots', fn (array $slots): bool => count($slots) === 26);
 });
 
+it('membatasi kartu landing maksimal sembilan dan mengarahkan sisanya ke katalog', function (): void {
+    Facility::factory()->count(15)->create(['status' => 'aktif']);
+
+    $landing = $this->get('/')
+        ->assertOk()
+        ->assertSee('Lihat Semua Fasilitas');
+
+    expect($landing->viewData('facilities')->count())->toBe(9)
+        ->and($landing->viewData('totalFacilities'))->toBe(15);
+});
+
 it('menandai Beranda sebagai navigasi aktif pada posisi awal', function (): void {
     $html = $this->get('/')->assertOk()->getContent();
 
