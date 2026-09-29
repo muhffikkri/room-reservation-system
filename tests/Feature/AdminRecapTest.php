@@ -231,6 +231,45 @@ it('still accepts a complete range and no range at all', function (): void {
         ->assertSessionHasNoErrors();
 });
 
+it('derives CSV and PDF columns from one definition, in the same order', function (): void {
+    $admin = User::factory()->create(['role' => 'admin', 'account_status' => 'aktif']);
+    Facility::factory()->create(['status' => 'aktif', 'name' => 'Ruang A', 'location' => 'Gedung 1']);
+    Facility::factory()->create(['status' => 'aktif', 'name' => 'Ruang B', 'location' => 'Gedung 2']);
+
+    $service = app(RecapService::class);
+    $period = [
+        Carbon::parse('2026-09-01', config('app.timezone'))->startOfDay(),
+        Carbon::parse('2026-09-01', config('app.timezone'))->endOfDay(),
+    ];
+
+    $occupancy = $service->getOccupancyRecap(...$period);
+    $lines = explode("\n", $service->exportOccupancyCsv($occupancy));
+    $html = $service->exportOccupancyHtml($occupancy);
+
+    // Baris pertama diawali BOM UTF-8.
+    $csvHeader = str_getcsv(substr($lines[0], 3), ';', '"', '');
+    $csvFirstRow = str_getcsv($lines[1], ';', '"', '');
+    preg_match_all('/<th>(.*?)<\/th>/', $html, $matches);
+
+    // Satu definisi kolom menjadi CSV, PDF dan halaman tidak bisa
+    // berbeda urutan maupun jumlah kolom.
+    expect($csvHeader)->toBe([
+        'Nama Fasilitas', 'Tipe', 'Lokasi', 'Kapasitas', 'Status', 'Disetujui',
+        'Pending', 'Ditolak', 'Dibatalkan', 'Total Reservasi', 'Total Jam (Disetujui)',
+        'Max Jam Operasional', 'Tingkat Okupansi (%)',
+    ]);
+
+    // PDF memakai label yang dipendekkan, urutan kolomnya sama.
+    expect($matches[1])->toBe([
+        'Nama Fasilitas', 'Tipe', 'Lokasi', 'Kapasitas', 'Status', 'Disetujui',
+        'Pending', 'Ditolak', 'Dibatalkan', 'Total', 'Jam Disetujui', 'Max Jam',
+        'Okupansi (%)',
+    ]);
+
+    expect($csvFirstRow)->toHaveCount(count($csvHeader))
+        ->and($matches[1])->toHaveCount(count($csvHeader));
+});
+
 it('escapes database values in the exported HTML', function (): void {
     Facility::factory()->create([
         'name' => '<b>Gedung</b> <script>alert(1)</script>',

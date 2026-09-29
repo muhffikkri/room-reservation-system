@@ -11,6 +11,53 @@ use Illuminate\Support\Facades\Log;
 
 class RecapService
 {
+    /**
+     * Definisi kolom rekap okupansi — satu-satunya daftar urutan kolom.
+     *
+     * Header CSV, baris CSV, header PDF dan baris PDF semuanya diturunkan
+     * dari sini; sebelumnya keempatnya ditulis manual dan bisa berbeda
+     * urutan tanpa ada yang gagal.
+     *
+     * `label` dipakai CSV, `short` dipakai PDF/HTML bila labelnya terlalu
+     * panjang untuk tabel, dan `suffix` ditambahkan hanya ke nilai di
+     * PDF/HTML.
+     *
+     * @var list<array{key: string, label: string, short?: string, suffix?: string}>
+     */
+    private const OCCUPANCY_COLUMNS = [
+        ['key' => 'facility_name', 'label' => 'Nama Fasilitas'],
+        ['key' => 'facility_type', 'label' => 'Tipe'],
+        ['key' => 'facility_location', 'label' => 'Lokasi'],
+        ['key' => 'capacity', 'label' => 'Kapasitas'],
+        ['key' => 'status', 'label' => 'Status'],
+        ['key' => 'approved_count', 'label' => 'Disetujui'],
+        ['key' => 'pending_count', 'label' => 'Pending'],
+        ['key' => 'rejected_count', 'label' => 'Ditolak'],
+        ['key' => 'cancelled_count', 'label' => 'Dibatalkan'],
+        ['key' => 'total_reservations', 'label' => 'Total Reservasi', 'short' => 'Total'],
+        ['key' => 'total_approved_hours', 'label' => 'Total Jam (Disetujui)', 'short' => 'Jam Disetujui'],
+        ['key' => 'max_possible_hours', 'label' => 'Max Jam Operasional', 'short' => 'Max Jam'],
+        ['key' => 'occupancy_rate', 'label' => 'Tingkat Okupansi (%)', 'short' => 'Okupansi (%)', 'suffix' => '%'],
+    ];
+
+    /**
+     * Definisi kolom rekap kerusakan. Sama seperti okupansi: satu daftar
+     * untuk CSV dan PDF/HTML.
+     *
+     * @var list<array{key: string, label: string, short?: string, suffix?: string}>
+     */
+    private const DAMAGE_COLUMNS = [
+        ['key' => 'facility_name', 'label' => 'Nama Fasilitas'],
+        ['key' => 'facility_type', 'label' => 'Tipe'],
+        ['key' => 'facility_location', 'label' => 'Lokasi'],
+        ['key' => 'status', 'label' => 'Status'],
+        ['key' => 'baru_count', 'label' => 'Baru'],
+        ['key' => 'diproses_count', 'label' => 'Diproses'],
+        ['key' => 'selesai_count', 'label' => 'Selesai'],
+        ['key' => 'ditolak_count', 'label' => 'Ditolak'],
+        ['key' => 'total_reports', 'label' => 'Total Laporan', 'short' => 'Total'],
+    ];
+
     public function __construct(
         protected int $defaultLookbackDays = 30,
     ) {}
@@ -230,39 +277,11 @@ class RecapService
     {
         $start = microtime(true);
 
-        $headers = [
-            'Nama Fasilitas',
-            'Tipe',
-            'Lokasi',
-            'Kapasitas',
-            'Status',
-            'Disetujui',
-            'Pending',
-            'Ditolak',
-            'Dibatalkan',
-            'Total Reservasi',
-            'Total Jam (Disetujui)',
-            'Max Jam Operasional',
-            'Tingkat Okupansi (%)',
-        ];
+        $headers = $this->csvLabels(self::OCCUPANCY_COLUMNS);
 
         $rows = [];
         foreach ($recapData['data'] as $item) {
-            $rows[] = [
-                $item['facility_name'],
-                $item['facility_type'],
-                $item['facility_location'],
-                $item['capacity'],
-                $item['status'],
-                $item['approved_count'],
-                $item['pending_count'],
-                $item['rejected_count'],
-                $item['cancelled_count'],
-                $item['total_reservations'],
-                $item['total_approved_hours'],
-                $item['max_possible_hours'],
-                $item['occupancy_rate'],
-            ];
+            $rows[] = $this->csvRow($item, self::OCCUPANCY_COLUMNS);
         }
 
         // Add summary row
@@ -301,31 +320,11 @@ class RecapService
     {
         $start = microtime(true);
 
-        $headers = [
-            'Nama Fasilitas',
-            'Tipe',
-            'Lokasi',
-            'Status',
-            'Baru',
-            'Diproses',
-            'Selesai',
-            'Ditolak',
-            'Total Laporan',
-        ];
+        $headers = $this->csvLabels(self::DAMAGE_COLUMNS);
 
         $rows = [];
         foreach ($recapData['data'] as $item) {
-            $rows[] = [
-                $item['facility_name'],
-                $item['facility_type'],
-                $item['facility_location'],
-                $item['status'],
-                $item['baru_count'],
-                $item['diproses_count'],
-                $item['selesai_count'],
-                $item['ditolak_count'],
-                $item['total_reports'],
-            ];
+            $rows[] = $this->csvRow($item, self::DAMAGE_COLUMNS);
         }
 
         // Add summary row
@@ -383,6 +382,63 @@ class RecapService
     }
 
     /**
+     * Label header CSV untuk satu definisi kolom.
+     *
+     * @param  list<array{key: string, label: string, short?: string, suffix?: string}>  $columns
+     * @return list<string>
+     */
+    private function csvLabels(array $columns): array
+    {
+        return array_map(fn (array $column): string => $column['label'], $columns);
+    }
+
+    /**
+     * Baris CSV untuk satu baris data, mengikuti urutan definisi kolom.
+     *
+     * @param  array<string, mixed>  $item
+     * @param  list<array{key: string, label: string, short?: string, suffix?: string}>  $columns
+     * @return list<mixed>
+     */
+    private function csvRow(array $item, array $columns): array
+    {
+        return array_map(fn (array $column): mixed => $item[$column['key']], $columns);
+    }
+
+    /**
+     * Sel header PDF/HTML. Label dipendekkan bila `short` ada, supaya tabel
+     * cetak tidak melebar.
+     *
+     * @param  list<array{key: string, label: string, short?: string, suffix?: string}>  $columns
+     */
+    private function htmlHeadCells(array $columns): string
+    {
+        $cells = '';
+
+        foreach ($columns as $column) {
+            $cells .= '<th>'.e($column['short'] ?? $column['label']).'</th>';
+        }
+
+        return $cells;
+    }
+
+    /**
+     * Sel data PDF/HTML. Nilai dari database selalu di-escape di sini.
+     *
+     * @param  array<string, mixed>  $item
+     * @param  list<array{key: string, label: string, short?: string, suffix?: string}>  $columns
+     */
+    private function htmlCells(array $item, array $columns): string
+    {
+        $cells = '';
+
+        foreach ($columns as $column) {
+            $cells .= '<td>'.e($item[$column['key']]).($column['suffix'] ?? '').'</td>';
+        }
+
+        return $cells;
+    }
+
+    /**
      * Build CSV string from headers and rows.
      *
      * Delimiter `;` sesuai spesifikasi §13: Excel dengan koma desimal
@@ -422,29 +478,7 @@ class RecapService
 
         $rowsHtml = '';
         foreach ($recapData['data'] as $item) {
-            // Heredoc hanya menginterpolasi {$var}, bukan panggilan fungsi,
-            // jadi nilai dari database di-escape lebih dulu ke variabel.
-            $name = e($item['facility_name']);
-            $type = e($item['facility_type']);
-            $location = e($item['facility_location']);
-
-            $rowsHtml .= <<<HTML
-<tr>
-    <td>{$name}</td>
-    <td>{$type}</td>
-    <td>{$location}</td>
-    <td>{$item['capacity']}</td>
-    <td>{$item['status']}</td>
-    <td>{$item['approved_count']}</td>
-    <td>{$item['pending_count']}</td>
-    <td>{$item['rejected_count']}</td>
-    <td>{$item['cancelled_count']}</td>
-    <td>{$item['total_reservations']}</td>
-    <td>{$item['total_approved_hours']}</td>
-    <td>{$item['max_possible_hours']}</td>
-    <td>{$item['occupancy_rate']}%</td>
-</tr>
-HTML;
+            $rowsHtml .= '<tr>'.$this->htmlCells($item, self::OCCUPANCY_COLUMNS).'</tr>';
         }
 
         $summary = $recapData['summary'];
@@ -487,21 +521,7 @@ HTML;
     <p class="subtitle">Periode: {$dateRange}</p>
     <table>
         <thead>
-            <tr>
-                <th>Nama Fasilitas</th>
-                <th>Tipe</th>
-                <th>Lokasi</th>
-                <th>Kapasitas</th>
-                <th>Status</th>
-                <th>Disetujui</th>
-                <th>Pending</th>
-                <th>Ditolak</th>
-                <th>Dibatalkan</th>
-                <th>Total</th>
-                <th>Jam Disetujui</th>
-                <th>Max Jam</th>
-                <th>Okupansi (%)</th>
-            </tr>
+            <tr>{$this->htmlHeadCells(self::OCCUPANCY_COLUMNS)}</tr>
         </thead>
         <tbody>
             {$rowsHtml}
@@ -533,25 +553,7 @@ HTML;
 
         $rowsHtml = '';
         foreach ($recapData['data'] as $item) {
-            // Heredoc hanya menginterpolasi {$var}, bukan panggilan fungsi,
-            // jadi nilai dari database di-escape lebih dulu ke variabel.
-            $name = e($item['facility_name']);
-            $type = e($item['facility_type']);
-            $location = e($item['facility_location']);
-
-            $rowsHtml .= <<<HTML
-<tr>
-    <td>{$name}</td>
-    <td>{$type}</td>
-    <td>{$location}</td>
-    <td>{$item['status']}</td>
-    <td>{$item['baru_count']}</td>
-    <td>{$item['diproses_count']}</td>
-    <td>{$item['selesai_count']}</td>
-    <td>{$item['ditolak_count']}</td>
-    <td>{$item['total_reports']}</td>
-</tr>
-HTML;
+            $rowsHtml .= '<tr>'.$this->htmlCells($item, self::DAMAGE_COLUMNS).'</tr>';
         }
 
         $summary = $recapData['summary'];
@@ -599,17 +601,7 @@ HTML;
     <p class="subtitle">Periode: {$dateRange}</p>
     <table>
         <thead>
-            <tr>
-                <th>Nama Fasilitas</th>
-                <th>Tipe</th>
-                <th>Lokasi</th>
-                <th>Status</th>
-                <th>Baru</th>
-                <th>Diproses</th>
-                <th>Selesai</th>
-                <th>Ditolak</th>
-                <th>Total</th>
-            </tr>
+            <tr>{$this->htmlHeadCells(self::DAMAGE_COLUMNS)}</tr>
         </thead>
         <tbody>
             {$rowsHtml}
