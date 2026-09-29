@@ -231,6 +231,69 @@ it('still accepts a complete range and no range at all', function (): void {
         ->assertSessionHasNoErrors();
 });
 
+it('refuses to format one report type as the other', function (): void {
+    Facility::factory()->create(['status' => 'aktif']);
+
+    $service = app(RecapService::class);
+    $period = [
+        Carbon::parse('2026-09-01', config('app.timezone'))->startOfDay(),
+        Carbon::parse('2026-09-01', config('app.timezone'))->endOfDay(),
+    ];
+
+    $damage = $service->getDamageRecap(...$period);
+
+    // Tanpa penjaga, rekap kerusakan yang diformat sebagai ekspor okupansi
+    // lolos secara tipe dan menghasilkan baris kosong tanpa error.
+    expect(fn () => $service->exportOccupancyCsv($damage))
+        ->toThrow(InvalidArgumentException::class);
+
+    expect(fn () => $service->exportOccupancyHtml($damage))
+        ->toThrow(InvalidArgumentException::class);
+
+    // Arah sebaliknya juga ditolak.
+    expect(fn () => $service->exportDamageCsv($service->getOccupancyRecap(...$period)))
+        ->toThrow(InvalidArgumentException::class);
+});
+
+it('derives CSV and PDF columns from one definition, in the same order', function (): void {
+    $admin = User::factory()->create(['role' => 'admin', 'account_status' => 'aktif']);
+    Facility::factory()->create(['status' => 'aktif', 'name' => 'Ruang A', 'location' => 'Gedung 1']);
+    Facility::factory()->create(['status' => 'aktif', 'name' => 'Ruang B', 'location' => 'Gedung 2']);
+
+    $service = app(RecapService::class);
+    $period = [
+        Carbon::parse('2026-09-01', config('app.timezone'))->startOfDay(),
+        Carbon::parse('2026-09-01', config('app.timezone'))->endOfDay(),
+    ];
+
+    $occupancy = $service->getOccupancyRecap(...$period);
+    $lines = explode("\n", $service->exportOccupancyCsv($occupancy));
+    $html = $service->exportOccupancyHtml($occupancy);
+
+    // Baris pertama diawali BOM UTF-8.
+    $csvHeader = str_getcsv(substr($lines[0], 3), ';', '"', '');
+    $csvFirstRow = str_getcsv($lines[1], ';', '"', '');
+    preg_match_all('/<th>(.*?)<\/th>/', $html, $matches);
+
+    // Satu definisi kolom menjadi CSV, PDF dan halaman tidak bisa
+    // berbeda urutan maupun jumlah kolom.
+    expect($csvHeader)->toBe([
+        'Nama Fasilitas', 'Tipe', 'Lokasi', 'Kapasitas', 'Status', 'Disetujui',
+        'Pending', 'Ditolak', 'Dibatalkan', 'Total Reservasi', 'Total Jam (Disetujui)',
+        'Max Jam Operasional', 'Tingkat Okupansi (%)',
+    ]);
+
+    // PDF memakai label yang dipendekkan, urutan kolomnya sama.
+    expect($matches[1])->toBe([
+        'Nama Fasilitas', 'Tipe', 'Lokasi', 'Kapasitas', 'Status', 'Disetujui',
+        'Pending', 'Ditolak', 'Dibatalkan', 'Total', 'Jam Disetujui', 'Max Jam',
+        'Okupansi (%)',
+    ]);
+
+    expect($csvFirstRow)->toHaveCount(count($csvHeader))
+        ->and($matches[1])->toHaveCount(count($csvHeader));
+});
+
 it('escapes database values in the exported HTML', function (): void {
     Facility::factory()->create([
         'name' => '<b>Gedung</b> <script>alert(1)</script>',
@@ -375,6 +438,47 @@ it('names an export after the selected range rather than today', function (): vo
             'content-disposition',
             'attachment; filename=rekap-kerusakan-2026-09-01-sd-2026-09-10.pdf'
         );
+});
+
+it('shows the category label, not the stored slug, everywhere the breakdown appears', function (): void {
+    $admin = User::factory()->create(['role' => 'admin', 'account_status' => 'aktif']);
+    $facility = Facility::factory()->create(['status' => 'aktif']);
+    $user = User::factory()->create(['account_status' => 'aktif']);
+    Report::factory()->create([
+        'facility_id' => $facility->id,
+        'user_id' => $user->id,
+        'category' => 'sarana_prasarana',
+        'status' => 'baru',
+        'created_at' => '2026-09-05 09:00:00',
+    ]);
+
+    $query = ['start_date' => '2026-09-01', 'end_date' => '2026-09-10'];
+    $label = Report::CATEGORIES['sarana_prasarana'];
+
+    // Halaman rekap.
+    $this->actingAs($admin)
+        ->get(route('admin.rekap.damage', $query))
+        ->assertOk()
+        ->assertSee($label)
+        ->assertDontSee('sarana_prasarana');
+
+    // Ekspor CSV.
+    $csv = $this->actingAs($admin)
+        ->get(route('admin.rekap.damage.export.csv', $query))
+        ->streamedContent();
+
+    expect($csv)->toContain($label)->not->toContain('sarana_prasarana');
+
+    // Ekspor PDF, lewat HTML yang sama persis dengan yang dicetak. Di sini
+    // label ikut di-escape, jadi "&" menjadi "&amp;".
+    $html = app(RecapService::class)->exportDamageHtml(
+        app(RecapService::class)->getDamageRecap(
+            Carbon::parse($query['start_date'], config('app.timezone'))->startOfDay(),
+            Carbon::parse($query['end_date'], config('app.timezone'))->endOfDay(),
+        )
+    );
+
+    expect($html)->toContain(e($label))->not->toContain('sarana_prasarana');
 });
 
 it('gives the two report types different filenames for the same range', function (): void {

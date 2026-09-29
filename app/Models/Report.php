@@ -75,8 +75,21 @@ class Report extends Model
         return $query->where('status', $status);
     }
 
+    /**
+     * Label humans untuk satu nilai kategori, baik dari instance maupun
+     * dari peta slug => jumlah di laporan rekap.
+     *
+     * Fallback dipakai kalau DB punya nilai yang belum masuk CATEGORIES,
+     * supaya enum di migrasi dan daftar di sini bisa tertinggal tanpa
+     * membuat tampilan kosong.
+     */
+    public static function labelForCategory(?string $category): string
+    {
+        return self::CATEGORIES[$category ?? ''] ?? ucfirst(str_replace('_', ' ', (string) $category));
+    }
+
     public function categoryLabel(): string
     {
-        return self::CATEGORIES[$this->category] ?? ucfirst(str_replace('_', ' ', (string) $this->category));
+        return self::labelForCategory($this->category);
     }
 }

@@ -17,6 +17,26 @@ use Illuminate\Support\Facades\Auth;
 final class AccountStatusGate
 {
     /**
+     * Apakah akun ini boleh bertindak sebagai salah satu role yang diberikan.
+     *
+     * Inilah satu-satunya tempat yang menggabungkan syarat "status akun
+     * aktif" (BR-14) dengan role, supaya 13 pemeriksa tidak masing-masing
+     * mengulang pasangan `isX() && isActive()`. Role ditulis sebagai string
+     * karena pemanggil sudah tahu role mana yang sedang diuji; accessor
+     * isAdmin()/isPetugas()/isPengguna() tetap tersedia untuk pemeriksaan
+     * satu-peran di luar gerbang ini.
+     *
+     * Argumentnya varies karena policy mengizinkan dua role ("pengguna atau
+     * petugas") sementara FormRequest biasanya satu.
+     */
+    public static function mayActAs(?User $user, string ...$roles): bool
+    {
+        return $user !== null
+            && $user->isActive()
+            && in_array($user->role, $roles, true);
+    }
+
+    /**
      * Kembalikan pesan penolakan, atau null bila akun boleh lewat.
      */
     public static function denialMessage(User $user): ?string

@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Services\AccountStatusGate;
 use App\Support\AccountAttributes;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
@@ -19,8 +20,7 @@ class AdminAccountRequest extends FormRequest
     {
         // Sistem mengunci pembuatan akun hanya untuk admin sebagai kunci
         // kedua; rute sudah dijaga middleware role:admin (§10).
-        return $this->user()?->isAdmin() === true
-            && $this->user()?->isActive() === true;
+        return AccountStatusGate::mayActAs($this->user(), 'admin');
     }
 
     /**

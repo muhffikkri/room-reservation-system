@@ -33,12 +33,6 @@ class HomeController extends Controller
 
     private const GRID_MAX_FACILITIES = 9;
 
-    /**
-     * Rentang hari yang boleh ditanyakan pada filter tanggal landing, sama
-     * dengan yang dipakai jadwal publik (±365 hari).
-     */
-    private const MAX_SCHEDULE_WINDOW_DAYS = 365;
-
     public function __construct(
         protected ReservationAvailability $availability,
     ) {}
@@ -92,8 +86,8 @@ class HomeController extends Controller
             'date' => [
                 'nullable',
                 'date_format:Y-m-d',
-                'after_or_equal:'.$today->copy()->subDays(self::MAX_SCHEDULE_WINDOW_DAYS)->toDateString(),
-                'before_or_equal:'.$today->copy()->addDays(self::MAX_SCHEDULE_WINDOW_DAYS)->toDateString(),
+                'after_or_equal:'.$today->copy()->subDays($this->availability->maxLookaheadDays())->toDateString(),
+                'before_or_equal:'.$today->copy()->addDays($this->availability->maxLookaheadDays())->toDateString(),
             ],
         ]);
 

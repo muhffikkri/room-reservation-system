@@ -191,7 +191,7 @@
                     <tbody class="divide-y divide-[#EEF2FF]">
                         @foreach ($recap['summary']['by_category'] as $category => $count)
                             <tr class="transition-colors hover:bg-[#F8FAFC]">
-                                <td class="px-6 py-3 font-medium text-[#00236f]">{{ $category }}</td>
+                                <td class="px-6 py-3 font-medium text-[#00236f]">{{ \App\Models\Report::labelForCategory($category) }}</td>
                                 <td class="px-6 py-3 text-right text-slate-700">{{ $count }}</td>
                             </tr>
                         @endforeach

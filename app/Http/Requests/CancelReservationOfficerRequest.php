@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Services\AccountStatusGate;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 
@@ -18,8 +19,7 @@ class CancelReservationOfficerRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return $this->user()?->isPetugas() === true
-            && $this->user()?->isActive() === true;
+        return AccountStatusGate::mayActAs($this->user(), 'petugas');
     }
 
     /**

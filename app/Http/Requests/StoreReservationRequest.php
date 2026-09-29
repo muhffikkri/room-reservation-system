@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Services\AccountStatusGate;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 
@@ -12,8 +13,7 @@ class StoreReservationRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return $this->user()?->isPengguna() === true
-            && $this->user()?->isActive() === true;
+        return AccountStatusGate::mayActAs($this->user(), 'pengguna');
     }
 
     /**
