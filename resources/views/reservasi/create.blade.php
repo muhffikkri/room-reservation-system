@@ -3,19 +3,22 @@
 @section('title', 'Ajukan Reservasi Fasilitas')
 
 @section('content')
-    <div class="mx-auto max-w-4xl space-y-8">
-        <div>
+    <div class="mx-auto max-w-6xl space-y-5">
+        <div class="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
+            <div>
             <a href="{{ route('reservasi.index') }}"
-                class="inline-flex items-center text-sm font-medium text-slate-500 transition hover:text-[#00236f]">
+                class="clay-pressable mb-4 inline-flex items-center gap-2 rounded-full px-4 py-2 text-xs font-semibold text-blue-700">
                 &larr; Kembali ke riwayat reservasi
             </a>
-            <p class="text-xs font-semibold uppercase tracking-[0.18em] text-[#0051d5]">Pemesanan fasilitas</p>
-            <h1 class="mt-2 text-2xl font-semibold tracking-tight text-[#00236f]">Ajukan Reservasi Fasilitas</h1>
+            <p class="text-[11px] font-bold uppercase tracking-[0.16em] text-blue-600">Pemesanan fasilitas · REKSA</p>
+            <h1 class="mt-1.5 text-2xl font-extrabold tracking-tight text-[#10264a] sm:text-3xl">Ajukan Reservasi Fasilitas</h1>
             <p class="mt-2 text-sm leading-6 text-slate-600">Pilih fasilitas, tanggal, dan slot waktu yang tersedia untuk mengajukan
                 peminjaman.</p>
+            </div>
+            <img src="{{ asset('images/reksa-mascot.png') }}" alt="Maskot REKSA" class="hidden h-36 w-40 object-contain drop-shadow-[0_12px_16px_rgba(37,99,235,0.16)] sm:block">
         </div>
 
-        <div class="rounded-2xl border border-[#E2E7FF] bg-white p-6 shadow-[0_14px_40px_rgba(15,23,42,0.06)] sm:p-8">
+        <div class="landing-panel rounded-[2rem] p-5 shadow-[0_16px_44px_rgba(53,103,175,0.12)] sm:p-7 lg:p-8">
             <form method="POST" action="{{ route('reservasi.store') }}" id="reservationForm"
                 data-reservation-form
                 data-create-url="{{ route('reservasi.create') }}"
@@ -33,7 +36,7 @@
                         <label for="facility_id" class="block text-sm font-medium text-slate-700">Fasilitas Kampus <span
                                 class="text-rose-500">*</span></label>
                         <select id="facility_id" name="facility_id" required
-                            class="mt-1 block w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-[#0051d5] focus:outline-none focus:ring-1 focus:ring-[#0051d5]">
+                            class="landing-input mt-1 block w-full rounded-xl px-3 py-3 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-400">
                             <option value="" disabled {{ !$selectedFacility ? 'selected' : '' }}>-- Pilih Fasilitas
                                 --</option>
                             @foreach ($facilities as $facility)
@@ -54,7 +57,7 @@
                                 class="text-rose-500">*</span></label>
                         <input type="date" id="date" name="date" required min="{{ date('Y-m-d') }}"
                             value="{{ old('date', $selectedDate->format('Y-m-d')) }}"
-                            class="mt-1 block w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-[#0051d5] focus:outline-none focus:ring-1 focus:ring-[#0051d5]">
+                            class="landing-input mt-1 block w-full rounded-xl px-3 py-3 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-400">
                         @error('date')
                             <p class="mt-1 text-xs text-rose-600">{{ $message }}</p>
                         @enderror
@@ -63,7 +66,7 @@
 
                 {{-- Grid Ketersediaan Slot Waktu Interaktif --}}
                 @if ($selectedFacility)
-                    <div class="rounded-xl border border-[#E2E7FF] bg-[#F8FAFC] p-5">
+                    <div class="rounded-2xl border border-blue-100/80 bg-blue-50/45 p-4 shadow-sm sm:p-5">
                         <div class="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                             <div>
                                 <h2 class="text-sm font-semibold text-[#00236f]">
@@ -75,7 +78,7 @@
                                 </p>
                             </div>
                             <button type="button" id="resetSelectionBtn"
-                                class="hidden text-xs font-semibold text-rose-600 hover:text-rose-800 hover:underline">
+                                class="clay-button-danger hidden rounded-full px-3 py-2 text-xs font-bold">
                                 Batalkan Pilihan Slot
                             </button>
                         </div>
@@ -117,7 +120,7 @@
 
                                 <div data-slot-index="{{ $index }}" data-start="{{ $slot['start'] }}"
                                     data-end="{{ $slot['end'] }}" data-state="{{ $state }}"
-                                    class="slot-item relative flex flex-col items-center justify-center rounded-lg border p-2.5 text-center transition-all duration-150
+                                    class="slot-item relative flex min-h-20 flex-col items-center justify-center rounded-xl border p-2.5 text-center transition-all duration-150
                                     @if ($isAvailable) cursor-pointer border-emerald-400 bg-white text-emerald-950 shadow-2xs hover:border-[#0051d5] hover:bg-[#F2F3FF]
                                     @elseif($isBooked)
                                         border-rose-300 bg-rose-50/90 text-rose-600 cursor-not-allowed opacity-80
@@ -157,7 +160,7 @@
                         <label for="start_time" class="block text-sm font-medium text-slate-700">Waktu Mulai <span
                                 class="text-rose-500">*</span></label>
                         <select id="start_time" name="start_time" required
-                            class="mt-1 block w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-[#0051d5] focus:outline-none focus:ring-1 focus:ring-[#0051d5]">
+                            class="landing-input mt-1 block w-full rounded-xl px-3 py-3 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-400">
                             <option value="" disabled {{ old('start_time') ? '' : 'selected' }}>-- Pilih Waktu Mulai
                                 --</option>
                         </select>
@@ -170,7 +173,7 @@
                         <label for="end_time" class="block text-sm font-medium text-slate-700">Waktu Selesai <span
                                 class="text-rose-500">*</span></label>
                         <select id="end_time" name="end_time" required
-                            class="mt-1 block w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-[#0051d5] focus:outline-none focus:ring-1 focus:ring-[#0051d5]">
+                            class="landing-input mt-1 block w-full rounded-xl px-3 py-3 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-400">
                             <option value="" disabled {{ old('end_time') ? '' : 'selected' }}>-- Pilih Jam Mulai Dulu
                                 --</option>
                         </select>
@@ -180,11 +183,11 @@
                     </div>
                 </div>
 
-                <p class="text-xs text-slate-500">
-                    &bull; Durasi minimal: 1 slot (30 menit).<br>
-                    &bull; Durasi maksimal: 8 slot (4 jam) per reservasi.<br>
-                    &bull; Waktu mulai minimal: 1 jam dari waktu saat ini.
-                </p>
+                <div class="grid gap-2 rounded-2xl border border-blue-100 bg-blue-50/70 p-4 text-xs leading-relaxed text-slate-600 sm:grid-cols-3">
+                    <p><span class="font-bold text-blue-600">•</span> Durasi minimal: 1 slot (30 menit).</p>
+                    <p><span class="font-bold text-blue-600">•</span> Durasi maksimal: 8 slot (4 jam) per reservasi.</p>
+                    <p><span class="font-bold text-blue-600">•</span> Waktu mulai minimal: 1 jam dari waktu saat ini.</p>
+                </div>
 
                 {{-- Tujuan Peminjaman --}}
                 <div>
@@ -194,20 +197,20 @@
                         karakter).</p>
                     <textarea id="purpose" name="purpose" rows="3" minlength="10" maxlength="255" required
                         placeholder="Contoh: Rapat koordinasi panitia seminar nasional BEM kampus."
-                        class="block w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-[#0051d5] focus:outline-none focus:ring-1 focus:ring-[#0051d5]">{{ old('purpose') }}</textarea>
+                        class="landing-input block w-full rounded-xl px-3 py-3 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-400">{{ old('purpose') }}</textarea>
                     @error('purpose')
                         <p class="mt-1 text-xs text-rose-600">{{ $message }}</p>
                     @enderror
                 </div>
 
                 {{-- Tombol Aksi --}}
-                <div class="flex items-center justify-end gap-3 border-t border-[#EEF2FF] pt-5">
+                <div class="flex flex-col-reverse items-stretch justify-end gap-3 border-t border-blue-100/80 pt-5 sm:flex-row sm:items-center">
                     <a href="{{ route('reservasi.index') }}"
-                        class="rounded-lg border border-[#D6DDF8] bg-white px-4 py-2 text-sm font-medium text-[#00236f] shadow-sm transition hover:bg-[#F2F3FF] focus:outline-none focus:ring-2 focus:ring-[#0051d5] focus:ring-offset-2">
+                        class="clay-pressable rounded-full px-5 py-3 text-sm font-semibold text-blue-700 focus:outline-none focus:ring-2 focus:ring-[#0051d5] focus:ring-offset-2">
                         Batal
                     </a>
                     <button type="submit" id="submitBtn"
-                        class="rounded-lg bg-[#0051d5] px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-[#00236f] focus:outline-none focus:ring-2 focus:ring-[#0051d5] focus:ring-offset-2">
+                        class="landing-button rounded-full bg-gradient-to-r from-blue-600 to-blue-500 px-6 py-3 text-sm font-bold text-white focus:outline-none focus:ring-2 focus:ring-[#0051d5] focus:ring-offset-2">
                         Ajukan Reservasi
                     </button>
                 </div>

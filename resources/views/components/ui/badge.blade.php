@@ -43,7 +43,13 @@
             'ring' => 'ring-slate-200',
             'dot' => 'bg-slate-400',
         ],
-        'cancelled_by_system', 'rejected_by_system' => [
+        'cancelled_by_system' => [
+            'bg' => 'bg-rose-50',
+            'text' => 'text-rose-700',
+            'ring' => 'ring-rose-200',
+            'dot' => 'bg-rose-500',
+        ],
+        'rejected_by_system' => [
             'bg' => 'bg-violet-50',
             'text' => 'text-violet-700',
             'ring' => 'ring-violet-200',
