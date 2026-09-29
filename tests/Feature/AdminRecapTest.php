@@ -149,3 +149,11 @@ it('keeps remote resource loading off while still producing a PDF', function ():
 
     expect($response->getContent())->toStartWith('%PDF');
 });
+
+it('leaves PDF JavaScript and PHP execution disabled', function (): void {
+    // Rekap tidak pernah menyertakan <script> atau PHP, jadi tidak ada
+    // kebutuhan yang terbukti. Menyalakannya hanya menambah permukaan
+    // eksekusi di pembaca PDF untuk dokumen yang dibangun dari nilai database.
+    expect(config('dompdf.options.enable_javascript'))->toBeFalse()
+        ->and(config('dompdf.options.enable_php'))->toBeFalse();
+});
