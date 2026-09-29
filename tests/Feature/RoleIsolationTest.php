@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\Facility;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
@@ -151,6 +152,39 @@ it('deletes database sessions when role changes', function () {
     $user->update(['role' => 'petugas']);
 
     $this->assertDatabaseMissing('sessions', ['id' => 'sesi-uji-hapus']);
+});
+
+it('points the public header to the home page of the current role', function (string $role) {
+    $user = User::factory()->create(['role' => $role, 'account_status' => 'aktif']);
+    $facility = Facility::factory()->create();
+
+    $home = $user->homeRoute();
+    $userDashboard = route('dashboard');
+
+    foreach (['/', '/fasilitas', route('fasilitas.jadwal', $facility)] as $page) {
+        $response = $this->actingAs($user)->get($page)->assertOk();
+
+        $response->assertSee('href="'.$home.'"', escape: false);
+
+        // Hanya pengguna yang boleh memiliki tautan ke /dashboard. Admin dan
+        // petugas akan mendarat di 403 bila tautan itu tetap dipakai.
+        if ($home !== $userDashboard) {
+            $response->assertDontSee('href="'.$userDashboard.'"', escape: false);
+        }
+
+        $this->actingAs($user)->get($home)->assertOk();
+    }
+})->with(['pengguna', 'petugas', 'admin']);
+
+it('shows the login entry to guests on public pages', function () {
+    $facility = Facility::factory()->create();
+
+    foreach (['/', '/fasilitas', route('fasilitas.jadwal', $facility)] as $page) {
+        $this->get($page)
+            ->assertOk()
+            ->assertSee('href="'.route('login').'"', escape: false)
+            ->assertDontSee('href="'.route('dashboard').'"', escape: false);
+    }
 });
 
 it('blocks admin from officer routes', function () {

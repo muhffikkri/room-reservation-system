@@ -20,7 +20,7 @@
         <div class="flex items-center gap-2">
             <a href="{{ route('home') }}" class="landing-button rounded-full border border-blue-100 bg-white/80 px-4 py-2.5 text-xs font-semibold text-blue-700 sm:text-sm">Beranda</a>
             @auth
-                <a href="{{ route('dashboard') }}" class="landing-button rounded-full bg-gradient-to-r from-blue-600 to-blue-500 px-4 py-2.5 text-xs font-semibold text-white sm:text-sm">Dashboard</a>
+                <a href="{{ auth()->user()->homeRoute() }}" class="landing-button rounded-full bg-gradient-to-r from-blue-600 to-blue-500 px-4 py-2.5 text-xs font-semibold text-white sm:text-sm">Dashboard</a>
             @else
                 <a href="{{ route('login') }}" class="landing-button rounded-full bg-gradient-to-r from-blue-600 to-blue-500 px-4 py-2.5 text-xs font-semibold text-white sm:text-sm">Masuk</a>
             @endauth
