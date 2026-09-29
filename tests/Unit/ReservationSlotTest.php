@@ -82,3 +82,20 @@ it('projects all daily slots with canonical times', function () {
     expect($slots[0]['start'])->toBe('07:00')
         ->and($slots[array_key_last($slots)]['end'])->toBe('20:00');
 });
+
+it('derives the daily operational hours from the slots it actually offers', function () {
+    $date = Carbon::parse('2030-01-06', config('app.timezone'));
+    $facility = new Facility(['status' => 'aktif']);
+    $slots = slotAvailability()->publicScheduleSlots($facility, $date, []);
+    $last = $slots[array_key_last($slots)]['end'];
+
+    // 07.00 sampai 20.00 = 13 jam, dan inilah angka yang dipakai rekap
+    // okupansi sebagai jam maksimum per hari. Dihitung dari slot, bukan
+    // ditulis terpisah, supaya tidak bisa menyimpang dari jadwal nyata.
+    expect(slotAvailability()->operationalHoursPerDay())->toBe(13)
+        ->and($last)->toBe('20:00');
+});
+
+it('exposes the same booking window that the public pages validate against', function () {
+    expect(slotAvailability()->maxLookaheadDays())->toBe(365);
+});

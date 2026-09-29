@@ -60,6 +60,7 @@ class RecapService
     ];
 
     public function __construct(
+        protected ReservationAvailability $availability,
         protected int $defaultLookbackDays = 30,
     ) {}
 
@@ -85,9 +86,10 @@ class RecapService
 
         // Both ends are normalised to midnight before differencing: diffInDays
         // already counts the final calendar day when handed an end-of-day
-        // timestamp, so the +1 would count it twice. 13 jam = 07.00-20.00.
+        // timestamp, so the +1 would count it twice. Jam per hari berasal
+        // dari ReservationAvailability, bukan ditulis ulang di sini.
         $operationalDays = $startDate->diffInDays($endDate->copy()->startOfDay()) + 1;
-        $maxPossibleHours = $operationalDays * 13;
+        $maxPossibleHours = $operationalDays * $this->availability->operationalHoursPerDay();
 
         // Calculate total approved hours per facility using subquery to avoid N+1
         $hoursSubquery = Reservation::approved()

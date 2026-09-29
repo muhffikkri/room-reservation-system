@@ -14,8 +14,6 @@ use Illuminate\View\View;
  */
 class FacilityController extends Controller
 {
-    private const MAX_SCHEDULE_LOOKAHEAD_DAYS = 365;
-
     /** @var array<string, array{int, int}> */
     private const CAPACITY_RANGES = [
         'lt_40' => [1, 39],
@@ -107,7 +105,7 @@ class FacilityController extends Controller
                 'nullable',
                 'date_format:Y-m-d',
                 'after_or_equal:'.$today->toDateString(),
-                'before_or_equal:'.$today->copy()->addDays(self::MAX_SCHEDULE_LOOKAHEAD_DAYS)->toDateString(),
+                'before_or_equal:'.$today->copy()->addDays($this->availability->maxLookaheadDays())->toDateString(),
             ],
             'from' => ['nullable', 'string', Rule::in(['home', 'all'])],
         ]);
