@@ -116,7 +116,7 @@ class HomeController extends Controller
                 ->get(['facility_id', 'start_time', 'end_time'])
                 ->groupBy('facility_id');
 
-            $grids = [$facility->id => $this->availability->bookingSlots(
+            $grids = [$facility->id => $this->availability->publicScheduleSlots(
                 $facility,
                 $targetDate,
                 $approvedByFacility->get($facility->id, collect()),
@@ -157,7 +157,7 @@ class HomeController extends Controller
         }
 
         $grids = $facilities->mapWithKeys(fn (Facility $facility) => [
-            $facility->id => $this->availability->bookingSlots(
+            $facility->id => $this->availability->publicScheduleSlots(
                 $facility,
                 now(),
                 $approvedByFacility->get($facility->id, collect()),

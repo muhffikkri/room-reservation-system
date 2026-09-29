@@ -58,5 +58,19 @@ class AppServiceProvider extends ServiceProvider
         RateLimiter::for('public-browse', function (Request $request): Limit {
             return Limit::perMinute(60)->by('ip:'.$request->ip());
         });
+
+        // Render PDF adalah operasi paling berat di aplikasi ini, jadi batasnya
+        // per menit dan per admin, bukan hanya per IP.
+        RateLimiter::for('recap-exports', function (Request $request): array {
+            $user = $request->user();
+            $key = $user === null
+                ? 'ip:'.$request->ip()
+                : 'user:'.$user->getAuthIdentifier();
+
+            return [
+                Limit::perMinute(6)->by($key),
+                Limit::perHour(30)->by($key),
+            ];
+        });
     }
 }

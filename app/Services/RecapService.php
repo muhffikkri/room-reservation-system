@@ -102,6 +102,12 @@ class RecapService
             ];
         });
 
+        // Rata-rata hanya menghitung fasilitas yang bisa dipakai. Fasilitas
+        // nonaktif/perbaikan tidak punya kemungkinan okupansi, jadi
+        // menyertakannya di penyebut menurunkan rata-rata tanpa alasan.
+        $bookable = $data->where('status', 'aktif');
+        $averageOccupancy = $bookable->avg('occupancy_rate');
+
         $summary = [
             'total_facilities' => $facilities->count(),
             'total_reservations' => $data->sum('total_reservations'),
@@ -110,7 +116,7 @@ class RecapService
             'total_rejected' => $data->sum('rejected_count'),
             'total_cancelled' => $data->sum('cancelled_count'),
             'total_approved_hours' => round($data->sum('total_approved_hours'), 2),
-            'average_occupancy_rate' => $data->avg('occupancy_rate') ? round($data->avg('occupancy_rate'), 2) : 0,
+            'average_occupancy_rate' => $averageOccupancy ? round($averageOccupancy, 2) : 0,
         ];
 
         return [
@@ -355,6 +361,28 @@ class RecapService
     }
 
     /**
+     * Netralkan sel yang akan dieksekusi sebagai rumus saat CSV dibuka.
+     *
+     * Sel yang diawali = + - @ diperlakukan sebagai rumus oleh Excel,
+     * LibreOffice dan Google Sheets, dan nilainya berasal dari database
+     * (nama fasilitas, lokasi, kategori kerusakan). Awalan kutip tunggal
+     * memaksa sel dibaca sebagai teks.
+     *
+     * @param  array<int, mixed>  $row
+     * @return array<int, mixed>
+     */
+    protected function neutraliseFormulas(array $row): array
+    {
+        return array_map(function ($value) {
+            if (is_string($value) && preg_match('/^[=+\-@]/', $value) === 1) {
+                return "'".$value;
+            }
+
+            return $value;
+        }, $row);
+    }
+
+    /**
      * Build CSV string from headers and rows.
      */
     protected function buildCsv(array $headers, array $rows): string
@@ -364,9 +392,11 @@ class RecapService
         // Add BOM for UTF-8
         fwrite($handle, "\xEF\xBB\xBF");
 
-        fputcsv($handle, $headers);
+        // escape wajib Passed pada PHP 8.4+: tanpa itu fputcsv() memunculkan
+        // deprecation pada setiap ekspor.
+        fputcsv($handle, $headers, ',', '"', '');
         foreach ($rows as $row) {
-            fputcsv($handle, $row);
+            fputcsv($handle, $this->neutraliseFormulas($row), ',', '"', '');
         }
 
         rewind($handle);
@@ -387,11 +417,17 @@ class RecapService
 
         $rowsHtml = '';
         foreach ($recapData['data'] as $item) {
+            // Heredoc hanya menginterpolasi {$var}, bukan panggilan fungsi,
+            // jadi nilai dari database di-escape lebih dulu ke variabel.
+            $name = e($item['facility_name']);
+            $type = e($item['facility_type']);
+            $location = e($item['facility_location']);
+
             $rowsHtml .= <<<HTML
 <tr>
-    <td>{$item['facility_name']}</td>
-    <td>{$item['facility_type']}</td>
-    <td>{$item['facility_location']}</td>
+    <td>{$name}</td>
+    <td>{$type}</td>
+    <td>{$location}</td>
     <td>{$item['capacity']}</td>
     <td>{$item['status']}</td>
     <td>{$item['approved_count']}</td>
@@ -492,11 +528,17 @@ HTML;
 
         $rowsHtml = '';
         foreach ($recapData['data'] as $item) {
+            // Heredoc hanya menginterpolasi {$var}, bukan panggilan fungsi,
+            // jadi nilai dari database di-escape lebih dulu ke variabel.
+            $name = e($item['facility_name']);
+            $type = e($item['facility_type']);
+            $location = e($item['facility_location']);
+
             $rowsHtml .= <<<HTML
 <tr>
-    <td>{$item['facility_name']}</td>
-    <td>{$item['facility_type']}</td>
-    <td>{$item['facility_location']}</td>
+    <td>{$name}</td>
+    <td>{$type}</td>
+    <td>{$location}</td>
     <td>{$item['status']}</td>
     <td>{$item['baru_count']}</td>
     <td>{$item['diproses_count']}</td>
@@ -527,7 +569,7 @@ HTML;
             $categoryHtml = '<tr><td colspan="9" style="border: none; padding-top: 20px;"><strong>Rincian per Kategori Kerusakan:</strong></td></tr>';
             $categoryHtml .= '<tr><th>Kategori</th><th>Jumlah</th><th colspan="7"></th></tr>';
             foreach ($summary['by_category'] as $category => $count) {
-                $categoryHtml .= "<tr><td>{$category}</td><td>{$count}</td><td colspan=\"7\"></td></tr>";
+                $categoryHtml .= '<tr><td>'.e($category).'</td><td>'.$count.'</td><td colspan="7"></td></tr>';
             }
         }
 

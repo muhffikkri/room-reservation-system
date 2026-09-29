@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\RecapDateRangeRequest;
 use App\Services\RecapService;
 use Barryvdh\DomPDF\Facade\Pdf;
+use Illuminate\Http\Response;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Log;
 use Illuminate\View\View;
@@ -77,7 +78,7 @@ class RecapController extends Controller
         $recap = $this->recapService->getOccupancyRecap($startDate, $endDate);
         $csv = $this->recapService->exportOccupancyCsv($recap);
 
-        $filename = 'rekap-okupansi-'.Carbon::now()->format('Y-m-d').'.csv';
+        $filename = $this->exportFilename('rekap-okupansi', $recap, 'csv');
 
         Log::info('RecapController: Occupancy CSV downloaded', [
             'user_id' => auth()->id(),
@@ -105,7 +106,7 @@ class RecapController extends Controller
         $recap = $this->recapService->getDamageRecap($startDate, $endDate);
         $csv = $this->recapService->exportDamageCsv($recap);
 
-        $filename = 'rekap-kerusakan-'.Carbon::now()->format('Y-m-d').'.csv';
+        $filename = $this->exportFilename('rekap-kerusakan', $recap, 'csv');
 
         Log::info('RecapController: Damage CSV downloaded', [
             'user_id' => auth()->id(),
@@ -125,7 +126,7 @@ class RecapController extends Controller
     /**
      * Ekspor rekap okupansi ke PDF (using dompdf).
      */
-    public function exportOccupancyPdf(RecapDateRangeRequest $request): BinaryFileResponse|StreamedResponse
+    public function exportOccupancyPdf(RecapDateRangeRequest $request): Response|BinaryFileResponse|StreamedResponse
     {
         $start = microtime(true);
         [$startDate, $endDate] = $request->getValidatedDates();
@@ -133,13 +134,16 @@ class RecapController extends Controller
         $recap = $this->recapService->getOccupancyRecap($startDate, $endDate);
         $html = $this->recapService->exportOccupancyHtml($recap);
 
-        $filename = 'rekap-okupansi-'.Carbon::now()->format('Y-m-d').'.pdf';
+        $filename = $this->exportFilename('rekap-okupansi', $recap, 'pdf');
 
         try {
+            // isRemoteEnabled sengaja dibiarkan mengikuti config/dompdf.php
+            // (false). Fassilitas berasal dari database, jadi HTML yang
+            // dirakit di sini bisa memuat URL pilihan pihak lain; mengaktifkan
+            // akses remote membuat server pendukung mengunduhnya.
             $pdf = Pdf::loadHTML($html)
                 ->setPaper('A4', 'landscape')
-                ->setOption('isHtml5ParserEnabled', true)
-                ->setOption('isRemoteEnabled', true);
+                ->setOption('isHtml5ParserEnabled', true);
 
             Log::info('RecapController: Occupancy PDF generated', [
                 'user_id' => auth()->id(),
@@ -157,7 +161,7 @@ class RecapController extends Controller
             ]);
 
             // Fallback to HTML download
-            $htmlFilename = 'rekap-okupansi-'.Carbon::now()->format('Y-m-d').'.html';
+            $htmlFilename = $this->exportFilename('rekap-okupansi', $recap, 'html');
 
             return response()->streamDownload(
                 fn () => print ($html),
@@ -170,7 +174,7 @@ class RecapController extends Controller
     /**
      * Ekspor rekap kerusakan ke PDF (using dompdf).
      */
-    public function exportDamagePdf(RecapDateRangeRequest $request): BinaryFileResponse|StreamedResponse
+    public function exportDamagePdf(RecapDateRangeRequest $request): Response|BinaryFileResponse|StreamedResponse
     {
         $start = microtime(true);
         [$startDate, $endDate] = $request->getValidatedDates();
@@ -178,13 +182,13 @@ class RecapController extends Controller
         $recap = $this->recapService->getDamageRecap($startDate, $endDate);
         $html = $this->recapService->exportDamageHtml($recap);
 
-        $filename = 'rekap-kerusakan-'.Carbon::now()->format('Y-m-d').'.pdf';
+        $filename = $this->exportFilename('rekap-kerusakan', $recap, 'pdf');
 
         try {
+            // Lihat exportOccupancyPdf(): akses remote mengikuti config.
             $pdf = Pdf::loadHTML($html)
                 ->setPaper('A4', 'landscape')
-                ->setOption('isHtml5ParserEnabled', true)
-                ->setOption('isRemoteEnabled', true);
+                ->setOption('isHtml5ParserEnabled', true);
 
             Log::info('RecapController: Damage PDF generated', [
                 'user_id' => auth()->id(),
@@ -202,7 +206,7 @@ class RecapController extends Controller
             ]);
 
             // Fallback to HTML download
-            $htmlFilename = 'rekap-kerusakan-'.Carbon::now()->format('Y-m-d').'.html';
+            $htmlFilename = $this->exportFilename('rekap-kerusakan', $recap, 'html');
 
             return response()->streamDownload(
                 fn () => print ($html),
@@ -210,6 +214,20 @@ class RecapController extends Controller
                 ['Content-Type' => 'text/html; charset=UTF-8']
             );
         }
+    }
+
+    /**
+     * Nama berkas ekspor mencerminkan rentang yang dipilih, bukan hari
+     * unduhan: rekap 1-10 September tidak boleh bernama tanggal hari ini.
+     *
+     * @param  array<string, mixed>  $recap
+     */
+    private function exportFilename(string $prefix, array $recap, string $extension): string
+    {
+        $start = $recap['date_range']['start'] ?? Carbon::now()->toDateString();
+        $end = $recap['date_range']['end'] ?? $start;
+
+        return $prefix.'-'.$start.'-'.$end.'.'.$extension;
     }
 
     /**

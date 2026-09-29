@@ -24,8 +24,10 @@ class RecapDateRangeRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'start_date' => ['nullable', 'date', 'before_or_equal:today'],
-            'end_date' => ['nullable', 'date', 'after_or_equal:start_date', 'before_or_equal:today'],
+            // Kedua batas bersifat berpasangan: hanya end_date menghasilkan
+            // rentang terbalik (start > end) dan max_possible_hours negatif.
+            'start_date' => ['nullable', 'date', 'before_or_equal:today', 'required_with:end_date'],
+            'end_date' => ['nullable', 'date', 'after_or_equal:start_date', 'before_or_equal:today', 'required_with:start_date'],
         ];
     }
 
