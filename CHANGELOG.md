@@ -19,6 +19,8 @@ Perubahan penting pada setiap rilis dicatat di sini. Detail commit dan pull requ
 - Izinkan reservasi bersebelahan tanpa dianggap overlap.
 - Hitung status penolakan dan pembatalan sistem dengan benar pada rekap.
 - Pulihkan fasilitas terkait ketika laporan kerusakan ditolak.
+- Batasi lagi opsi lokasi pada filter publik dan endpoint AJAX ke 50 nilai unik.
+- Sediakan `Facility::photo_url` sebagai URL absolut agar kartu hasil pencarian langsung dan halaman publik tidak lagi memakai path relatif yang rusak.
 
 ## v1.2.3 — 2026-09-23
 

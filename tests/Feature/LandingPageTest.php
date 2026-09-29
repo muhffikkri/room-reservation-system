@@ -16,20 +16,39 @@ afterEach(function (): void {
     Carbon::setTestNow();
 });
 
-it('menampilkan landing page publik dengan fasilitas dan grid 26 slot', function (): void {
-    Facility::factory()->create([
+it('menampilkan landing page publik dengan kartu fasilitas dan gerbang ke grid jadwal', function (): void {
+    $facility = Facility::factory()->create([
         'name' => 'Aula Terpadu',
         'type' => 'aula',
         'location' => 'Gedung A',
         'capacity' => 300,
     ]);
 
-    $this->get('/')
+    $landing = $this->get('/')
         ->assertOk()
         ->assertSee('Aula Terpadu')
         ->assertSee('Fasilitas Kampus Unggulan')
-        ->assertSee('07:00 - 07:30')
-        ->assertSee('Total 26 Slot');
+        ->assertSee('Lihat Jadwal');
+
+    expect($landing->viewData('facilities')->modelKeys())->toBe([$facility->id]);
+
+    // Grid 26 slot tidak lagi dirender inline di kartu landing. Pengunjung
+    // mencapainya lewat tombol "Lihat Jadwal" pada tiap kartu.
+    $this->get(route('fasilitas.jadwal', ['facility' => $facility, 'from' => 'home']))
+        ->assertOk()
+        ->assertSee('Jadwal Ketersediaan')
+        ->assertViewHas('slots', fn (array $slots): bool => count($slots) === 26);
+});
+
+it('membatasi kartu landing maksimal sembilan dan mengarahkan sisanya ke katalog', function (): void {
+    Facility::factory()->count(15)->create(['status' => 'aktif']);
+
+    $landing = $this->get('/')
+        ->assertOk()
+        ->assertSee('Lihat Semua Fasilitas');
+
+    expect($landing->viewData('facilities')->count())->toBe(9)
+        ->and($landing->viewData('totalFacilities'))->toBe(15);
 });
 
 it('menandai Beranda sebagai navigasi aktif pada posisi awal', function (): void {
@@ -39,27 +58,6 @@ it('menandai Beranda sebagai navigasi aktif pada posisi awal', function (): void
         ->toContain('data-landing-nav="top"')
         ->toContain('aria-current="page">Beranda</a>')
         ->not->toContain('aria-current="page">Jadwal</a>');
-});
-
-it('menandai slot lewat dan slot terpakai pada grid', function (): void {
-    $facility = Facility::factory()->create(['name' => 'Lab Komputer 1']);
-    $user = User::factory()->create(['role' => 'pengguna', 'account_status' => 'aktif']);
-    Reservation::factory()->approved()->create([
-        'user_id' => $user->id,
-        'facility_id' => $facility->id,
-        'start_time' => '2026-09-09 11:00:00',
-        'end_time' => '2026-09-09 12:00:00',
-        'purpose' => 'Data uji rahasia internal',
-    ]);
-
-    $html = $this->get('/')->assertOk()->getContent();
-
-    // Interval setengah terbuka hanya menandai slot 11:00 dan 11:30 terpakai;
-    // slot yang mulai tepat pukul 12:00 tetap tersedia.
-    // Past: 07:00-10:30 = 8 slots | Booked: 11:00-11:30 = 2 slots | Available: 12:00-19:30 = 16 slots
-    expect(substr_count($html, '>Terpakai</span>'))->toBe(2);
-    expect(substr_count($html, '>Waktu Lewat</span>'))->toBe(8);
-    expect(substr_count($html, '>Tersedia</span>'))->toBe(16);
 });
 
 it('tidak membocorkan identitas pemohon dan tujuan ke publik (BR-13)', function (): void {
@@ -135,4 +133,19 @@ it('menolak nilai filter yang tidak dikenal pada endpoint ajax', function (): vo
     $this->getJson(route('home.facilities.ajax', ['type' => 'bukan_tipe']))
         ->assertStatus(422)
         ->assertJsonValidationErrors('type');
+});
+
+it('mengirim url foto absolut pada endpoint ajax agar kartu hasil pencarian tidak rusak', function (): void {
+    $withPhoto = Facility::factory()->create(['name' => 'Aula Terpadu']);
+    $withPhoto->forceFill(['photo' => 'fasilitas/aula-terpadu.jpg'])->save();
+    Facility::factory()->create(['name' => 'Ruang Tanpa Foto']);
+
+    $facilities = $this->getJson(route('home.facilities.ajax'))->assertOk()->json('facilities');
+
+    // Kolom photo tetap path relatif di disk, sementara photo_url sudah
+    // resolved ke URL yang bisa langsung dipakai sebagai atribut src.
+    expect($facilities[0]['photo'])->toBe('fasilitas/aula-terpadu.jpg');
+    expect($facilities[0]['photo_url'])->toBe(url('/storage/fasilitas/aula-terpadu.jpg'));
+    expect($facilities[0]['photo_url'])->not->toBe($facilities[0]['photo']);
+    expect($facilities[1]['photo_url'])->toBe('');
 });

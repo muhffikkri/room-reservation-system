@@ -72,7 +72,7 @@
                     <label for="photo" class="mb-1 block text-sm font-medium text-slate-700">Foto fasilitas</label>
                     <div class="mb-2 flex items-center gap-3">
                         @if ($facility->photo !== null)
-                            <img src="{{ Storage::disk('public')->url($facility->photo) }}" alt="Foto saat ini {{ $facility->name }}"
+                            <img src="{{ $facility->photo_url }}" alt="Foto saat ini {{ $facility->name }}"
                                  id="photo-preview" class="aspect-[16/9] w-full max-w-xs rounded-lg border border-slate-200 object-cover">
                             <p class="text-xs text-slate-500">Foto saat ini. Unggah file baru untuk menggantinya.</p>
                         @else

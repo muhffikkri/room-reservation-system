@@ -168,122 +168,6 @@ document.querySelectorAll('[data-notification-toggle]').forEach((toggle) => {
     });
 });
 
-const landing = document.querySelector('[data-landing]');
-
-if (landing !== null) {
-    const navLinks = landing.querySelectorAll('[data-landing-nav][data-nav-active]');
-    const sections = landing.querySelectorAll('[data-landing-section]');
-    const tabs = landing.querySelectorAll('[data-landing-tab]');
-    const grids = landing.querySelectorAll('[data-facility-grid]');
-    const indicator = landing.querySelector('[data-facility-indicator]');
-    const schedule = document.getElementById('jadwal-preview');
-
-    const activateNav = (sectionId) => {
-        navLinks.forEach((link) => {
-            const active = link.dataset.landingNav === sectionId;
-
-            link.className = active ? link.dataset.navActive : link.dataset.navInactive;
-
-            if (active) {
-                link.setAttribute('aria-current', 'page');
-            } else {
-                link.removeAttribute('aria-current');
-            }
-        });
-    };
-
-    const initialSection = window.location.hash.slice(1);
-
-    activateNav([...sections].some((section) => section.id === initialSection) ? initialSection : 'top');
-
-    navLinks.forEach((link) => {
-        link.addEventListener('click', () => activateNav(link.dataset.landingNav));
-    });
-
-    if ('IntersectionObserver' in window) {
-        const navObserver = new IntersectionObserver((entries) => {
-            const visibleSections = entries
-                .filter((entry) => entry.isIntersecting)
-                .sort((first, second) => second.intersectionRatio - first.intersectionRatio);
-
-            if (visibleSections[0] !== undefined) {
-                activateNav(visibleSections[0].target.id);
-            }
-        }, { rootMargin: '-20% 0px -60% 0px', threshold: [0, 0.25, 0.5, 0.75, 1] });
-
-        sections.forEach((section) => navObserver.observe(section));
-    }
-
-    const activateFacility = (facilityId) => {
-        tabs.forEach((tab) => {
-            const active = tab.dataset.landingTab === String(facilityId);
-
-            tab.className = active ? tab.dataset.tabActive : tab.dataset.tabInactive;
-            tab.setAttribute('aria-selected', active ? 'true' : 'false');
-            tab.tabIndex = active ? 0 : -1;
-        });
-
-        grids.forEach((grid) => {
-            grid.classList.toggle('hidden', grid.dataset.facilityGrid !== String(facilityId));
-
-            if (grid.dataset.facilityGrid === String(facilityId) && indicator !== null) {
-                indicator.textContent = `Fasilitas: ${grid.dataset.facilityName}`;
-            }
-        });
-    };
-
-    tabs.forEach((tab) => {
-        tab.addEventListener('click', () => activateFacility(tab.dataset.landingTab));
-    });
-
-    tabs[0]?.parentElement?.addEventListener('keydown', (event) => {
-        if (event.key !== 'ArrowRight' && event.key !== 'ArrowLeft' && event.key !== 'Home' && event.key !== 'End') {
-            return;
-        }
-
-        const currentIndex = [...tabs].findIndex((tab) => tab.tabIndex === 0);
-        let nextIndex = currentIndex;
-
-        if (event.key === 'ArrowRight') {
-            nextIndex = Math.min(currentIndex + 1, tabs.length - 1);
-        }
-
-        if (event.key === 'ArrowLeft') {
-            nextIndex = Math.max(currentIndex - 1, 0);
-        }
-
-        if (event.key === 'Home') {
-            nextIndex = 0;
-        }
-
-        if (event.key === 'End') {
-            nextIndex = tabs.length - 1;
-        }
-
-        const nextTab = tabs[nextIndex];
-
-        if (nextTab !== undefined) {
-            event.preventDefault();
-            nextTab.focus();
-            activateFacility(nextTab.dataset.landingTab);
-        }
-    });
-
-    landing.querySelectorAll('[data-landing-go]').forEach((button) => {
-        button.addEventListener('click', () => {
-            activateFacility(button.dataset.landingGo);
-
-            if (schedule !== null) {
-                schedule.scrollIntoView({ behavior: 'smooth', block: 'start' });
-            }
-
-            if (scheduleDateInput !== null && scheduleGrid !== null) {
-                fetchSchedule();
-            }
-        });
-    });
-}
-
 const petugasFilterForm = document.getElementById('petugasFilterForm');
 const resetFilterBtn = document.getElementById('reset-filter');
 const loadingIndicator = document.getElementById('loading-indicator');
@@ -479,13 +363,62 @@ const landingResetBtn = document.getElementById('landing-reset-filter');
 const landingLoading = document.getElementById('landing-loading');
 const landingGridContainer = document.getElementById('landing-grid-container');
 const facilityCountNum = document.getElementById('facility-count-num');
-const scheduleDateInput = document.getElementById('schedule-date');
-const scheduleLoading = document.getElementById('schedule-loading');
-const scheduleGrid = document.getElementById('schedule-grid');
-const scheduleTabsContainer = document.getElementById('schedule-tabs');
-const scheduleIndicator = document.querySelector('[data-facility-indicator]');
-
 const typeLabels = {"ruang_kelas":"Ruang Kelas","aula":"Aula","laboratorium":"Laboratorium","alat":"Alat","lapangan":"Lapangan"};
+
+const landingPage = document.querySelector('[data-landing]');
+
+if (landingPage !== null) {
+    const navLinks = [...landingPage.querySelectorAll('[data-landing-nav][data-nav-active]')];
+    const sections = [...landingPage.querySelectorAll('[data-landing-section]')];
+
+    const activateNav = (sectionId) => {
+        navLinks.forEach((link) => {
+            const isActive = link.dataset.landingNav === sectionId;
+            link.className = isActive ? link.dataset.navActive : link.dataset.navInactive;
+
+            if (isActive) {
+                link.setAttribute('aria-current', 'page');
+            } else {
+                link.removeAttribute('aria-current');
+            }
+        });
+    };
+
+    const initialSection = window.location.hash.slice(1);
+    activateNav(sections.some((section) => section.id === initialSection) ? initialSection : 'top');
+
+    navLinks.forEach((link) => {
+        link.addEventListener('click', () => activateNav(link.dataset.landingNav));
+    });
+
+    if ('IntersectionObserver' in window) {
+        const navObserver = new IntersectionObserver((entries) => {
+            const visibleSections = entries
+                .filter((entry) => entry.isIntersecting)
+                .sort((first, second) => second.intersectionRatio - first.intersectionRatio);
+
+            if (visibleSections[0] !== undefined) {
+                activateNav(visibleSections[0].target.id);
+            }
+        }, { rootMargin: '-20% 0px -60% 0px', threshold: [0, 0.25, 0.5, 0.75, 1] });
+
+        sections.forEach((section) => navObserver.observe(section));
+    }
+}
+
+document.querySelectorAll('[data-facility-filters]').forEach((form) => {
+    let searchTimer = null;
+    const searchInput = form.querySelector('[data-search-filter]');
+
+    form.querySelectorAll('[data-auto-filter]').forEach((filter) => {
+        filter.addEventListener('change', () => form.requestSubmit());
+    });
+
+    searchInput?.addEventListener('input', () => {
+        clearTimeout(searchTimer);
+        searchTimer = setTimeout(() => form.requestSubmit(), 350);
+    });
+});
 
 if (landingFilterForm !== null) {
     const searchInput = document.getElementById('search-input');
@@ -527,29 +460,39 @@ if (landingFilterForm !== null) {
                     landingGridContainer.innerHTML = '';
                     data.facilities.forEach((facility) => {
                         const card = document.createElement('div');
-                        card.className = 'group facility-card flex flex-col overflow-hidden rounded-xl bg-white shadow-sm transition-all hover:shadow-md';
+                        card.className = 'landing-card group facility-card flex flex-col overflow-hidden rounded-3xl border border-white/80 bg-white transition-all hover:-translate-y-0.5 hover:shadow-lg';
                         card.dataset.facilityId = facility.id;
 
                         const badgeClass = facility.status === 'aktif' ? 'bg-green-50 text-green-700 ring-green-200' :
                             facility.status === 'perbaikan' ? 'bg-amber-50 text-amber-700 ring-amber-200' :
                             'bg-slate-100 text-slate-600 ring-slate-200';
-                        const statusDot = facility.status === 'aktif' ? 'bg-green-500' :
-                            facility.status === 'perbaikan' ? 'bg-amber-500' : 'bg-slate-400';
+                        const statusIcon = facility.status === 'aktif'
+                            ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="h-3.5 w-3.5" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="m5 12 4 4L19 6"/></svg>'
+                            : facility.status === 'perbaikan'
+                                ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="h-3.5 w-3.5" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M14.7 6.3a4 4 0 0 0-5.6 5.6L4 17l3 3 5.1-5.1a4 4 0 0 0 5.6-5.6L15 12l-3-3 2.7-2.7Z"/></svg>'
+                                : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="h-3.5 w-3.5" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path stroke-linecap="round" d="m5.6 5.6 12.8 12.8"/></svg>';
                         const typeLabel = typeLabels[facility.type] || facility.type;
+                        const fallbackImage = {
+                            aula: '/images/aula.jpg',
+                            laboratorium: '/images/lab-komputer.jpg',
+                            lapangan: '/images/lapangan-futsal.jpg',
+                            ruang_kelas: '/images/ruang-kelas.jpg',
+                            alat: '/images/proyektor.jpg',
+                        }[facility.type] || '/images/aula.jpg';
 
                         card.innerHTML = `
                             <div class="relative aspect-[16/9] w-full overflow-hidden bg-[#f2f3ff]">
-                                ${facility.photo ? `<img src="${facility.photo}" alt="${escapeHtml(facility.name)}" loading="lazy" class="img-fade h-full w-full object-cover transition-transform duration-300 group-hover:scale-105">` :
-                                `<div class="flex h-full w-full items-center justify-center bg-gradient-to-br from-[#00236f] to-[#0051d5]"><span class="text-5xl font-bold text-white/90">${escapeHtml(facility.name.charAt(0) + facility.name.charAt(1))}</span></div>`}
+                                ${facility.photo_url ? `<img src="${facility.photo_url}" alt="${escapeHtml(facility.name)}" loading="lazy" class="img-fade h-full w-full object-cover transition-transform duration-300 group-hover:scale-105">` :
+                                `<img src="${fallbackImage}" alt="${escapeHtml(facility.name)}" loading="lazy" class="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105">`}
                                 <span class="absolute right-3 top-3 inline-flex items-center gap-1 rounded-full bg-white/95 px-2.5 py-1 text-xs font-medium shadow-sm ring-1 ${badgeClass}">
-                                    <span class="h-1.5 w-1.5 rounded-full ${statusDot}"></span>
-                                    ${escapeHtml(facility.status)}
+                                    ${statusIcon}
+                                    ${escapeHtml(facility.status.charAt(0).toUpperCase() + facility.status.slice(1))}
                                 </span>
                             </div>
-                            <div class="flex flex-1 flex-col justify-between gap-4 p-6">
+                            <div class="flex flex-1 flex-col justify-between gap-4 p-4 sm:p-5">
                                 <div class="space-y-2">
-                                    <h3 class="text-lg font-semibold text-[#0F172A]">${escapeHtml(facility.name)}</h3>
-                                    <span class="inline-block rounded bg-[#e2e7ff] px-2 py-0.5 text-xs font-medium text-[#00236f]">${escapeHtml(typeLabel)}</span>
+                                    <h3 class="text-base font-bold text-slate-900">${escapeHtml(facility.name)}</h3>
+                                    <span class="inline-block rounded-full border border-blue-100 bg-blue-50 px-2 py-0.5 text-[10px] font-medium text-blue-600">${escapeHtml(typeLabel)}</span>
                                     <div class="space-y-1 pt-1">
                                         <div class="flex items-center gap-2 text-sm text-[#475569]">
                                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="h-4 w-4 text-[#94A3B8]" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M12 21s7-5.5 7-11a7 7 0 10-14 0c0 5.5 7 11 7 11z"/><circle cx="12" cy="10" r="2.5"/></svg>
@@ -561,10 +504,10 @@ if (landingFilterForm !== null) {
                                         </div>
                                     </div>
                                 </div>
-                                <button type="button" data-landing-go="${facility.id}" class="flex h-10 w-full items-center justify-center gap-1.5 rounded-lg bg-[#f2f3ff] text-sm font-medium text-[#00236f] transition-colors hover:bg-[#e2e7ff]">
+                                <a href="/fasilitas/${Number(facility.id)}/jadwal?from=home" class="landing-button flex h-10 w-full items-center justify-center gap-1.5 rounded-xl border border-blue-200 bg-white/80 text-xs font-semibold text-blue-700 transition-colors hover:bg-blue-50">
                                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="h-[18px] w-[18px]" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M8 3v4m8-4v4M3 10h18"/></svg>
                                     Lihat Jadwal
-                                </button>
+                                </a>
                             </div>`;
                         landingGridContainer.appendChild(card);
                     });
@@ -602,104 +545,29 @@ if (landingFilterForm !== null) {
     }
 }
 
-// Schedule date change handler
-const slotClasses = {
-    available: 'bg-white text-[#0F172A] shadow-sm hover:shadow',
-    booked: 'bg-[#FFDAD6]/40 text-[#DC2626]',
-    past: 'bg-[#EEF2FF] text-[#94A3B8]',
-    inactive: 'bg-[#EEF2FF] text-[#94A3B8]',
-};
-const slotLabels = {
-    available: 'Tersedia',
-    booked: 'Terpakai',
-    past: 'Waktu Lewat',
-    inactive: 'Tidak Aktif',
-};
+const availableSlotsToggle = document.querySelector('[data-available-filter]');
+const scheduleSlots = document.querySelector('[data-schedule-slots]');
+const emptyScheduleSlots = document.querySelector('[data-empty-slots]');
 
-let scheduleDebounceTimer = null;
+if (availableSlotsToggle !== null && scheduleSlots !== null) {
+    const filterAvailableSlots = () => {
+        const onlyAvailable = availableSlotsToggle.getAttribute('aria-checked') === 'true';
+        let visibleSlots = 0;
 
-const updateScheduleGrid = (data) => {
-    if (scheduleLoading !== null) scheduleLoading.classList.add('hidden');
-    if (scheduleGrid !== null) scheduleGrid.style.opacity = '1';
-
-    if (!data || !data.grids || !data.facilities || data.facilities.length === 0) return;
-
-    const facility = data.facilities[0];
-    const facilityId = String(facility.id);
-    const grids = data.grids[facilityId] || [];
-
-    const indicator = document.querySelector('[data-facility-indicator]');
-    if (indicator) indicator.textContent = `Fasilitas: ${facility.name}`;
-
-    const title = document.getElementById('schedule-title');
-    if (title) {
-        const selectedDate = scheduleDateInput.value;
-        const dateObj = selectedDate ? new Date(selectedDate + 'T00:00:00') : null;
-        const dateStr = dateObj ? dateObj.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }) : 'Jadwal';
-        title.textContent = `Pratinjau Ketersediaan Jadwal — ${dateStr}`;
-    }
-
-    const gridContainer = document.getElementById('schedule-grid');
-    if (!gridContainer) return;
-
-    gridContainer.innerHTML = `
-        <div role="tabpanel" aria-labelledby="tab-facility-${facilityId}" id="facility-grid-${facilityId}"
-             data-facility-grid="${facilityId}" data-facility-name="${escapeHtml(facility.name)}"
-             class="space-y-3">
-            <div class="flex items-center justify-between">
-                <span class="text-xs font-medium uppercase tracking-wider text-[#475569]">Slot Waktu Pemakaian (Interval 30 Menit)</span>
-                <span class="text-xs text-[#94A3B8]">Total ${grids.length} Slot</span>
-            </div>
-            <div class="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6">
-                ${grids.map(slot => `
-                    <div class="flex flex-col items-center justify-center rounded-lg p-3 text-center select-none ${slotClasses[slot.state] || ''}
-                        ${['past', 'booked', 'inactive'].includes(slot.state) ? 'cursor-not-allowed opacity-70' : ''}">
-                        <span class="text-sm font-medium">${escapeHtml(slot.start)} - ${escapeHtml(slot.end)}</span>
-                        <span class="mt-0.5 text-xs font-medium ${['booked', 'past', 'inactive'].includes(slot.state) ? 'text-[#DC2626]' : 'text-green-600'}">${slotLabels[slot.state] || slot.state}</span>
-                    </div>
-                `).join('')}
-            </div>
-        </div>`;
-};
-
-const fetchSchedule = () => {
-    if (!scheduleDateInput || !scheduleGrid) return;
-
-    const date = scheduleDateInput.value;
-    const activeTab = document.querySelector('[data-landing-tab].bg-\\[\\#00236f\\]');
-    const facilityId = activeTab ? activeTab.dataset.landingTab : null;
-
-    if (!facilityId) return;
-
-    if (scheduleLoading !== null) scheduleLoading.classList.remove('hidden');
-    if (scheduleGrid !== null) scheduleGrid.style.opacity = '0.5';
-
-    fetch(`/home/facilities?date=${date}&facility_id=${facilityId}`, {
-        headers: { 'X-Requested-With': 'XMLHttpRequest' },
-    })
-        .then((response) => response.json())
-        .then((data) => {
-            updateScheduleGrid(data);
-        })
-        .catch((error) => {
-            if (scheduleLoading !== null) scheduleLoading.classList.add('hidden');
-            if (scheduleGrid !== null) scheduleGrid.style.opacity = '1';
-            console.error('Failed to fetch schedule:', error);
+        scheduleSlots.querySelectorAll('[data-slot-state]').forEach((slot) => {
+            const isAvailable = slot.dataset.slotState === 'available';
+            const isVisible = !onlyAvailable || isAvailable;
+            slot.classList.toggle('hidden', !isVisible);
+            visibleSlots += isVisible ? 1 : 0;
         });
-};
 
-if (scheduleDateInput !== null && scheduleGrid !== null) {
-    scheduleDateInput.addEventListener('change', () => {
-        clearTimeout(scheduleDebounceTimer);
-        scheduleDebounceTimer = setTimeout(fetchSchedule, 300);
+        emptyScheduleSlots?.classList.toggle('hidden', visibleSlots !== 0);
+    };
+
+    availableSlotsToggle.addEventListener('click', () => {
+        const isOn = availableSlotsToggle.getAttribute('aria-checked') === 'true';
+        availableSlotsToggle.setAttribute('aria-checked', String(!isOn));
+        filterAvailableSlots();
     });
-
-    if (scheduleTabsContainer !== null) {
-        scheduleTabsContainer.addEventListener('click', (e) => {
-            const tab = e.target.closest('[data-landing-tab]');
-            if (!tab) return;
-            clearTimeout(scheduleDebounceTimer);
-            scheduleDebounceTimer = setTimeout(fetchSchedule, 300);
-        });
-    }
+    filterAvailableSlots();
 }

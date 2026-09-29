@@ -25,9 +25,49 @@ it('displays the list of facilities on public catalog index', function () {
     $response = $this->get('/fasilitas');
 
     $response->assertOk()
-        ->assertSee('Katalog Fasilitas Kampus')
+        ->assertSee('Semua Fasilitas Kampus')
         ->assertSee('Aula Terpadu')
         ->assertSee('Lab Multimedia');
+});
+
+it('paginates the public catalog so every facility stays reachable', function () {
+    $names = collect(range(1, 20))->map(fn (int $index) => 'Fasilitas '.$index);
+
+    foreach ($names as $name) {
+        Facility::factory()->create(['name' => $name, 'status' => 'aktif']);
+    }
+
+    $firstPage = $this->get('/fasilitas')->assertOk();
+    $pageOne = $firstPage->viewData('facilities');
+
+    expect($pageOne->total())->toBe(20)
+        ->and($pageOne->count())->toBe(12)
+        ->and($pageOne->lastPage())->toBe(2);
+
+    $firstPage->assertSee('page=2', escape: false);
+
+    $pageTwo = $this->get('/fasilitas?page=2')->assertOk()->viewData('facilities');
+
+    expect($pageTwo->count())->toBe(8)
+        ->and($pageOne->pluck('name')->merge($pageTwo->pluck('name'))->sort()->values()->all())
+        ->toBe($names->sort()->values()->all());
+});
+
+it('keeps the active filter on catalog pagination links', function () {
+    foreach (range(1, 15) as $index) {
+        Facility::factory()->create(['name' => 'Aula Uji '.$index, 'status' => 'aktif']);
+    }
+
+    Facility::factory()->create(['name' => 'Laboratorium Uji', 'status' => 'aktif']);
+
+    $response = $this->get('/fasilitas?q=Aula%20Uji')
+        ->assertOk()
+        ->assertSee('Aula Uji 1')
+        ->assertDontSee('Laboratorium Uji');
+
+    expect($response->viewData('facilities')->total())->toBe(15);
+
+    $response->assertSee('q=Aula%20Uji&amp;page=2', escape: false);
 });
 
 it('filters facilities by keyword q', function () {
