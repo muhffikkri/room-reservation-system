@@ -10,6 +10,7 @@ Perubahan penting pada setiap rilis dicatat di sini. Detail commit dan pull requ
 - Penolakan otomatis dan notifikasi untuk reservasi pending yang overlap setelah reservasi lain disetujui.
 - Filter dan pengurutan antrian reservasi petugas.
 - Pencarian fasilitas dan pratinjau jadwal pada landing page.
+- Favicon logo REKSA pada seluruh halaman, diturunkan dari `public/images/reksa-logo.png` dengan latar transparan dan ukuran 16, 32, 48, serta 180 piksel.
 
 ### Fixed
 
