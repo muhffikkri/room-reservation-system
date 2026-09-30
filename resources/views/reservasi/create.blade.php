@@ -9,7 +9,7 @@
                 class="mb-7 flex flex-col gap-4 border-b border-blue-100/80 pb-6 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                     <a href="{{ route('reservasi.index') }}"
-                        class="clay-pressable mb-3 inline-flex items-center gap-2 rounded-full px-4 py-2 text-xs font-semibold text-blue-700">
+                        class="clay-button-white mb-3 inline-flex items-center gap-2 rounded-full px-4 py-2 text-xs font-semibold text-blue-700">
                         &larr; Kembali ke riwayat reservasi
                     </a>
                     <p class="text-[11px] font-bold uppercase tracking-[0.16em] text-blue-600">Pemesanan fasilitas · REKSA
@@ -217,7 +217,7 @@
                 <div
                     class="flex flex-col-reverse items-stretch justify-end gap-3 border-t border-blue-100/80 pt-5 sm:flex-row sm:items-center">
                     <a href="{{ route('reservasi.index') }}"
-                        class="clay-pressable inline-flex justify-center rounded-full px-6 py-3 text-sm font-semibold text-blue-700">
+                        class="clay-button-white inline-flex justify-center rounded-full px-6 py-3 text-sm font-semibold text-blue-700">
                         Batal
                     </a>
                     <button type="submit" id="submitBtn"

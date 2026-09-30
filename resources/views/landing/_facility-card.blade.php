@@ -19,6 +19,6 @@
             <p class="text-sm text-[#475569]">{{ $facility->location }} · Kapasitas {{ $facility->capacity }} orang</p>
             @if ($facility->description)<p class="text-xs leading-relaxed text-slate-500">{{ \Illuminate\Support\Str::limit($facility->description, 110) }}</p>@endif
         </div>
-        <a href="{{ route('fasilitas.jadwal', ['facility' => $facility, 'from' => $from ?? 'all']) }}" class="landing-button flex h-10 w-full items-center justify-center gap-2 rounded-xl border border-blue-200 bg-white/80 text-xs font-semibold text-blue-700 hover:bg-blue-50">Lihat Jadwal</a>
+        <a href="{{ route('fasilitas.jadwal', ['facility' => $facility, 'from' => $from ?? 'all']) }}" class="clay-button-white flex h-10 w-full items-center justify-center gap-2 rounded-xl text-xs font-semibold text-blue-700">Lihat Jadwal</a>
     </div>
 </article>

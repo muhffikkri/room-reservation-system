@@ -23,7 +23,7 @@
                         Verifikasi Akun <span aria-hidden="true">&rarr;</span>
                     </a>
                     <a href="{{ route('admin.fasilitas.index') }}"
-                        class="clay-pressable inline-flex min-h-11 items-center gap-2 rounded-full px-5 py-3 text-sm font-semibold text-blue-700 sm:px-6">
+                        class="clay-button-white inline-flex min-h-11 items-center gap-2 rounded-full px-5 py-3 text-sm font-semibold text-blue-700 sm:px-6">
                         Kelola Fasilitas
                     </a>
                 </div>
@@ -41,7 +41,7 @@
                 <h2 id="admin-summary-heading" class="mt-1 text-xl font-extrabold tracking-tight text-[#10264a]">Kondisi
                     sistem hari ini</h2>
             </div>
-            <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+            <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
                 <a href="{{ route('admin.pengguna.verifikasi') }}"
                     class="dashboard-clay-stat clay-inset flex items-center gap-4 rounded-2xl p-4 transition hover:-translate-y-0.5 sm:p-5">
                     <span
@@ -121,24 +121,6 @@
                         <p class="mt-1 text-3xl font-extrabold leading-none tracking-tight text-slate-900">
                             {{ $repairFacilityCount }}</p>
                         <p class="mt-2 text-[11px] text-slate-500">menunggu selesai laporan</p>
-                    </div>
-                </article>
-                <article
-                    class="dashboard-clay-stat clay-inset flex flex-col justify-center gap-1 rounded-2xl p-4 text-center sm:p-5">
-                    <p class="text-xs font-semibold text-slate-600">Pintasan</p>
-                    <div class="mt-2 flex flex-wrap justify-center gap-2">
-                        <a href="{{ route('admin.fasilitas.index') }}"
-                            class="clay-pressable inline-flex h-9 items-center rounded-full px-4 text-xs font-bold text-blue-700">
-                            Fasilitas
-                        </a>
-                        <a href="{{ route('admin.rekap.damage') }}"
-                            class="clay-pressable inline-flex h-9 items-center rounded-full px-4 text-xs font-bold text-blue-700">
-                            Rekap Kerusakan
-                        </a>
-                        <a href="{{ route('admin.rekap.occupancy') }}"
-                            class="clay-pressable inline-flex h-9 items-center rounded-full px-4 text-xs font-bold text-blue-700">
-                            Rekap Okupansi
-                        </a>
                     </div>
                 </article>
             </div>

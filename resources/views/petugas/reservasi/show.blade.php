@@ -17,7 +17,7 @@
             <div class="flex flex-col gap-4 border-b border-blue-100/80 pb-6 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                     <a href="{{ route('petugas.reservasi.index') }}"
-                        class="clay-pressable mb-3 inline-flex items-center gap-2 rounded-full px-4 py-2 text-xs font-semibold text-blue-700">
+                        class="clay-button-white mb-3 inline-flex items-center gap-2 rounded-full px-4 py-2 text-xs font-semibold text-blue-700">
                         <span aria-hidden="true">&larr;</span> Kembali ke antrian
                     </a>
                     <p class="text-[11px] font-bold uppercase tracking-[0.16em] text-blue-600">Pusat operasional · Antrian
@@ -171,7 +171,7 @@
             <div
                 class="mt-7 flex flex-col-reverse items-stretch gap-3 border-t border-blue-100/80 pt-6 sm:flex-row sm:items-center sm:justify-between">
                 <a href="{{ route('petugas.reservasi.index') }}"
-                    class="clay-pressable inline-flex justify-center rounded-full px-6 py-3 text-sm font-semibold text-blue-700">
+                    class="clay-button-white inline-flex justify-center rounded-full px-6 py-3 text-sm font-semibold text-blue-700">
                     <span aria-hidden="true">&larr;</span> Kembali ke antrian
                 </a>
                 <div class="flex flex-col items-stretch gap-3 sm:flex-row sm:items-center">
@@ -217,7 +217,7 @@
             @enderror
             <div class="mt-5 flex items-center justify-end gap-2">
                 <button type="button" data-close-dialog="reject-detail"
-                    class="clay-pressable inline-flex h-10 items-center justify-center rounded-full px-5 text-sm font-semibold text-blue-700">
+                    class="clay-button-white inline-flex h-10 items-center justify-center rounded-full px-5 text-sm font-semibold text-blue-700">
                     Kembali
                 </button>
                 <button type="submit" data-submit-loading data-loading-label="Menolak..."
@@ -246,7 +246,7 @@
             @enderror
             <div class="mt-5 flex items-center justify-end gap-2">
                 <button type="button" data-close-dialog="cancel-detail"
-                    class="clay-pressable inline-flex h-10 items-center justify-center rounded-full px-5 text-sm font-semibold text-blue-700">
+                    class="clay-button-white inline-flex h-10 items-center justify-center rounded-full px-5 text-sm font-semibold text-blue-700">
                     Kembali
                 </button>
                 <button type="submit" data-submit-loading data-loading-label="Membatalkan..."

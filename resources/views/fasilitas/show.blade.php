@@ -188,7 +188,7 @@
                                 @if (Route::has('reservasi.create'))
                                     <a
                                         href="{{ route('reservasi.create', ['facility_id' => $facility->id]) }}"
-                                        class="flex w-full items-center justify-center gap-2 rounded-xl border border-[#D6DDF8] bg-white px-4 py-2.5 text-sm font-semibold text-[#00236f] shadow-sm transition hover:bg-[#F2F3FF]"
+                                        class="clay-button-white flex w-full items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold text-[#00236f]"
                                     >
                                         Ajukan Reservasi
                                     </a>
@@ -200,7 +200,7 @@
                             @else
                                 <a
                                     href="{{ route('login') }}"
-                                    class="flex w-full items-center justify-center gap-2 rounded-xl border border-[#D6DDF8] bg-white px-4 py-2.5 text-sm font-semibold text-[#00236f] shadow-sm transition hover:bg-[#F2F3FF]"
+                                    class="clay-button-white flex w-full items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold text-[#00236f]"
                                 >
                                     Login untuk Mengajukan Reservasi
                                 </a>

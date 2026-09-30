@@ -9,7 +9,7 @@
             <div class="flex flex-col gap-4 border-b border-blue-100/80 pb-6 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                     <a href="{{ route('laporan.index') }}"
-                        class="clay-pressable mb-3 inline-flex items-center gap-2 rounded-full px-4 py-2 text-xs font-semibold text-blue-700">
+                        class="clay-button-white mb-3 inline-flex items-center gap-2 rounded-full px-4 py-2 text-xs font-semibold text-blue-700">
                         &larr; Kembali ke daftar laporan
                     </a>
                     <p class="text-[11px] font-bold uppercase tracking-[0.16em] text-blue-600">Laporan Kerusakan · REKSA</p>
@@ -174,7 +174,7 @@
             {{-- Footer Button --}}
             <div class="border-t border-blue-100/80 pt-5">
                 <a href="{{ route('laporan.index') }}"
-                    class="clay-pressable inline-flex justify-center rounded-full px-6 py-3 text-sm font-semibold text-blue-700">
+                    class="clay-button-white inline-flex justify-center rounded-full px-6 py-3 text-sm font-semibold text-blue-700">
                     &larr; Kembali ke daftar laporan
                 </a>
             </div>

@@ -11,7 +11,7 @@
     // menukar kelas active/inactive dari atribut ini, bukan dari salinan kelas.
     $chipBase = 'shrink-0 rounded-full px-4 py-2 text-xs font-bold';
     $chipActive = 'landing-button bg-gradient-to-r from-blue-600 to-blue-500 text-white';
-    $chipInactive = 'clay-pressable text-slate-600';
+    $chipInactive = 'clay-button-white text-slate-600';
 @endphp
 
 <a href="{{ $href }}" @class([$chipBase, $active ? $chipActive : $chipInactive])

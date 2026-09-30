@@ -18,7 +18,7 @@
                 <img src="{{ asset('images/reksa-logo.webp') }}" alt="" class="h-11 w-11 rounded-xl object-contain shadow-sm">
                 <span class="flex flex-col"><span class="text-base font-extrabold tracking-wide text-slate-900">REKSA</span><span class="text-[10px] leading-tight text-slate-600">Reservasi dan Kerusakan Sarana Akademik</span></span>
             </a>
-            <a href="{{ route('home') }}" class="landing-button inline-flex items-center gap-2 rounded-full border border-white bg-white/80 px-4 py-2.5 text-xs font-semibold text-blue-700 shadow-[0_6px_16px_rgba(59,130,246,0.12)] transition hover:bg-white sm:text-sm">
+            <a href="{{ route('home') }}" class="clay-button-white inline-flex items-center gap-2 rounded-full px-4 py-2.5 text-xs font-semibold text-blue-700 sm:text-sm sm:text-sm">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="h-4 w-4" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="m10 19-7-7 7-7M3 12h18"/></svg>
                 Kembali ke Beranda
             </a>

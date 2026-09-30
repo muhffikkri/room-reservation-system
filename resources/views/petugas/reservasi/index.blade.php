@@ -13,7 +13,7 @@
         // dan Batalkan merah seperti tombol Keluar, Setujui biru, Detail putih
         // dengan efek hover dan tekan, dan Detail selalu paling kanan.
         $chipLayout = 'inline-flex h-9 items-center justify-center whitespace-nowrap rounded-full px-4 text-xs font-bold';
-        $detailChip = "clay-pressable {$chipLayout} text-slate-600";
+        $detailChip = "clay-button-white {$chipLayout} text-slate-600";
         $approveChip = "landing-button {$chipLayout} bg-gradient-to-r from-blue-600 to-blue-500 text-white";
         $dangerChip = "clay-button-danger {$chipLayout}";
         $dialogShell = 'w-full max-w-md rounded-[1.8rem] border border-white/90 bg-gradient-to-br from-white/98 to-blue-50/80 p-6 shadow-[0_24px_60px_rgba(16,38,74,0.24),inset_2px_2px_6px_rgba(255,255,255,0.9)] backdrop:bg-slate-950/40';
@@ -119,7 +119,7 @@
                                             </p>
                                             <div class="mt-4 flex items-center justify-end gap-2">
                                                 <button type="button" data-close-dialog="approve-{{ $reservation->id }}"
-                                                    class="clay-pressable inline-flex h-10 items-center justify-center rounded-full px-5 text-sm font-semibold text-blue-700">
+                                                    class="clay-button-white inline-flex h-10 items-center justify-center rounded-full px-5 text-sm font-semibold text-blue-700">
                                                     Kembali
                                                 </button>
                                                 <button type="submit" data-submit-loading data-loading-label="Menyetujui..."
@@ -156,7 +156,7 @@
                                             </div>
                                             <div class="mt-4 flex items-center justify-end gap-2">
                                                 <button type="button" data-close-dialog="reject-{{ $reservation->id }}"
-                                                    class="clay-pressable inline-flex h-10 items-center justify-center rounded-full px-5 text-sm font-semibold text-blue-700">
+                                                    class="clay-button-white inline-flex h-10 items-center justify-center rounded-full px-5 text-sm font-semibold text-blue-700">
                                                     Kembali
                                                 </button>
                                                 <button type="submit" data-submit-loading data-loading-label="Menolak..."
@@ -195,7 +195,7 @@
                                             </div>
                                             <div class="mt-4 flex items-center justify-end gap-2">
                                                 <button type="button" data-close-dialog="cancel-{{ $reservation->id }}"
-                                                    class="clay-pressable inline-flex h-10 items-center justify-center rounded-full px-5 text-sm font-semibold text-blue-700">
+                                                    class="clay-button-white inline-flex h-10 items-center justify-center rounded-full px-5 text-sm font-semibold text-blue-700">
                                                     Kembali
                                                 </button>
                                                 <button type="submit" data-submit-loading data-loading-label="Membatalkan..."

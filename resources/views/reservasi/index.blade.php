@@ -18,9 +18,9 @@
                 </a>
             </div>
             <nav class="mt-6 flex gap-2 overflow-x-auto pb-1" aria-label="Filter status reservasi">
-                <a href="{{ route('reservasi.index') }}" @class(['shrink-0 rounded-full px-4 py-2 text-xs font-semibold', 'landing-button bg-gradient-to-r from-blue-600 to-blue-500 text-white' => (string) request('status') === '', 'clay-pressable text-slate-600' => (string) request('status') !== ''])>Semua</a>
+                <a href="{{ route('reservasi.index') }}" @class(['shrink-0 rounded-full px-4 py-2 text-xs font-semibold', 'landing-button bg-gradient-to-r from-blue-600 to-blue-500 text-white' => (string) request('status') === '', 'clay-button-white text-slate-600' => (string) request('status') !== ''])>Semua</a>
                 @foreach (Reservation::ORDERED_STATUSES as $status)
-                    <a href="{{ route('reservasi.index', ['status' => $status]) }}" @class(['shrink-0 rounded-full px-4 py-2 text-xs font-semibold', 'landing-button bg-gradient-to-r from-blue-600 to-blue-500 text-white' => (string) request('status') === $status, 'clay-pressable text-slate-600' => (string) request('status') !== $status])>{{ $status === 'cancelled_by_system' ? 'Gagal' : Reservation::statusLabel($status) }}</a>
+                    <a href="{{ route('reservasi.index', ['status' => $status]) }}" @class(['shrink-0 rounded-full px-4 py-2 text-xs font-semibold', 'landing-button bg-gradient-to-r from-blue-600 to-blue-500 text-white' => (string) request('status') === $status, 'clay-button-white text-slate-600' => (string) request('status') !== $status])>{{ $status === 'cancelled_by_system' ? 'Gagal' : Reservation::statusLabel($status) }}</a>
                 @endforeach
             </nav>
         </section>

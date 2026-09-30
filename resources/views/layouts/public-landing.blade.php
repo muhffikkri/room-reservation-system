@@ -18,7 +18,7 @@
             <span class="flex flex-col"><span class="text-sm font-extrabold tracking-wide text-slate-900 sm:text-base">REKSA</span><span class="hidden text-[10px] text-slate-600 sm:inline">Reservasi dan Kerusakan Sarana Akademik</span></span>
         </a>
         <div class="flex items-center gap-2">
-            <a href="{{ route('home') }}" class="landing-button rounded-full border border-blue-100 bg-white/80 px-4 py-2.5 text-xs font-semibold text-blue-700 sm:text-sm">Beranda</a>
+            <a href="{{ route('home') }}" class="clay-button-white rounded-full px-4 py-2.5 text-xs font-semibold text-blue-700 sm:text-sm">Beranda</a>
             @auth
                 <a href="{{ route('dashboard') }}" class="landing-button rounded-full bg-gradient-to-r from-blue-600 to-blue-500 px-4 py-2.5 text-xs font-semibold text-white sm:text-sm">Dashboard</a>
             @else

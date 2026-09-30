@@ -9,7 +9,7 @@
         // Aksi baris mengikuti token clay yang sama dengan halaman lain:
         // Edit putih, Aktifkan hijau, Nonaktifkan merah.
         $chipLayout = 'inline-flex h-9 items-center justify-center whitespace-nowrap rounded-full px-4 text-xs font-bold';
-        $editChip = "clay-pressable {$chipLayout} text-slate-600";
+        $editChip = "clay-button-white {$chipLayout} text-slate-600";
         $dangerChip = "clay-button-danger {$chipLayout}";
         $activateChip = "inline-flex {$chipLayout} border border-emerald-200 bg-gradient-to-br from-emerald-50 to-white text-emerald-700 transition hover:from-emerald-100 hover:to-white";
     @endphp
@@ -44,7 +44,7 @@
                 </button>
                 @if ($keyword !== '')
                     <a href="{{ route('admin.fasilitas.index') }}"
-                        class="clay-pressable inline-flex h-11 items-center justify-center rounded-full px-5 text-sm font-semibold text-blue-700">
+                        class="clay-button-white inline-flex h-11 items-center justify-center rounded-full px-5 text-sm font-semibold text-blue-700">
                         Reset
                     </a>
                 @endif

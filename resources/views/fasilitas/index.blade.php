@@ -4,7 +4,7 @@
 
 @section('content')
     <div class="flex flex-wrap items-center justify-between gap-3">
-        <a href="{{ ($from ?? 'home') === 'home' ? route('home') : route('fasilitas.index') }}" class="landing-button inline-flex items-center gap-2 rounded-full border border-blue-100 bg-white/80 px-4 py-2.5 text-sm font-semibold text-blue-700">← Kembali</a>
+        <a href="{{ ($from ?? 'home') === 'home' ? route('home') : route('fasilitas.index') }}" class="clay-button-white inline-flex items-center gap-2 rounded-full px-4 py-2.5 text-sm font-semibold text-blue-700">← Kembali</a>
         <span class="rounded-full border border-white/80 bg-white/70 px-3 py-1.5 text-xs font-medium text-slate-600 shadow-sm">{{ $facilities->total() }} fasilitas</span>
     </div>
 
@@ -20,7 +20,7 @@
             <div><label for="tipe" class="mb-1.5 block text-xs font-semibold text-slate-600">Jenis</label><select id="tipe" name="tipe" data-auto-filter class="landing-input h-10 w-full rounded-xl px-3 text-sm"><option value="">Semua Jenis</option>@foreach ($types as $value => $label)<option value="{{ $value }}" @selected(($filters['tipe'] ?? '') === $value)>{{ $label }}</option>@endforeach</select></div>
             <div><label for="lokasi" class="mb-1.5 block text-xs font-semibold text-slate-600">Lokasi</label><select id="lokasi" name="lokasi" data-auto-filter class="landing-input h-10 w-full rounded-xl px-3 text-sm"><option value="">Semua Lokasi</option>@foreach ($locations as $location)<option value="{{ $location }}" @selected(($filters['lokasi'] ?? '') === $location)>{{ $location }}</option>@endforeach</select></div>
             <div><label for="kapasitas" class="mb-1.5 block text-xs font-semibold text-slate-600">Kapasitas</label><select id="kapasitas" name="kapasitas" data-auto-filter class="landing-input h-10 w-full rounded-xl px-3 text-sm"><option value="">Semua Kapasitas</option><option value="lt_40" @selected(($filters['kapasitas'] ?? '') === 'lt_40')>&lt; 40 orang</option><option value="40_100" @selected(($filters['kapasitas'] ?? '') === '40_100')>40–100 orang</option><option value="gt_100" @selected(($filters['kapasitas'] ?? '') === 'gt_100')>&gt; 100 orang</option></select></div>
-            <a href="{{ route('fasilitas.index', ['from' => $from ?? 'home']) }}" class="landing-button inline-flex h-10 items-center justify-center rounded-xl border border-blue-100 bg-white px-4 text-sm font-semibold text-slate-700 shadow-sm hover:bg-blue-50">Reset Filter</a>
+            <a href="{{ route('fasilitas.index', ['from' => $from ?? 'home']) }}" class="clay-button-white inline-flex h-10 items-center justify-center rounded-xl px-4 text-sm font-semibold text-slate-700">Reset Filter</a>
         </form>
     </section>
 

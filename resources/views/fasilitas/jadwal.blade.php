@@ -34,7 +34,7 @@
 
     <div class="flex flex-wrap items-center justify-between gap-3">
         <a href="{{ ($from ?? 'all') === 'home' ? route('home') : route('fasilitas.index') }}"
-            class="landing-button inline-flex items-center gap-2 rounded-full border border-blue-100 bg-white/80 px-4 py-2.5 text-sm font-semibold text-blue-700">←
+            class="clay-button-white inline-flex items-center gap-2 rounded-full px-4 py-2.5 text-sm font-semibold text-blue-700">←
             Kembali</a>
         <span
             class="rounded-full border border-white/80 bg-white/70 px-3 py-1.5 text-xs font-medium text-slate-600 shadow-sm">Jadwal

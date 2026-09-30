@@ -35,7 +35,7 @@
                 <p class="mt-3 max-w-2xl text-sm leading-relaxed text-slate-600 sm:text-base">Pantau reservasi fasilitas dan laporan kerusakan Anda dari satu tempat.</p>
                 <div class="mt-5 flex flex-wrap items-center gap-3">
                     <a href="{{ route('reservasi.create') }}" class="landing-button inline-flex min-h-11 items-center gap-2 rounded-full bg-gradient-to-r from-blue-600 to-blue-500 px-5 py-3 text-sm font-semibold text-white shadow-[0_4px_14px_rgba(37,99,235,0.25)] transition hover:from-blue-700 hover:to-blue-600 sm:px-6">Buat reservasi <span aria-hidden="true">→</span></a>
-                    <a href="{{ route('laporan.create') }}" class="landing-button inline-flex min-h-11 items-center gap-2 rounded-full border border-white bg-white px-4 py-3 text-sm font-semibold text-slate-700 shadow-[8px_8px_20px_rgba(166,195,235,0.35),-8px_-8px_20px_rgba(255,255,255,0.95)] transition hover:bg-slate-50 sm:px-6">Laporkan kerusakan</a>
+                    <a href="{{ route('laporan.create') }}" class="clay-button-white inline-flex min-h-11 items-center gap-2 rounded-full px-4 py-3 text-sm font-semibold text-slate-700 sm:px-6">Laporkan kerusakan</a>
                 </div>
             </div>
             <div class="dashboard-mascot pointer-events-none absolute inset-y-0 right-0 z-0 flex w-32 items-end justify-center sm:w-52 lg:w-72">

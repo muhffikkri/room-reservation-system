@@ -20,7 +20,7 @@
             <div class="flex flex-col gap-4 border-b border-blue-100/80 pb-6 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                     <a href="{{ route('reservasi.index') }}"
-                        class="clay-pressable mb-3 inline-flex items-center gap-2 rounded-full px-4 py-2 text-xs font-semibold text-blue-700">
+                        class="clay-button-white mb-3 inline-flex items-center gap-2 rounded-full px-4 py-2 text-xs font-semibold text-blue-700">
                         &larr; Kembali ke riwayat reservasi
                     </a>
                     <p class="text-[11px] font-bold uppercase tracking-[0.16em] text-blue-600">Informasi Pemesanan · REKSA
@@ -198,7 +198,7 @@
             <div
                 class="flex flex-col-reverse items-stretch justify-between gap-3 border-t border-blue-100/80 pt-6 sm:flex-row sm:items-center">
                 <a href="{{ route('reservasi.index') }}"
-                    class="clay-pressable inline-flex justify-center rounded-full px-6 py-3 text-sm font-semibold text-blue-700">
+                    class="clay-button-white inline-flex justify-center rounded-full px-6 py-3 text-sm font-semibold text-blue-700">
                     &larr; Kembali ke daftar
                 </a>
                 @if ($canCancel)
@@ -237,7 +237,7 @@
                 </div>
                 <div class="flex items-center justify-end gap-3 pt-2">
                     <button type="button" data-close-dialog
-                        class="clay-pressable rounded-full px-5 py-2.5 text-sm font-semibold text-blue-700">Kembali</button>
+                        class="clay-button-white rounded-full px-5 py-2.5 text-sm font-semibold text-blue-700">Kembali</button>
                     <button type="submit" data-submit-loading data-loading-label="Membatalkan..."
                         class="clay-button-danger rounded-full px-5 py-2.5 text-sm font-bold">Konfirmasi
                         Pembatalan</button>

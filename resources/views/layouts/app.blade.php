@@ -48,7 +48,7 @@
                         @php($unreadNotifications = auth()->user()->unreadNotifications()->count())
                         <div class="relative">
                         <button type="button" data-notification-toggle aria-expanded="false" aria-controls="notification-panel"
-                                class="clay-pressable relative inline-flex h-10 w-10 items-center justify-center rounded-full text-[#00236f] focus:outline-none focus:ring-2 focus:ring-[#0051d5] focus:ring-offset-2"
+                                class="clay-button-white relative inline-flex h-10 w-10 items-center justify-center rounded-full text-[#00236f] focus:outline-none focus:ring-2 focus:ring-[#0051d5] focus:ring-offset-2"
                                 aria-label="Notifikasi{{ $unreadNotifications > 0 ? " ({$unreadNotifications} belum dibaca)" : '' }}">
                                 <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
                                     <path d="M15 17h5l-1.4-1.4A2 2 0 0 1 18 14.2V11a6 6 0 0 0-4-5.7V5a2 2 0 1 0-4 0v.3A6 6 0 0 0 6 11v3.2c0 .5-.2 1-.6 1.4L4 17h5m6 0a3 3 0 1 1-6 0m6 0H9" stroke-linecap="round" stroke-linejoin="round" />

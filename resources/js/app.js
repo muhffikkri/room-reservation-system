@@ -4,7 +4,7 @@ import { initializeReservationForm } from './reservation-form';
 // Cursor tail spring physics
 // =========================================================================
 const TRAIL_COUNT = 7;
-const SPACING = 28;
+const SPACING = 22;
 const TENSION = 0.055;
 const DAMPING = 0.75;
 const RETRACT_TENSION = 0.09;
@@ -60,7 +60,7 @@ function drawCursorTail() {
         const tangentY = nextPoint.y - previousPoint.y;
         const tangentLength = Math.hypot(tangentX, tangentY) || 1;
         const taper = 1 - index / points.length;
-        const halfWidth = (1.35 + taper * 8.1) * point.emerge;
+        const halfWidth = (1.1 + taper * 6.4) * point.emerge;
         const normalX = -tangentY / tangentLength;
         const normalY = tangentX / tangentLength;
 
@@ -100,7 +100,7 @@ function drawCursorTail() {
     tailContext.closePath();
     tailContext.fillStyle = gradient;
     tailContext.shadowColor = 'rgba(44, 149, 255, 0.55)';
-    tailContext.shadowBlur = 10;
+    tailContext.shadowBlur = 8;
     tailContext.fill();
     tailContext.shadowBlur = 0;
 }

@@ -23,7 +23,7 @@
                         Buka Antrian Reservasi <span aria-hidden="true">&rarr;</span>
                     </a>
                     <a href="{{ route('petugas.laporan.index') }}"
-                        class="clay-pressable inline-flex min-h-11 items-center gap-2 rounded-full px-5 py-3 text-sm font-semibold text-blue-700 sm:px-6">
+                        class="clay-button-white inline-flex min-h-11 items-center gap-2 rounded-full px-5 py-3 text-sm font-semibold text-blue-700 sm:px-6">
                         Laporan Kerusakan
                     </a>
                 </div>

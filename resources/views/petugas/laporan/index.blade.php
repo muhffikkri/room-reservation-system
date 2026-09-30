@@ -76,7 +76,7 @@
                                         </td>
                                         <td class="{{ $clayTableCell }} text-right">
                                             <a href="{{ route('petugas.laporan.show', $report) }}"
-                                                class="clay-pressable inline-flex h-9 items-center justify-center whitespace-nowrap rounded-full px-4 text-xs font-bold text-slate-600">
+                                                class="clay-button-white inline-flex h-9 items-center justify-center whitespace-nowrap rounded-full px-4 text-xs font-bold text-slate-600">
                                                 Detail
                                             </a>
                                         </td>

@@ -13,7 +13,7 @@ body,
 *,
 *::before,
 *::after {
-    cursor: url('/images/cursors/main_cursor.webp') 5 2, auto;
+    cursor: url('/images/cursors/main_cursor.webp') 4 2, auto;
 }
 
 a[href],
@@ -38,14 +38,14 @@ label:has(input[type='radio']),
 .slot-item *,
 .cursor-pointer,
 .cursor-pointer * {
-    cursor: url('/images/cursors/link_cursor.webp') 12 3, pointer !important;
+    cursor: url('/images/cursors/link_cursor.webp') 10 2, pointer !important;
 }
 
 input:not([type='button']):not([type='submit']):not([type='reset']):not([type='checkbox']):not([type='radio']):not([type='range']):not([type='file']),
 textarea,
 [contenteditable='true'],
 [role='textbox'] {
-    cursor: url('/images/cursors/text_cursor.webp') 18 18, text !important;
+    cursor: url('/images/cursors/text_cursor.webp') 15 15, text !important;
 }
 
 .cursor-tail-canvas {
@@ -154,6 +154,37 @@ img.img-fade.is-loaded {
     color: #1d4ed8;
     background: linear-gradient(145deg, #edf4ff, #fff);
     box-shadow: inset 4px 4px 9px rgba(125, 158, 202, 0.18), inset -4px -4px 9px rgba(255, 255, 255, 0.95);
+}
+
+/* Tombol putih: pemilik tunggal untuk setiap tombol aksi berlatar putih
+   (kembali, reset, batal, chip baris, ekspor CSV, tombol sekunder di semua
+   halaman). Bentuk 3D claymorphism memakai pola yang sama dengan tombol biru
+   .landing-button: muka putih, tepi bawah biru 0-blur sebagai "alas" yang
+   diekstrusi, lalu bayangan biru lembut di bawahnya. Warna teks tetap
+   deciding per elemen lewat utility text-*. */
+.clay-button-white {
+    border: 1px solid rgba(255, 255, 255, 0.9);
+    background: linear-gradient(145deg, #fff, #eff5ff);
+    box-shadow: 0 9px 18px rgba(24, 91, 225, 0.24), 0 3px 0 rgba(45, 96, 224, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.98), inset 0 -2px 4px rgba(37, 99, 235, 0.1);
+    transition: transform 180ms cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 180ms ease, background 180ms ease;
+}
+
+.clay-button-white:hover,
+.clay-button-white:focus-visible {
+    transform: translateY(-3px) scale(1.015);
+    background: linear-gradient(145deg, #fff, #e8f1ff);
+    box-shadow: 0 14px 25px rgba(24, 91, 225, 0.3), 0 4px 0 rgba(37, 99, 235, 0.58), inset 0 1px 0 #fff, inset 0 -2px 4px rgba(37, 99, 235, 0.08);
+}
+
+.clay-button-white:active {
+    transform: translateY(2px) scale(0.985);
+    background: linear-gradient(145deg, #f2f7ff, #fff);
+    box-shadow: 0 2px 5px rgba(24, 91, 225, 0.2), 0 0 0 rgba(45, 96, 224, 0), inset 0 3px 7px rgba(37, 99, 235, 0.16);
+}
+
+.clay-button-white:focus-visible {
+    outline: 3px solid rgba(37, 99, 235, 0.42);
+    outline-offset: 3px;
 }
 
 .clay-button-danger {

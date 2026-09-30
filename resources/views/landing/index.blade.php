@@ -74,7 +74,7 @@
                             <path stroke-linecap="round" stroke-linejoin="round" d="M5 12h14m-6-6l6 6-6 6"/>
                         </svg>
                     </a>
-                    <a href="{{ route('fasilitas.index', ['from' => 'home']) }}" class="landing-button inline-flex min-h-11 items-center gap-2 rounded-full border border-white bg-white px-4 py-3 text-sm font-semibold text-slate-700 shadow-[8px_8px_20px_rgba(166,195,235,0.35),-8px_-8px_20px_rgba(255,255,255,0.95)] transition hover:bg-slate-50 sm:px-6">
+                    <a href="{{ route('fasilitas.index', ['from' => 'home']) }}" class="clay-button-white inline-flex min-h-11 items-center gap-2 rounded-full px-4 py-3 text-sm font-semibold text-slate-700 sm:px-6">
                         Cek Fasilitas
                     </a>
                 </div>
@@ -192,7 +192,7 @@
                 </div>
                 <div>
                         <button type="button" id="landing-reset-filter"
-                            class="landing-button flex h-10 w-full items-center justify-center gap-2 rounded-xl border border-blue-100 bg-white text-xs font-semibold text-slate-700 shadow-sm transition-all hover:bg-blue-50">
+                            class="clay-button-white flex h-10 w-full items-center justify-center gap-2 rounded-xl text-xs font-semibold text-slate-700">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="h-[18px] w-[18px]" aria-hidden="true">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16M8 6v-.5A1.5 1.5 0 0110 4v0A1.5 1.5 0 0111.5 6v0M12 12v-.5A1.5 1.5 0 0114 10v0A1.5 1.5 0 0115.5 12v0M8 18v-.5A1.5 1.5 0 0110 16v0A1.5 1.5 0 0111.5 18v0"/>
                         </svg>
@@ -219,7 +219,7 @@
                 <div class="landing-panel rounded-2xl p-10 text-center shadow-sm">
                     <p class="text-base font-medium text-[#0F172A]">Fasilitas tidak ditemukan</p>
                     <p class="mt-1 text-sm text-[#475569]">Coba ubah kata kunci atau filter pencarian Anda.</p>
-                    <a href="{{ route('home') }}" class="landing-button mt-4 inline-block rounded-full border border-blue-100 bg-white px-5 py-2.5 text-sm font-semibold text-slate-700 shadow-sm hover:bg-blue-50">Reset Filter</a>
+                    <a href="{{ route('home') }}" class="clay-button-white mt-4 inline-block rounded-full px-5 py-2.5 text-sm font-semibold text-slate-700">Reset Filter</a>
                 </div>
             @endif
 
@@ -258,7 +258,7 @@
                                 </div>
                             </div>
                             <a href="{{ route('fasilitas.jadwal', ['facility' => $facility, 'from' => 'home']) }}"
-                                    class="landing-button flex h-10 w-full items-center justify-center gap-1.5 rounded-xl border border-blue-200 bg-white/80 text-xs font-semibold text-blue-700 transition-colors hover:bg-blue-50">
+                                    class="clay-button-white flex h-10 w-full items-center justify-center gap-1.5 rounded-xl text-xs font-semibold text-blue-700">
                                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="h-[18px] w-[18px]" aria-hidden="true">
                                     <rect x="3" y="5" width="18" height="16" rx="2"/><path d="M8 3v4m8-4v4M3 10h18"/>
                                 </svg>

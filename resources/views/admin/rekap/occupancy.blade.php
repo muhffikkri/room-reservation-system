@@ -25,7 +25,7 @@
                 </div>
                 <div class="flex flex-wrap items-center gap-2">
                     <a href="{{ route('admin.rekap.occupancy.export.csv', ['start_date' => $startDate, 'end_date' => $endDate]) }}"
-                        class="inline-flex min-h-11 items-center gap-2 rounded-full border border-emerald-200 bg-gradient-to-br from-emerald-50 to-white px-5 py-2.5 text-sm font-bold text-emerald-700 transition hover:from-emerald-100 hover:to-white">
+                        class="clay-button-white inline-flex min-h-11 items-center gap-2 rounded-full px-5 py-2.5 text-sm font-bold text-slate-700">
                         <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                             aria-hidden="true">
                             <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3" stroke-linecap="round"
@@ -34,7 +34,7 @@
                         Ekspor CSV
                     </a>
                     <a href="{{ route('admin.rekap.occupancy.export.pdf', ['start_date' => $startDate, 'end_date' => $endDate]) }}"
-                        class="clay-button-danger inline-flex min-h-11 items-center gap-2 rounded-full px-5 py-2.5 text-sm font-bold">
+                        class="landing-button inline-flex min-h-11 items-center gap-2 rounded-full bg-gradient-to-r from-blue-600 to-blue-500 px-5 py-2.5 text-sm font-bold text-white shadow-[0_4px_14px_rgba(37,99,235,0.25)]">
                         <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                             aria-hidden="true">
                             <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" stroke-linecap="round"
@@ -68,7 +68,7 @@
                     Filter
                 </button>
                 <a href="{{ route('admin.rekap.occupancy') }}"
-                    class="clay-pressable inline-flex h-11 items-center justify-center rounded-full px-5 text-sm font-semibold text-blue-700">
+                    class="clay-button-white inline-flex h-11 items-center justify-center rounded-full px-5 text-sm font-semibold text-blue-700">
                     Reset
                 </a>
             </form>
