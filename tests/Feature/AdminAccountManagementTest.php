@@ -39,3 +39,21 @@ it('locks each admin-created account to the route account type', function () {
             ->and($account->account_status)->toBe('aktif');
     }
 });
+
+it('renders the pattern and hint on the admin account creation forms', function () {
+    $admin = User::factory()->create([
+        'role' => 'admin',
+        'account_status' => 'aktif',
+    ]);
+
+    foreach (['admin.pengguna.create', 'admin.petugas.create', 'admin.admin.create'] as $routeName) {
+        $this->actingAs($admin)
+            ->get(route($routeName))
+            ->assertStatus(200)
+            ->assertSee('name="phone"', false)
+            ->assertSee('type="tel"', false)
+            ->assertSee('pattern="[\+0-9][\s\-().0-9]{7,19}"', false)
+            ->assertSee('08xx')
+            ->assertSee('+62xx');
+    }
+});

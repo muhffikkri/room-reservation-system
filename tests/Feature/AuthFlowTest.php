@@ -339,3 +339,14 @@ it('stays error-free when logout is submitted repeatedly', function () {
 
     $this->assertGuest();
 });
+
+it('renders the pattern and hint on the registration phone input', function () {
+    $response = $this->get(route('register'));
+
+    $response->assertStatus(200)
+        ->assertSee('id="phone"', false)
+        ->assertSee('type="tel"', false)
+        ->assertSee('pattern="[\+0-9][\s\-().0-9]{7,19}"', false)
+        ->assertSee('08xx')
+        ->assertSee('+62xx');
+});

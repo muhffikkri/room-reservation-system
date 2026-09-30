@@ -53,7 +53,9 @@
                     <div>
                         <label for="date" class="block text-sm font-medium text-slate-700">Tanggal Penggunaan <span
                                 class="text-rose-500">*</span></label>
-                        <input type="date" id="date" name="date" required min="{{ date('Y-m-d') }}"
+                        <input type="date" id="date" name="date" required
+                            min="{{ Carbon\Carbon::now(config('app.timezone'))->toDateString() }}"
+                            max="{{ $maxBookingDate }}"
                             value="{{ old('date', $selectedDate->format('Y-m-d')) }}"
                             class="landing-input mt-1 block w-full rounded-xl px-3 py-3 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-400">
                         @error('date')

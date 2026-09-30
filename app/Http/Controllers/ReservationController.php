@@ -93,6 +93,7 @@ class ReservationController extends Controller
             'slots' => $slots,
             'timeOptions' => $this->availability->timeOptions(),
             'maxDurationSlots' => $this->availability->maxDurationSlots(),
+            'maxBookingDate' => $this->availability->maxBookingDate()->toDateString(),
         ]);
     }
 

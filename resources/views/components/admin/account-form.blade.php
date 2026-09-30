@@ -54,8 +54,15 @@
 
             <div>
                 <label for="phone" class="block text-sm font-semibold text-slate-700">No. HP</label>
-                <input id="phone" name="phone" type="text" required maxlength="20" value="{{ old('phone') }}"
+                <input id="phone" name="phone" type="tel" required maxlength="20"
+                    pattern="[\+0-9][\s\-().0-9]{7,19}"
+                    title="Format: 08xx, 62xx, atau +62xx"
+                    value="{{ old('phone') }}"
+                    placeholder="Contoh: 081234567890"
                     class="landing-input mt-1.5 block w-full rounded-2xl px-4 py-2.5 text-sm text-slate-900 focus:outline-none focus:ring-4 focus:ring-blue-500/15">
+                <p class="mt-1 text-[11px] leading-relaxed text-slate-500">
+                    Format: <code class="font-mono">08xx</code>, <code class="font-mono">62xx</code>, atau <code class="font-mono">+62xx</code>
+                </p>
                 @error('phone')
                     <p class="mt-1.5 text-xs text-rose-600">{{ $message }}</p>
                 @enderror
