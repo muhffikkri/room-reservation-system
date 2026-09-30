@@ -12,7 +12,7 @@
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
 <body class="landing-page min-h-screen py-5 font-sans text-slate-800 antialiased">
-<div class="mx-auto w-full max-w-7xl space-y-5 px-4 sm:px-6 lg:px-8">
+<div class="mx-auto w-full max-w-public space-y-5 px-4 sm:px-6 lg:px-8">
     <header class="clay-nav sticky top-3 z-50 flex min-h-18 items-center justify-between gap-3 rounded-[2rem] px-4 sm:gap-4 sm:rounded-full sm:px-6">
         <a href="{{ route('home') }}" class="flex shrink-0 items-center gap-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0051d5] focus:ring-offset-2" aria-label="REKSA, kembali ke halaman utama">
             <img src="{{ asset('images/reksa-logo.webp') }}" alt="" class="h-10 w-10 rounded-xl object-contain">

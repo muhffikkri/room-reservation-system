@@ -22,7 +22,7 @@
     Lewati ke konten utama
 </a>
 
-<div class="mx-auto w-full max-w-7xl space-y-5 px-4 sm:px-6 lg:px-8">
+<div class="mx-auto w-full max-w-public space-y-5 px-4 sm:px-6 lg:px-8">
 <header class="clay-nav sticky top-3 z-50 rounded-[2rem] px-4 sm:rounded-full sm:px-6">
     <div class="flex min-h-18 items-center gap-3 sm:gap-4">
         <a href="#top" data-landing-nav="top" class="flex shrink-0 items-center gap-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0051d5] focus:ring-offset-2" aria-label="Kembali ke Beranda">
@@ -232,7 +232,7 @@
 
 <footer class="landing-footer relative overflow-hidden rounded-3xl border border-blue-200/70 py-7 shadow-[0_12px_30px_rgba(53,103,175,0.12)] sm:py-10">
     <div class="relative z-10">
-        <div class="mx-auto grid w-full max-w-7xl gap-8 px-5 sm:px-8 lg:grid-cols-[1.4fr_1fr_1fr] lg:gap-12">
+        <div class="mx-auto grid w-full max-w-public gap-8 px-5 sm:px-8 lg:grid-cols-[1.4fr_1fr_1fr] lg:gap-12">
             <div class="flex items-start gap-4">
                 <img src="{{ asset('images/reksa-logo.webp') }}" alt="Logo REKSA" class="h-14 w-14 shrink-0 rounded-2xl object-contain" loading="lazy">
                 <div>

@@ -4,6 +4,7 @@
 @source '../../storage/framework/views/*.php';
 
 @theme {
+    --container-public: 100rem;
     --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
         'Segoe UI Symbol', 'Noto Color Emoji';
 }
@@ -13,7 +14,7 @@ body,
 *,
 *::before,
 *::after {
-    cursor: url('/images/cursors/main_cursor.webp') 4 2, auto;
+    cursor: url('../../public/images/cursors/main_cursor.webp') 4 2, auto;
 }
 
 a[href],
@@ -38,14 +39,14 @@ label:has(input[type='radio']),
 .slot-item *,
 .cursor-pointer,
 .cursor-pointer * {
-    cursor: url('/images/cursors/link_cursor.webp') 10 2, pointer !important;
+    cursor: url('../../public/images/cursors/link_cursor.webp') 10 2, pointer !important;
 }
 
 input:not([type='button']):not([type='submit']):not([type='reset']):not([type='checkbox']):not([type='radio']):not([type='range']):not([type='file']),
 textarea,
 [contenteditable='true'],
 [role='textbox'] {
-    cursor: url('/images/cursors/text_cursor.webp') 15 15, text !important;
+    cursor: url('../../public/images/cursors/text_cursor.webp') 15 15, text !important;
 }
 
 .cursor-tail-canvas {
@@ -74,7 +75,7 @@ img.img-fade.is-loaded {
 
 .landing-page {
     background-color: #e6eefb;
-    background-image: url('/images/background.webp');
+    background-image: url('../../public/images/background.webp');
     background-position: center top;
     background-repeat: no-repeat;
     background-size: cover;
@@ -152,7 +153,7 @@ img.img-fade.is-loaded {
 .landing-hero-art::before {
     position: absolute;
     inset: -1.5rem;
-    background: url('/images/landing-bubbles.webp') center / contain no-repeat;
+    background: url('../../public/images/landing-bubbles.webp') center / contain no-repeat;
     opacity: 0.12;
     content: '';
 }
@@ -423,7 +424,7 @@ img.img-fade.is-loaded {
     position: absolute;
     inset: -8% -22%;
     border-radius: 9999px;
-    background: url('/images/landing-bubbles.webp') center / contain no-repeat, radial-gradient(circle at 42% 42%, rgba(191, 219, 254, 0.92), rgba(219, 234, 254, 0.62) 58%, rgba(255, 255, 255, 0) 76%);
+    background: url('../../public/images/landing-bubbles.webp') center / contain no-repeat, radial-gradient(circle at 42% 42%, rgba(191, 219, 254, 0.92), rgba(219, 234, 254, 0.62) 58%, rgba(255, 255, 255, 0) 76%);
     opacity: 0.34;
     content: '';
 }
@@ -544,14 +545,14 @@ img.img-fade.is-loaded {
     inset: 0;
     pointer-events: none;
     content: '';
-    background: linear-gradient(115deg, rgba(245, 249, 255, 0.94), rgba(231, 241, 255, 0.88)), url('/images/background.webp') center 58% / cover no-repeat;
+    background: linear-gradient(115deg, rgba(245, 249, 255, 0.94), rgba(231, 241, 255, 0.88)), url('../../public/images/background.webp') center 58% / cover no-repeat;
     opacity: 0.96;
 }
 
 .reksa-icon {
     display: inline-block;
     flex: none;
-    background-image: url('/images/landing-icons.webp');
+    background-image: url('../../public/images/landing-icons.webp');
     background-repeat: no-repeat;
     background-size: 400% 200%;
 }
