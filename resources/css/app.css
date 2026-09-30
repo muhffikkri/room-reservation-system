@@ -8,15 +8,22 @@
         'Segoe UI Symbol', 'Noto Color Emoji';
 }
 
-html {
-    scroll-behavior: smooth;
+html,
+body,
+*,
+*::before,
+*::after {
     cursor: url('/images/cursors/main_cursor.webp') 5 2, auto;
 }
 
 a[href],
+a[href] *,
 button:not(:disabled),
+button:not(:disabled) *,
 [role='button']:not([aria-disabled='true']),
+[role='button']:not([aria-disabled='true']) *,
 [role='switch'],
+[role='switch'] *,
 select,
 input[type='button'],
 input[type='submit'],
@@ -26,15 +33,19 @@ input[type='radio'],
 input[type='file'],
 summary,
 label:has(input[type='checkbox']),
-label:has(input[type='radio']) {
-    cursor: url('/images/cursors/link_cursor.webp') 12 3, pointer;
+label:has(input[type='radio']),
+.slot-item,
+.slot-item *,
+.cursor-pointer,
+.cursor-pointer * {
+    cursor: url('/images/cursors/link_cursor.webp') 12 3, pointer !important;
 }
 
 input:not([type='button']):not([type='submit']):not([type='reset']):not([type='checkbox']):not([type='radio']):not([type='range']):not([type='file']),
 textarea,
 [contenteditable='true'],
 [role='textbox'] {
-    cursor: url('/images/cursors/text_cursor.webp') 18 18, text;
+    cursor: url('/images/cursors/text_cursor.webp') 18 18, text !important;
 }
 
 .cursor-tail-canvas {
