@@ -499,10 +499,11 @@ Untuk rekap reservasi, status `rejected` dan `rejected_by_system` termasuk kelom
 
 Ketiga format ekspor harus merepresentasikan data rekap yang sama; perbedaannya hanya format file dan tata letak.
 
-- **CSV**: streamed response dengan delimiter `;` agar Excel Indonesia langsung membaca kolom, nama file `rekap-{start_date}-sd-{end_date}.csv`.
-- **XLSX**: file workbook Excel dengan isi rekap yang setara dengan CSV dan PDF, nama file `rekap-{start_date}-sd-{end_date}.xlsx`.
+- **CSV**: streamed response dengan delimiter `;` agar Excel Indonesia langsung membaca kolom, nama file `rekap-{jenis}-{start_date}-sd-{end_date}.csv`.
+- **XLSX**: file workbook Excel dengan isi rekap yang setara dengan CSV dan PDF, nama file `rekap-{jenis}-{start_date}-sd-{end_date}.xlsx`.
 - **PDF**: paket `barryvdh/laravel-dompdf`, orientasi landscape.
-- Ketentuan tugas mewajibkan tiga format: CSV, XLSX, dan PDF. Pemilihan package XLSX menjadi bagian milestone implementasi berikutnya.
+- ketentuan tugas mewajibkan tiga format: CSV, XLSX, dan PDF. Pemilihan package XLSX menjadi bagian milestone implementasi berikutnya.
+- `{jenis}` adalah `okupansi` atau `kerusakan`. Segmen ini tidak ada pada rumusan nama file semula; tanpanya, ekspor okupansi dan kerusakan untuk rentang yang sama menghasilkan nama file yang identik sehingga unduhan kedua menimpa yang pertama. Rumusan nama file dikoreksi karena mengoreksi kode akan menimbulkan kehilangan data.
 
 Implementasi saat ini menyediakan halaman dan ekspor CSV/PDF terpisah untuk okupansi dan kerusakan (§6). XLSX belum tersedia dan tidak boleh ditampilkan sebagai route yang sudah berjalan.
 

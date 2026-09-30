@@ -1,11 +1,4 @@
 @php
-    $facilityFallbackImages = [
-        'aula' => asset('images/aula.webp'),
-        'laboratorium' => asset('images/lab-komputer.webp'),
-        'lapangan' => asset('images/lapangan-futsal.webp'),
-        'ruang_kelas' => asset('images/ruang-kelas.webp'),
-        'alat' => asset('images/proyektor.webp'),
-    ];
     $navActiveClass = 'landing-button clay-nav-item rounded-full bg-blue-600 text-sm font-semibold text-white shadow-md transition-all';
     $navInactiveClass = 'landing-button landing-nav-muted clay-nav-item rounded-full text-sm font-medium transition-colors';
 @endphp
@@ -17,6 +10,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="description" content="REKSA — Reservasi dan Kerusakan Sarana Akademik. Temukan fasilitas kampus, cek jadwal, ajukan reservasi, dan laporkan kerusakan.">
     <title>REKSA — Reservasi dan Kerusakan Sarana Akademik</title>
+    <x-ui.favicon />
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -47,7 +41,7 @@
         </div>
         <div class="flex shrink-0 items-center gap-2 sm:gap-3">
             @auth
-                <a href="{{ route('dashboard') }}" class="landing-button clay-nav-action rounded-full bg-gradient-to-r from-blue-600 to-blue-500 px-3.5 text-sm font-semibold text-white shadow-[0_4px_14px_rgba(37,99,235,0.25)] transition hover:from-blue-700 hover:to-blue-600">Dashboard</a>
+                <a href="{{ auth()->user()->homeRoute() }}" class="landing-button clay-nav-action rounded-full bg-gradient-to-r from-blue-600 to-blue-500 px-3.5 text-sm font-semibold text-white shadow-[0_4px_14px_rgba(37,99,235,0.25)] transition hover:from-blue-700 hover:to-blue-600">Dashboard</a>
             @else
                 <a href="{{ route('login') }}" class="clay-button-white clay-nav-action rounded-full px-3.5 text-sm font-semibold text-blue-700">Masuk</a>
                 <a href="{{ route('register') }}" class="landing-button clay-nav-action rounded-full bg-gradient-to-r from-blue-600 to-blue-500 px-3.5 text-sm font-semibold text-white shadow-[0_4px_14px_rgba(37,99,235,0.25)] transition hover:from-blue-700 hover:to-blue-600">
@@ -224,58 +218,8 @@
             </span>
         </div>
 
-            @if ($facilities->isEmpty())
-                <div class="landing-panel rounded-2xl p-10 text-center shadow-sm">
-                    <p class="text-base font-medium text-[#0F172A]">Fasilitas tidak ditemukan</p>
-                    <p class="mt-1 text-sm text-[#475569]">Coba ubah kata kunci atau filter pencarian Anda.</p>
-                    <a href="{{ route('home') }}" class="clay-button-white mt-4 inline-block rounded-full px-5 py-2.5 text-sm font-semibold text-slate-700">Reset Filter</a>
-                </div>
-            @endif
-
-            <div id="landing-grid-container" class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                @foreach ($facilities as $facility)
-                    <div class="landing-card group facility-card flex flex-col overflow-hidden rounded-3xl border border-white/80 bg-white shadow-[0_10px_30px_-5px_rgba(186,215,248,0.45),0_0_0_1px_rgba(255,255,255,0.8)_inset] transition-all hover:-translate-y-0.5 hover:shadow-lg" data-facility-id="{{ $facility->id }}">
-                        <div class="relative aspect-[16/9] w-full overflow-hidden bg-[#f2f3ff]">
-                            @if ($facility->photo)
-                                <img src="{{ $facility->photo_url }}" alt="{{ $facility->name }}" loading="lazy"
-                                     class="img-fade h-full w-full object-cover transition-transform duration-300 group-hover:scale-105">
-                            @else
-                                <img src="{{ $facilityFallbackImages[$facility->type] ?? asset('images/aula.webp') }}" alt="{{ $facility->name }}" loading="lazy" class="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105">
-                            @endif
-                            @include('landing._facility-status', ['status' => $facility->status, 'class' => 'absolute right-3 top-3'])
-                        </div>
-                        <div class="flex flex-1 flex-col justify-between gap-4 p-4 sm:p-5">
-                            <div class="space-y-2">
-                                <h3 class="text-base font-bold text-slate-900">{{ $facility->name }}</h3>
-                                <span class="inline-block rounded-full border border-blue-100 bg-blue-50 px-2 py-0.5 text-[10px] font-medium text-blue-600">{{ $typeLabels[$facility->type] }}</span>
-                                <div class="space-y-1 pt-1">
-                                    <div class="flex items-center gap-2 text-sm text-[#475569]">
-                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="h-4 w-4 text-[#94A3B8]" aria-hidden="true">
-                                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 21s7-5.5 7-11a7 7 0 10-14 0c0 5.5 7 11 7 11z"/><circle cx="12" cy="10" r="2.5"/>
-                                        </svg>
-                                        <span>{{ $facility->location }}</span>
-                                    </div>
-                                    <div class="flex items-center gap-2 text-sm text-[#475569]">
-                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="h-4 w-4 text-[#94A3B8]" aria-hidden="true">
-                                            <circle cx="9" cy="8" r="3.5"/><path stroke-linecap="round" d="M3 20v-1a6 6 0 0112 0v1M16 8.5a3 3 0 010 5.5M17.5 15.2a6 6 0 013.5 4.8"/>
-                                        </svg>
-                                        <span>Kapasitas: {{ $facility->capacity }} orang</span>
-                                    </div>
-                                    @if ($facility->description)
-                                    <p class="pt-1 text-xs leading-relaxed text-slate-500">{{ \Illuminate\Support\Str::limit($facility->description, 90) }}</p>
-                                    @endif
-                                </div>
-                            </div>
-                            <a href="{{ route('fasilitas.jadwal', ['facility' => $facility, 'from' => 'home']) }}"
-                                    class="clay-button-white flex h-10 w-full items-center justify-center gap-1.5 rounded-xl text-xs font-semibold text-blue-700">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="h-[18px] w-[18px]" aria-hidden="true">
-                                    <rect x="3" y="5" width="18" height="16" rx="2"/><path d="M8 3v4m8-4v4M3 10h18"/>
-                                </svg>
-                                Lihat Jadwal
-                            </a>
-                        </div>
-                    </div>
-                @endforeach
+            <div id="landing-grid-container" class="grid min-h-[24rem] grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                @include('landing._facility-grid', ['facilities' => $facilities])
             </div>
 
         </section>

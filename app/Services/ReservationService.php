@@ -19,6 +19,14 @@ use Symfony\Component\HttpKernel\Exception\ConflictHttpException;
  */
 class ReservationService
 {
+    /**
+     * Panjang minimum alasan yang disimpan. Dua angka karena aturan memang
+     * berbeda: §5 memberi pengguna 5 karakter, BR-9 memberi petugas 10.
+     */
+    public const MIN_USER_CANCEL_REASON = 5;
+
+    public const MIN_OFFICER_REASON = 10;
+
     public function __construct(
         protected ReservationAvailability $availability,
     ) {}
@@ -218,6 +226,7 @@ class ReservationService
     public function reject(Reservation $reservation, User $officer, string $reason): Reservation
     {
         $this->ensureActivePetugas($officer);
+        $this->assertReason('reason', $reason, self::MIN_OFFICER_REASON);
 
         $this->expireStale();
 
@@ -251,6 +260,7 @@ class ReservationService
     public function cancel(Reservation $reservation, User $officer, string $reason): Reservation
     {
         $this->ensureActivePetugas($officer);
+        $this->assertReason('cancel_reason', $reason, self::MIN_OFFICER_REASON);
 
         return DB::transaction(function () use ($reservation, $officer, $reason): Reservation {
             $locked = Reservation::whereKey($reservation->id)->lockForUpdate()->firstOrFail();
@@ -294,9 +304,10 @@ class ReservationService
      * Hanya pemilik yang dapat membatalkan reservasi miliknya yang berstatus
      * pending atau approved, dan minimal 1 jam sebelum start_time.
      */
-    public function cancelByUser(Reservation $reservation, User $user, ?string $reason = null): Reservation
+    public function cancelByUser(Reservation $reservation, User $user, string $reason): Reservation
     {
         $this->ensureActivePengguna($user);
+        $this->assertReason('cancel_reason', $reason, self::MIN_USER_CANCEL_REASON);
 
         return DB::transaction(function () use ($reservation, $user, $reason): Reservation {
             $locked = Reservation::whereKey($reservation->id)->lockForUpdate()->firstOrFail();
@@ -343,6 +354,25 @@ class ReservationService
         if ($this->availability->isWithinLeadTime($locked->start_time)) {
             throw new ConflictHttpException('Reservasi sudah melewati batas persetujuan (1 jam sebelum waktu mulai) sehingga tidak dapat diproses.');
         }
+    }
+
+    /**
+     * Penjaga panjang alasan di batas bersama.
+     *
+     * Lapisan request sudah memvalidasi, tetapi pemanggil internal
+     * (command, seeder, pengujian) melewati request itu. Tanpa penjaga di
+     * sini, alasan kosong atau null akan tersimpan dan membatalkan
+     * reservasi tanpa keterangan (§5 mewajibkan minimal 5 karakter).
+     *
+     * @param  string  $attribute  nama field pada pemanggil, agar pesan
+     *                             validasi muncul pada field yang benar
+     */
+    private function assertReason(string $attribute, ?string $reason, int $minimum): void
+    {
+        Validator::make(
+            [$attribute => $reason],
+            [$attribute => ['required', 'string', 'min:'.$minimum, 'max:255']],
+        )->validate();
     }
 
     private function assertSlotShape(Carbon $start, Carbon $end): void

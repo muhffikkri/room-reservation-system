@@ -8,10 +8,59 @@ use App\Models\Reservation;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use InvalidArgumentException;
 
 class RecapService
 {
+    /**
+     * Definisi kolom rekap okupansi — satu-satunya daftar urutan kolom.
+     *
+     * Header CSV, baris CSV, header PDF dan baris PDF semuanya diturunkan
+     * dari sini; sebelumnya keempatnya ditulis manual dan bisa berbeda
+     * urutan tanpa ada yang gagal.
+     *
+     * `label` dipakai CSV, `short` dipakai PDF/HTML bila labelnya terlalu
+     * panjang untuk tabel, dan `suffix` ditambahkan hanya ke nilai di
+     * PDF/HTML.
+     *
+     * @var list<array{key: string, label: string, short?: string, suffix?: string}>
+     */
+    private const OCCUPANCY_COLUMNS = [
+        ['key' => 'facility_name', 'label' => 'Nama Fasilitas'],
+        ['key' => 'facility_type', 'label' => 'Tipe'],
+        ['key' => 'facility_location', 'label' => 'Lokasi'],
+        ['key' => 'capacity', 'label' => 'Kapasitas'],
+        ['key' => 'status', 'label' => 'Status'],
+        ['key' => 'approved_count', 'label' => 'Disetujui'],
+        ['key' => 'pending_count', 'label' => 'Pending'],
+        ['key' => 'rejected_count', 'label' => 'Ditolak'],
+        ['key' => 'cancelled_count', 'label' => 'Dibatalkan'],
+        ['key' => 'total_reservations', 'label' => 'Total Reservasi', 'short' => 'Total'],
+        ['key' => 'total_approved_hours', 'label' => 'Total Jam (Disetujui)', 'short' => 'Jam Disetujui'],
+        ['key' => 'max_possible_hours', 'label' => 'Max Jam Operasional', 'short' => 'Max Jam'],
+        ['key' => 'occupancy_rate', 'label' => 'Tingkat Okupansi (%)', 'short' => 'Okupansi (%)', 'suffix' => '%'],
+    ];
+
+    /**
+     * Definisi kolom rekap kerusakan. Sama seperti okupansi: satu daftar
+     * untuk CSV dan PDF/HTML.
+     *
+     * @var list<array{key: string, label: string, short?: string, suffix?: string}>
+     */
+    private const DAMAGE_COLUMNS = [
+        ['key' => 'facility_name', 'label' => 'Nama Fasilitas'],
+        ['key' => 'facility_type', 'label' => 'Tipe'],
+        ['key' => 'facility_location', 'label' => 'Lokasi'],
+        ['key' => 'status', 'label' => 'Status'],
+        ['key' => 'baru_count', 'label' => 'Baru'],
+        ['key' => 'diproses_count', 'label' => 'Diproses'],
+        ['key' => 'selesai_count', 'label' => 'Selesai'],
+        ['key' => 'ditolak_count', 'label' => 'Ditolak'],
+        ['key' => 'total_reports', 'label' => 'Total Laporan', 'short' => 'Total'],
+    ];
+
     public function __construct(
+        protected ReservationAvailability $availability,
         protected int $defaultLookbackDays = 30,
     ) {}
 
@@ -37,9 +86,10 @@ class RecapService
 
         // Both ends are normalised to midnight before differencing: diffInDays
         // already counts the final calendar day when handed an end-of-day
-        // timestamp, so the +1 would count it twice. 13 jam = 07.00-20.00.
+        // timestamp, so the +1 would count it twice. Jam per hari berasal
+        // dari ReservationAvailability, bukan ditulis ulang di sini.
         $operationalDays = $startDate->diffInDays($endDate->copy()->startOfDay()) + 1;
-        $maxPossibleHours = $operationalDays * 13;
+        $maxPossibleHours = $operationalDays * $this->availability->operationalHoursPerDay();
 
         // Calculate total approved hours per facility using subquery to avoid N+1
         $hoursSubquery = Reservation::approved()
@@ -102,6 +152,12 @@ class RecapService
             ];
         });
 
+        // Rata-rata hanya menghitung fasilitas yang bisa dipakai. Fasilitas
+        // nonaktif/perbaikan tidak punya kemungkinan okupansi, jadi
+        // menyertakannya di penyebut menurunkan rata-rata tanpa alasan.
+        $bookable = $data->where('status', 'aktif');
+        $averageOccupancy = $bookable->avg('occupancy_rate');
+
         $summary = [
             'total_facilities' => $facilities->count(),
             'total_reservations' => $data->sum('total_reservations'),
@@ -110,7 +166,7 @@ class RecapService
             'total_rejected' => $data->sum('rejected_count'),
             'total_cancelled' => $data->sum('cancelled_count'),
             'total_approved_hours' => round($data->sum('total_approved_hours'), 2),
-            'average_occupancy_rate' => $data->avg('occupancy_rate') ? round($data->avg('occupancy_rate'), 2) : 0,
+            'average_occupancy_rate' => $averageOccupancy ? round($averageOccupancy, 2) : 0,
         ];
 
         return [
@@ -222,41 +278,15 @@ class RecapService
      */
     public function exportOccupancyCsv(array $recapData): string
     {
+        $this->assertColumns($recapData, self::OCCUPANCY_COLUMNS, 'exportOccupancyCsv');
+
         $start = microtime(true);
 
-        $headers = [
-            'Nama Fasilitas',
-            'Tipe',
-            'Lokasi',
-            'Kapasitas',
-            'Status',
-            'Disetujui',
-            'Pending',
-            'Ditolak',
-            'Dibatalkan',
-            'Total Reservasi',
-            'Total Jam (Disetujui)',
-            'Max Jam Operasional',
-            'Tingkat Okupansi (%)',
-        ];
+        $headers = $this->csvLabels(self::OCCUPANCY_COLUMNS);
 
         $rows = [];
         foreach ($recapData['data'] as $item) {
-            $rows[] = [
-                $item['facility_name'],
-                $item['facility_type'],
-                $item['facility_location'],
-                $item['capacity'],
-                $item['status'],
-                $item['approved_count'],
-                $item['pending_count'],
-                $item['rejected_count'],
-                $item['cancelled_count'],
-                $item['total_reservations'],
-                $item['total_approved_hours'],
-                $item['max_possible_hours'],
-                $item['occupancy_rate'],
-            ];
+            $rows[] = $this->csvRow($item, self::OCCUPANCY_COLUMNS);
         }
 
         // Add summary row
@@ -293,33 +323,15 @@ class RecapService
      */
     public function exportDamageCsv(array $recapData): string
     {
+        $this->assertColumns($recapData, self::DAMAGE_COLUMNS, 'exportDamageCsv');
+
         $start = microtime(true);
 
-        $headers = [
-            'Nama Fasilitas',
-            'Tipe',
-            'Lokasi',
-            'Status',
-            'Baru',
-            'Diproses',
-            'Selesai',
-            'Ditolak',
-            'Total Laporan',
-        ];
+        $headers = $this->csvLabels(self::DAMAGE_COLUMNS);
 
         $rows = [];
         foreach ($recapData['data'] as $item) {
-            $rows[] = [
-                $item['facility_name'],
-                $item['facility_type'],
-                $item['facility_location'],
-                $item['status'],
-                $item['baru_count'],
-                $item['diproses_count'],
-                $item['selesai_count'],
-                $item['ditolak_count'],
-                $item['total_reports'],
-            ];
+            $rows[] = $this->csvRow($item, self::DAMAGE_COLUMNS);
         }
 
         // Add summary row
@@ -339,7 +351,7 @@ class RecapService
         $rows[] = ['', '', '', '', '', '', '', '', ''];
         $rows[] = ['Kategori Kerusakan', 'Jumlah', '', '', '', '', '', '', ''];
         foreach ($recapData['summary']['by_category'] as $category => $count) {
-            $rows[] = [$category, $count, '', '', '', '', '', '', ''];
+            $rows[] = [Report::labelForCategory($category), $count, '', '', '', '', '', '', ''];
         }
 
         $csv = $this->buildCsv($headers, $rows);
@@ -355,7 +367,122 @@ class RecapService
     }
 
     /**
+     * Netralkan sel yang akan dieksekusi sebagai rumus saat CSV dibuka.
+     *
+     * Sel yang diawali = + - @ diperlakukan sebagai rumus oleh Excel,
+     * LibreOffice dan Google Sheets, dan nilainya berasal dari database
+     * (nama fasilitas, lokasi, kategori kerusakan). Awalan kutip tunggal
+     * memaksa sel dibaca sebagai teks.
+     *
+     * @param  array<int, mixed>  $row
+     * @return array<int, mixed>
+     */
+    protected function neutraliseFormulas(array $row): array
+    {
+        return array_map(function ($value) {
+            if (is_string($value) && preg_match('/^[=+\-@]/', $value) === 1) {
+                return "'".$value;
+            }
+
+            return $value;
+        }, $row);
+    }
+
+    /**
+     * Pastikan rekap yang masuk sesuai dengan format yang diminta.
+     *
+     * Tanpa ini, `exportOccupancyCsv()` yang menerima rekap kerusakan lolos
+     * secara tipe lalu menghasilkan baris kosong tanpa error: array tidak
+     * membawa jenisnya, dan kedua laporan memang punya bentuk berbeda.
+     *
+     * Hanya baris pertama yang diperiksa karena semua baris dibangun oleh
+     * kode yang sama, jadi cukup satu untuk menangkap ketidakcocokan.
+     *
+     * @param  array<string, mixed>  $recapData
+     * @param  list<array{key: string, label: string, short?: string, suffix?: string}>  $columns
+     */
+    private function assertColumns(array $recapData, array $columns, string $formatter): void
+    {
+        $row = $recapData['data'][0] ?? null;
+
+        if (! is_array($row)) {
+            return;
+        }
+
+        foreach ($columns as $column) {
+            if (! array_key_exists($column['key'], $row)) {
+                throw new InvalidArgumentException(
+                    "{$formatter} menerima rekap tanpa kolom '{$column['key']}'. "
+                    .'Pastikan jenis rekap yang diminta benar.'
+                );
+            }
+        }
+    }
+
+    /**
+     * Label header CSV untuk satu definisi kolom.
+     *
+     * @param  list<array{key: string, label: string, short?: string, suffix?: string}>  $columns
+     * @return list<string>
+     */
+    private function csvLabels(array $columns): array
+    {
+        return array_map(fn (array $column): string => $column['label'], $columns);
+    }
+
+    /**
+     * Baris CSV untuk satu baris data, mengikuti urutan definisi kolom.
+     *
+     * @param  array<string, mixed>  $item
+     * @param  list<array{key: string, label: string, short?: string, suffix?: string}>  $columns
+     * @return list<mixed>
+     */
+    private function csvRow(array $item, array $columns): array
+    {
+        return array_map(fn (array $column): mixed => $item[$column['key']], $columns);
+    }
+
+    /**
+     * Sel header PDF/HTML. Label dipendekkan bila `short` ada, supaya tabel
+     * cetak tidak melebar.
+     *
+     * @param  list<array{key: string, label: string, short?: string, suffix?: string}>  $columns
+     */
+    private function htmlHeadCells(array $columns): string
+    {
+        $cells = '';
+
+        foreach ($columns as $column) {
+            $cells .= '<th>'.e($column['short'] ?? $column['label']).'</th>';
+        }
+
+        return $cells;
+    }
+
+    /**
+     * Sel data PDF/HTML. Nilai dari database selalu di-escape di sini.
+     *
+     * @param  array<string, mixed>  $item
+     * @param  list<array{key: string, label: string, short?: string, suffix?: string}>  $columns
+     */
+    private function htmlCells(array $item, array $columns): string
+    {
+        $cells = '';
+
+        foreach ($columns as $column) {
+            $cells .= '<td>'.e($item[$column['key']]).($column['suffix'] ?? '').'</td>';
+        }
+
+        return $cells;
+    }
+
+    /**
      * Build CSV string from headers and rows.
+     *
+     * Delimiter `;` sesuai spesifikasi §13: Excel dengan koma desimal
+     * membaca koma sebagai pemisah kolom dan salah membelah angka, sedangkan
+     * titik koma langsung terbaca sebagai kolom. BOM UTF-8 di depan
+     * memastikan karakter non-ASCII terbaca di Excel.
      */
     protected function buildCsv(array $headers, array $rows): string
     {
@@ -364,9 +491,11 @@ class RecapService
         // Add BOM for UTF-8
         fwrite($handle, "\xEF\xBB\xBF");
 
-        fputcsv($handle, $headers);
+        // escape wajib passed pada PHP 8.4+: tanpa itu fputcsv() memunculkan
+        // deprecation pada setiap ekspor.
+        fputcsv($handle, $headers, ';', '"', '');
         foreach ($rows as $row) {
-            fputcsv($handle, $row);
+            fputcsv($handle, $this->neutraliseFormulas($row), ';', '"', '');
         }
 
         rewind($handle);
@@ -381,29 +510,15 @@ class RecapService
      */
     public function exportOccupancyHtml(array $recapData): string
     {
+        $this->assertColumns($recapData, self::OCCUPANCY_COLUMNS, 'exportOccupancyHtml');
+
         $start = microtime(true);
 
         $dateRange = "{$recapData['date_range']['start']} s/d {$recapData['date_range']['end']}";
 
         $rowsHtml = '';
         foreach ($recapData['data'] as $item) {
-            $rowsHtml .= <<<HTML
-<tr>
-    <td>{$item['facility_name']}</td>
-    <td>{$item['facility_type']}</td>
-    <td>{$item['facility_location']}</td>
-    <td>{$item['capacity']}</td>
-    <td>{$item['status']}</td>
-    <td>{$item['approved_count']}</td>
-    <td>{$item['pending_count']}</td>
-    <td>{$item['rejected_count']}</td>
-    <td>{$item['cancelled_count']}</td>
-    <td>{$item['total_reservations']}</td>
-    <td>{$item['total_approved_hours']}</td>
-    <td>{$item['max_possible_hours']}</td>
-    <td>{$item['occupancy_rate']}%</td>
-</tr>
-HTML;
+            $rowsHtml .= '<tr>'.$this->htmlCells($item, self::OCCUPANCY_COLUMNS).'</tr>';
         }
 
         $summary = $recapData['summary'];
@@ -446,21 +561,7 @@ HTML;
     <p class="subtitle">Periode: {$dateRange}</p>
     <table>
         <thead>
-            <tr>
-                <th>Nama Fasilitas</th>
-                <th>Tipe</th>
-                <th>Lokasi</th>
-                <th>Kapasitas</th>
-                <th>Status</th>
-                <th>Disetujui</th>
-                <th>Pending</th>
-                <th>Ditolak</th>
-                <th>Dibatalkan</th>
-                <th>Total</th>
-                <th>Jam Disetujui</th>
-                <th>Max Jam</th>
-                <th>Okupansi (%)</th>
-            </tr>
+            <tr>{$this->htmlHeadCells(self::OCCUPANCY_COLUMNS)}</tr>
         </thead>
         <tbody>
             {$rowsHtml}
@@ -486,25 +587,15 @@ HTML;
      */
     public function exportDamageHtml(array $recapData): string
     {
+        $this->assertColumns($recapData, self::DAMAGE_COLUMNS, 'exportDamageHtml');
+
         $start = microtime(true);
 
         $dateRange = "{$recapData['date_range']['start']} s/d {$recapData['date_range']['end']}";
 
         $rowsHtml = '';
         foreach ($recapData['data'] as $item) {
-            $rowsHtml .= <<<HTML
-<tr>
-    <td>{$item['facility_name']}</td>
-    <td>{$item['facility_type']}</td>
-    <td>{$item['facility_location']}</td>
-    <td>{$item['status']}</td>
-    <td>{$item['baru_count']}</td>
-    <td>{$item['diproses_count']}</td>
-    <td>{$item['selesai_count']}</td>
-    <td>{$item['ditolak_count']}</td>
-    <td>{$item['total_reports']}</td>
-</tr>
-HTML;
+            $rowsHtml .= '<tr>'.$this->htmlCells($item, self::DAMAGE_COLUMNS).'</tr>';
         }
 
         $summary = $recapData['summary'];
@@ -527,7 +618,7 @@ HTML;
             $categoryHtml = '<tr><td colspan="9" style="border: none; padding-top: 20px;"><strong>Rincian per Kategori Kerusakan:</strong></td></tr>';
             $categoryHtml .= '<tr><th>Kategori</th><th>Jumlah</th><th colspan="7"></th></tr>';
             foreach ($summary['by_category'] as $category => $count) {
-                $categoryHtml .= "<tr><td>{$category}</td><td>{$count}</td><td colspan=\"7\"></td></tr>";
+                $categoryHtml .= '<tr><td>'.e(Report::labelForCategory($category)).'</td><td>'.$count.'</td><td colspan="7"></td></tr>';
             }
         }
 
@@ -552,17 +643,7 @@ HTML;
     <p class="subtitle">Periode: {$dateRange}</p>
     <table>
         <thead>
-            <tr>
-                <th>Nama Fasilitas</th>
-                <th>Tipe</th>
-                <th>Lokasi</th>
-                <th>Status</th>
-                <th>Baru</th>
-                <th>Diproses</th>
-                <th>Selesai</th>
-                <th>Ditolak</th>
-                <th>Total</th>
-            </tr>
+            <tr>{$this->htmlHeadCells(self::DAMAGE_COLUMNS)}</tr>
         </thead>
         <tbody>
             {$rowsHtml}

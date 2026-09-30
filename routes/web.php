@@ -140,16 +140,23 @@ Route::middleware(['auth', 'active', 'role:admin'])->prefix('admin')->group(func
     // Rekap okupansi & kerusakan
     Route::get('/rekap/okupansi', [RecapController::class, 'occupancy'])
         ->name('admin.rekap.occupancy');
-    Route::get('/rekap/okupansi/export/csv', [RecapController::class, 'exportOccupancyCsv'])
-        ->name('admin.rekap.occupancy.export.csv');
-    Route::get('/rekap/okupansi/export/pdf', [RecapController::class, 'exportOccupancyPdf'])
-        ->name('admin.rekap.occupancy.export.pdf');
+
+    // Ekspor dibatasi: PDF adalah operasi paling berat yang bisa dipicu admin
+    // (merender HTML penuh per permintaan), dan tanpa batas grup ini bisa
+    // dipakai menjatuhkan worker.
+    Route::middleware('throttle:recap-exports')->group(function (): void {
+        Route::get('/rekap/okupansi/export/csv', [RecapController::class, 'exportOccupancyCsv'])
+            ->name('admin.rekap.occupancy.export.csv');
+        Route::get('/rekap/okupansi/export/pdf', [RecapController::class, 'exportOccupancyPdf'])
+            ->name('admin.rekap.occupancy.export.pdf');
+        Route::get('/rekap/kerusakan/export/csv', [RecapController::class, 'exportDamageCsv'])
+            ->name('admin.rekap.damage.export.csv');
+        Route::get('/rekap/kerusakan/export/pdf', [RecapController::class, 'exportDamagePdf'])
+            ->name('admin.rekap.damage.export.pdf');
+    });
+
     Route::get('/rekap/kerusakan', [RecapController::class, 'damage'])
         ->name('admin.rekap.damage');
-    Route::get('/rekap/kerusakan/export/csv', [RecapController::class, 'exportDamageCsv'])
-        ->name('admin.rekap.damage.export.csv');
-    Route::get('/rekap/kerusakan/export/pdf', [RecapController::class, 'exportDamagePdf'])
-        ->name('admin.rekap.damage.export.pdf');
 });
 
 Route::middleware('auth')->group(function (): void {

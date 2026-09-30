@@ -5,6 +5,7 @@ use App\Models\Reservation;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Str;
 
 uses(RefreshDatabase::class);
 
@@ -135,6 +136,62 @@ it('menolak nilai filter yang tidak dikenal pada endpoint ajax', function (): vo
         ->assertJsonValidationErrors('type');
 });
 
+it('menyamakan proyeksi slot landing dengan halaman jadwal publik', function (): void {
+    $facility = Facility::factory()->create(['status' => 'aktif']);
+
+    // Now = 10:00. Slot 10:30 masih di masa depan tetapi hanya 30 menit lagi,
+    // jadi berada di dalam lead time 60 menit (BR-3). Proyeksi publik tidak
+    // menerapkan lead time — hanya menolak slot yang sudah lewat — sehingga
+    // kedua halaman publik harus memberi jawaban yang sama.
+    $landing = $this->getJson(route('home.facilities.ajax', [
+        'facility_id' => $facility->id,
+        'date' => '2026-09-09',
+    ]))->assertOk();
+
+    $jadwal = $this->get("/fasilitas/{$facility->id}/jadwal?date=2026-09-09")
+        ->assertOk()
+        ->viewData('slots');
+
+    $landingSlot = collect($landing->json("grids.{$facility->id}"))
+        ->firstWhere('start', '10:30');
+    $jadwalSlot = collect($jadwal)->firstWhere('start', '10:30');
+
+    expect($landingSlot['state'])->toBe('available')
+        ->and($landingSlot['state'])->toBe($jadwalSlot['state']);
+
+    // Slot yang benar-benar lewat tetap 'past' di kedua halaman.
+    $landingPast = collect($landing->json("grids.{$facility->id}"))
+        ->firstWhere('start', '08:00');
+
+    expect($landingPast['state'])->toBe('past')
+        ->and(collect($jadwal)->firstWhere('start', '08:00')['state'])->toBe('past');
+});
+
+it('menolak filter tanggal di luar jendela yang sama dengan jadwal publik', function (): void {
+    $today = Carbon::now(config('app.timezone'))->startOfDay();
+    $facility = Facility::factory()->create(['status' => 'aktif']);
+
+    // Kedua tepi jendela harus tetap diterima: +365 dan -365.
+    foreach ([$today->copy()->addDays(365), $today->copy()->subDays(365)] as $edge) {
+        $this->getJson(route('home.facilities.ajax', [
+            'facility_id' => $facility->id,
+            'date' => $edge->toDateString(),
+        ]))->assertOk();
+    }
+
+    // Setelah itu ditolak. Sebelumnya tidak ada batas sama sekali, jadi
+    // tanggal berapa pun diterima di kedua arah.
+    $this->getJson(route('home.facilities.ajax', [
+        'facility_id' => $facility->id,
+        'date' => $today->copy()->addDays(366)->toDateString(),
+    ]))->assertStatus(422)->assertJsonValidationErrors('date');
+
+    $this->getJson(route('home.facilities.ajax', [
+        'facility_id' => $facility->id,
+        'date' => $today->copy()->subDays(366)->toDateString(),
+    ]))->assertStatus(422)->assertJsonValidationErrors('date');
+});
+
 it('mengirim url foto absolut pada endpoint ajax agar kartu hasil pencarian tidak rusak', function (): void {
     $withPhoto = Facility::factory()->create(['name' => 'Aula Terpadu']);
     $withPhoto->forceFill(['photo' => 'fasilitas/aula-terpadu.jpg'])->save();
@@ -148,4 +205,69 @@ it('mengirim url foto absolut pada endpoint ajax agar kartu hasil pencarian tida
     expect($facilities[0]['photo_url'])->toBe(url('/storage/fasilitas/aula-terpadu.jpg'));
     expect($facilities[0]['photo_url'])->not->toBe($facilities[0]['photo']);
     expect($facilities[1]['photo_url'])->toBe('');
+});
+
+it('memakai satu batas kata pada card grid dan menautkan ke halaman detail', function () {
+    $words = array_map(
+        fn (int $index): string => "kata{$index}",
+        range(1, Facility::MAX_DESCRIPTION_WORDS + 5),
+    );
+    $facility = Facility::factory()->create(['description' => implode(' ', $words)]);
+
+    // Accessor model adalah satu-satunya tempat pemotongan kata.
+    expect(Str::wordCount($facility->short_description))->toBe(Facility::MAX_DESCRIPTION_WORDS);
+
+    $html = $this->get('/')->assertOk()->getContent();
+
+    expect($html)
+        ->toContain('Lihat Deskripsi Lengkap')
+        ->toContain('href="'.route('fasilitas.show', $facility).'"')
+        ->toContain('kata'.Facility::MAX_DESCRIPTION_WORDS)
+        ->not->toContain('kata'.(Facility::MAX_DESCRIPTION_WORDS + 1));
+});
+
+it('menahan tinggi card dan tinggi grid agar hasil kosong tidak menggeser komponen', function () {
+    Facility::factory()->create(['name' => 'Aula Terpadu']);
+
+    $withResults = $this->get('/')->assertOk()->getContent();
+    $empty = $this->get('/?q=tidak-ada-fasilitas')->assertOk()->getContent();
+
+    // min-height mencegah grid menyusut jadi nol saat tidak ada hasil.
+    expect($withResults)->toContain('min-h-[24rem]')->toContain('min-h-[5rem]');
+    expect($empty)->toContain('min-h-[24rem]');
+
+    // Pesan kosong harus berada DI DALAM container grid, bukan sibling di atasnya.
+    $containerPosition = strpos($empty, 'id="landing-grid-container"');
+    $emptyMessagePosition = strpos($empty, 'Fasilitas tidak ditemukan');
+
+    expect($containerPosition)->toBeInt();
+    expect($emptyMessagePosition)->toBeInt()
+        ->toBeGreaterThan($containerPosition);
+});
+
+it('mengirim card ter-render dari server agar hasil pencarian sama dengan render awal', function () {
+    $facility = Facility::factory()->create([
+        'name' => 'Aula Terpadu',
+        'description' => 'Aula untuk kegiatan besar.',
+    ]);
+
+    $html = $this->getJson(route('home.facilities.ajax'))->assertOk()->json('html');
+
+    // app.js hanya menuliskan innerHTML, jadi markup card tidak boleh disusun
+    // ulang di JavaScript.
+    expect($html)
+        ->toContain($facility->name)
+        ->toContain('Lihat Deskripsi Lengkap')
+        ->toContain('Lihat Jadwal')
+        ->toContain(route('fasilitas.show', $facility));
+});
+
+it('mengirim pesan kosong dari server agar bentuknya sama dengan render awal', function () {
+    Facility::factory()->create(['name' => 'Aula Terpadu']);
+
+    $html = $this->getJson(route('home.facilities.ajax', ['q' => 'tidak-ada-fasilitas']))
+        ->assertOk()
+        ->json('html');
+
+    expect($html)->toContain('Fasilitas tidak ditemukan')->toContain('col-span-full');
 });

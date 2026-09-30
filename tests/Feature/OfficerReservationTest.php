@@ -163,6 +163,31 @@ it('cancels a pending reservation by officer with a persisted reason (BR-9)', fu
         ->and($fresh->decided_by)->toBe($officer->id);
 });
 
+it('rejects an officer cancel reason made only of markup', function () {
+    [, $reservation, $officer] = makeOfficerReservationActors();
+
+    // 28 karakter, semuanya tag: lolos min:10 apa adanya, lalu kosong
+    // setelah strip_tags — sehingga batal tanpa alasan tersimpan.
+    $this->actingAs($officer)
+        ->post(route('petugas.reservasi.cancel', $reservation), ['cancel_reason' => '<b></b><i></i><u></u><s></s>'])
+        ->assertSessionHasErrors('cancel_reason');
+
+    expect($reservation->fresh()->status)->toBe('pending')
+        ->and($reservation->fresh()->cancel_reason)->toBeNull();
+});
+
+it('stores an officer cancel reason that carries text alongside markup', function () {
+    [, $reservation, $officer] = makeOfficerReservationActors();
+
+    $this->actingAs($officer)
+        ->post(route('petugas.reservasi.cancel', $reservation), [
+            'cancel_reason' => '<b>Jadwal</b> bertabrakan dengan <i>renovasi</i> fasilitas.',
+        ])
+        ->assertSessionHasNoErrors();
+
+    expect($reservation->fresh()->cancel_reason)->toBe('Jadwal bertabrakan dengan renovasi fasilitas.');
+});
+
 it('cancels an approved reservation when the facility enters repair (BR-16)', function () {
     [$facility, $reservation] = makeOfficerReservationActors();
     $reservation->update(['status' => 'approved']);

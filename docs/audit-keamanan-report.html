@@ -1,0 +1,286 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Audit Keamanan — Sistem Reservasi Fasilitas Kampus (16 Sep 2026)</title>
+<style>
+  :root{--bg:#0f172a;--card:#ffffff;--muted:#64748b;--line:#e2e8f0;--ink:#0f172a;
+    --crit:#b91c1c;--high:#c2410c;--med:#b45309;--low:#1d4ed8;--info:#475569;--ok:#15803d;}
+  *{box-sizing:border-box}
+  body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",Roboto,Ubuntu,sans-serif;background:#f1f5f9;color:var(--ink);line-height:1.6}
+  header{background:linear-gradient(135deg,#00236f,#0051d5);color:#fff;padding:40px 24px}
+  header .wrap,main .wrap{max-width:1080px;margin:0 auto}
+  header h1{margin:0 0 8px;font-size:28px;letter-spacing:-.02em}
+  header p{margin:4px 0;opacity:.92}
+  main{padding:28px 24px 64px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:22px;margin:18px 0;box-shadow:0 10px 30px rgba(15,23,42,.05)}
+  h2{font-size:20px;margin:0 0 12px;color:#00236f}
+  h3{font-size:16px;margin:22px 0 8px;color:#00236f}
+  table{width:100%;border-collapse:collapse;font-size:13.5px}
+  th,td{border:1px solid var(--line);padding:8px 10px;vertical-align:top;text-align:left}
+  th{background:#f8fafc;font-size:12px;text-transform:uppercase;letter-spacing:.04em}
+  tr:nth-child(even) td{background:#fcfdff}
+  code,pre{font-family:ui-monospace,Consolas,Menlo,monospace;font-size:12.5px}
+  pre{background:#0f172a;color:#e2e8f0;padding:14px;border-radius:10px;overflow:auto;white-space:pre-wrap}
+  .badge{display:inline-block;padding:2px 10px;border-radius:999px;font-size:12px;font-weight:700;color:#fff}
+  .b-crit{background:var(--crit)}.b-high{background:var(--high)}.b-med{background:var(--med)}
+  .b-low{background:var(--low)}.b-info{background:var(--info)}.b-ok{background:var(--ok)}
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin:14px 0}
+  .stat{border:1px solid var(--line);border-radius:12px;padding:14px;text-align:center}
+  .stat b{font-size:26px;display:block}
+  .toc a{color:#0051d5;text-decoration:none}.toc a:hover{text-decoration:underline}
+  .toc li{margin:4px 0}
+  .finding{border:1px solid var(--line);border-left:6px solid var(--med);border-radius:12px;padding:16px;margin:16px 0}
+  .finding.med{border-left-color:var(--med)}.finding.low{border-left-color:var(--low)}.finding.info{border-left-color:var(--info)}
+  .meta{color:var(--muted);font-size:13px}
+  .rec{background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;padding:12px 14px;margin-top:10px}
+  .warn{background:#fffbeb;border:1px solid #fde68a;border-radius:10px;padding:12px 14px;margin-top:10px}
+  footer{color:var(--muted);font-size:12.5px;text-align:center;padding:24px}
+  @media print{header{padding:20px}main{padding:12px}.card{box-shadow:none;break-inside:avoid}}
+</style>
+</head>
+<body>
+<header><div class="wrap">
+  <h1>Audit Keamanan Lengkap — Sistem Reservasi Fasilitas Kampus</h1>
+  <p><strong>Tanggal:</strong> 16 September 2026 (UTC) &nbsp;•&nbsp; <strong>Repo:</strong> sistem-reservasi &nbsp;•&nbsp; <strong>Commit:</strong> d005ba2 (main, sync dev) &nbsp;•&nbsp; <strong>Stack:</strong> Laravel 13.29 / PHP 8.4 / MySQL 8</p>
+  <p><strong>Sifat audit:</strong> READ-ONLY — tidak ada file kode yang diubah. Satu-satunya file baru adalah laporan ini (<code>docs/audit-keamanan-report.html</code>).</p>
+  <p><strong>Acuan:</strong> <code>docs/spesifikasi-sistem-reservasi.md</code> (§4–§12, BR-1..BR-17), OWASP Top 10 2021.</p>
+</div></header>
+<main><div class="wrap">
+
+<div class="card">
+<h2>1. Ringkasan Eksekutif</h2>
+<p>Fondasi keamanan repo ini <strong>baik</strong>: tidak ditemukan celah <strong>Critical</strong> (RCE, SQL injection tereksploitasi, auth-bypass, IDOR reservasi/laporan, CSRF hilang, upload PHP/SVG). Password di-hash, sesi diregenerasi, CSRF ada di semua form, query memakai binding, XSSStored mayoritas ter-escape, overlap dikunci transaksi, verifikasi akun memakai lock+audit, dan sesi dibatalkan saat role/status berubah.</p>
+<div class="grid">
+  <div class="stat"><b style="color:var(--crit)">0</b>Critical</div>
+  <div class="stat"><b style="color:var(--high)">0</b>High</div>
+  <div class="stat"><b style="color:var(--med)">4</b>Medium</div>
+  <div class="stat"><b style="color:var(--low)">6</b>Low</div>
+  <div class="stat"><b style="color:var(--info)">5</b>Info</div>
+</div>
+<p><strong>3 risiko utama bila dibiarkan:</strong> (1) Stored XSS konteks-JS di halaman admin fasilitas (A1) — admin jahat/terkompromi bisa menyerang admin lain; (2) bypass kuota 2 pending/hari via request paralel (A2) — spam antrean; (3) konfigurasi produksi belum aman — <code>APP_DEBUG=true</code>, cookie tanpa <code>Secure</code>, tanpa enkripsi sesi, tanpa security headers (A3/A4/A10). Semuanya bisa diperbaiki tanpa mengubah desain spec.</p>
+<p class="meta">Catatan secret: nilai rahasia di laporan ini disensor (<code>[REDACTED]</code>). File <code>.env</code> lokal <strong>tidak ter-commit</strong> (terverifikasi via <code>git ls-files</code> + <code>git log --all -- .env</code> kosong, dan <code>.gitignore</code> mengabaikan <code>.env</code>).</p>
+</div>
+
+<div class="card toc">
+<h2>2. Daftar Isi</h2>
+<ol>
+  <li><a href="#metode">Metode &amp; cakupan</a></li>
+  <li><a href="#tabel">Tabel temuan</a></li>
+  <li><a href="#detail">Detail temuan (A1–A15)</a></li>
+  <li><a href="#aman">Hal yang AMAN (dengan bukti)</a></li>
+  <li><a href="#deploy">Checklist konfigurasi &amp; deployment</a></li>
+  <li><a href="#roadmap">Roadmap perbaikan prioritas</a></li>
+  <li><a href="#lampiran">Lampiran: file yang diperiksa &amp; bukti tak-ubah</a></li>
+</ol>
+</div>
+
+<div class="card" id="metode">
+<h2>3. Metode &amp; Cakupan</h2>
+<ul>
+  <li><strong>Read-only:</strong> hanya <code>read</code>/<code>grep</code>/<code>bash</code> baca (git status/log, daftar file, isi log tail tersensor). Tidak ada edit/patch/migrasi.</li>
+  <li><strong>Jalur 1 — auth &amp; otorisasi:</strong> <code>routes/web.php</code>, <code>bootstrap/app.php</code>, <code>Auth/*</code>, <code>Middleware/EnsureRole|EnsureAccountActive</code>, <code>Policies/*</code>, <code>User.php</code>, <code>AccountVerificationService</code>, <code>AccountStatusGate</code>, <code>UserObserver</code>, <code>config/auth|session</code>.</li>
+  <li><strong>Jalur 2 — input &amp; logika:</strong> semua <code>Http/Requests/*</code>, <code>Rules/*</code>, semua controller (pengguna/petugas/admin), <code>Services/ReservationService|ReportService</code>, seluruh <code>resources/views/**/*.blade.php</code> (pola <code>{!!</code>, <code>@php</code>, <code>onsubmit/onclick</code>, <code>@csrf</code>, <code>Storage::url|asset('storage')</code>), <code>Models/*</code>, migrasi.</li>
+  <li><strong>Jalur 3 — config &amp; exposure:</strong> <code>.env</code> (pola saja, disensor), <code>.env.example</code>, <code>config/app|session|filesystems|database</code>, <code>composer.json</code>, <code>Dockerfile</code>, <code>.dockerignore</code>, <code>docker-compose.yml</code>, <code>docker/nginx/default.conf</code>, <code>.gitignore</code>, <code>git log/status/ls-files</code>, <code>storage/logs/laravel.log</code> (tail tersensor).</li>
+  <li><strong>Tidak dalam cakupan:</strong> penetration test jaringan, audit MySQL server, review <code>vendor/</code> &amp; <code>node_modules/</code> baris-per-baris.</li>
+</ul>
+</div>
+
+<div class="card" id="tabel">
+<h2>4. Tabel Temuan</h2>
+<table>
+<tr><th>ID</th><th>Judul</th><th>Sev</th><th>OWASP</th><th>Lokasi</th></tr>
+<tr><td>A1</td><td>Stored XSS konteks-JS di <code>onsubmit</code> (nama fasilitas)</td><td><span class="badge b-med">Medium</span></td><td>A03 Injection</td><td><code>resources/views/admin/fasilitas/index.blade.php:111</code></td></tr>
+<tr><td>A2</td><td>Bypass kuota 2 pending/hari via race condition (TOCTOU)</td><td><span class="badge b-med">Medium</span></td><td>A04 Insecure Design</td><td><code>app/Services/ReservationService.php:35-60</code>, <code>app/Rules/PendingQuota.php:23-30</code></td></tr>
+<tr><td>A3</td><td>Cookie sesi tanpa <code>Secure</code> + sesi tak terenkripsi + <code>APP_URL http</code></td><td><span class="badge b-med">Medium*</span></td><td>A02 / A05</td><td><code>config/session.php:50,172</code>, <code>.env</code> (<code>SESSION_SECURE_COOKIE</code> unset, <code>SESSION_ENCRYPT=false</code>, <code>APP_URL=http</code>)</td></tr>
+<tr><td>A4</td><td><code>APP_DEBUG=true</code> + <code>LOG_LEVEL=debug</code> (risiko stack-trace ke user bila terbawa ke produksi)</td><td><span class="badge b-med">Medium*</span></td><td>A05 / A09</td><td><code>.env:4,21</code>, <code>config/app.php:42</code></td></tr>
+<tr><td>A5</td><td>Foto laporan/fasilitas di disk publik tanpa kontrol akses</td><td><span class="badge b-low">Low</span></td><td>A01</td><td><code>app/Services/ReportService.php:30-32</code>, <code>app/Http/Controllers/Admin/FacilityController.php:131</code>, <code>config/filesystems.php:41-48</code></td></tr>
+<tr><td>A6</td><td><code>$fillable</code> over-permissive (<code>role</code>, <code>account_status</code>, <code>status</code>, dsb.)</td><td><span class="badge b-low">Low</span></td><td>A01</td><td><code>app/Models/User.php:15</code>, <code>Reservation.php:12</code>, <code>Report.php:13</code></td></tr>
+<tr><td>A7</td><td>Tanpa <code>throttle</code> di endpoint tulis (spam antrean)</td><td><span class="badge b-low">Low</span></td><td>A07</td><td><code>routes/web.php:41,47,59-64,82-110</code> vs <code>:30,33</code></td></tr>
+<tr><td>A8</td><td>Wildcard <code>LIKE</code> tanpa escape + filter tanpa allowlist/batas</td><td><span class="badge b-low">Low</span></td><td>A04</td><td><code>Admin/FacilityController.php:24,28</code>, <code>ReservationController.php:39-43</code>, <code>Facility.php:43-47</code></td></tr>
+<tr><td>A9</td><td>Otorisasi tipis: andalkan middleware saja + inkonsistensi <code>authorize()</code></td><td><span class="badge b-low">Low</span></td><td>A01</td><td><code>UpdateReportStatusRequest.php:15-17</code>, <code>Officer/ReservationController.php:56-79</code>, <code>RejectReservationRequest.php:21</code></td></tr>
+<tr><td>A10</td><td>Security headers hilang (tanpa CSP/HSTS/X-Frame-Options)</td><td><span class="badge b-low">Low</span></td><td>A05</td><td><code>bootstrap/app.php</code>, <code>docker/nginx/default.conf</code></td></tr>
+<tr><td>A11</td><td>Inkonsistensi <code>cancel_reason</code> min:5 vs min:10</td><td><span class="badge b-info">Info</span></td><td>—</td><td><code>ReservationController.php:130-135</code> vs <code>Reject/Cancel*Request.php:32</code></td></tr>
+<tr><td>A12</td><td>Enumerasi akun via pesan <code>unique</code> &amp; flash email</td><td><span class="badge b-info">Info</span></td><td>A07</td><td><code>RegisterController.php:44-48</code>, <code>AdminAccountRequest.php:39-45</code></td></tr>
+<tr><td>A13</td><td>Invalidasi sesi hanya untuk driver <code>database</code></td><td><span class="badge b-info">Info</span></td><td>A07</td><td><code>app/Observers/UserObserver.php:26-28</code></td></tr>
+<tr><td>A14</td><td>Tanpa alur reset password (<code>password_reset_tokens</code> tak terpakai)</td><td><span class="badge b-info">Info</span></td><td>A07</td><td><code>routes/web.php</code> (nihil), migrasi <code>0001_01_01_000000</code></td></tr>
+<tr><td>A15</td><td>Higiene secret lokal (password DB dev lemah; file tak ter-commit — BAIK)</td><td><span class="badge b-info">Info</span></td><td>A07</td><td><code>.env</code> (disensor), <code>.gitignore:48</code>, <code>.dockerignore:5-6</code></td></tr>
+</table>
+<p class="meta">* A3/A4 berisiko <strong>Low</strong> di lingkungan lokal (XAMPP/Laragon http) dan naik ke <strong>Medium/High</strong> bila konfigurasi yang sama terbawa ke produksi/demo publik.</p>
+</div>
+
+<div class="card" id="detail">
+<h2>5. Detail Temuan</h2>
+
+<div class="finding med">
+<h3>A1 — Stored XSS konteks-JS di <code>onsubmit</code> halaman admin fasilitas <span class="badge b-med">Medium</span></h3>
+<p class="meta">OWASP A03 Injection • <code>resources/views/admin/fasilitas/index.blade.php:111</code> • sumber: <code>FacilityRequest.php:33 (name max:120)</code></p>
+<pre>&lt;form method="POST" action=".../nonaktifkan"
+      onsubmit="return confirm('Fasilitas {{ $facility-&gt;name }} akan dinonaktifkan ...')"&gt;</pre>
+<p><code>{{ }}</code> memakai <code>htmlspecialchars(ENT_QUOTES)</code> — aman untuk konteks HTML, <strong>tidak cukup</strong> untuk string JS dalam atribut. Parser HTML men-decode entitas (<code>&amp;#039;</code> → <code>'</code>) sebelum JS dieksekusi, sehingga nama seperti <code>x');alert(document.cookie);//</code> (muat dalam 120 karakter) memutus string <code>confirm('...')</code>. Prasyarat: pelaku sudah ber-role admin (pembuat fasilitas, <code>FacilityRequest::authorize</code> membatasi ke admin) — dampaknya serangan intra-admin (pencurian sesi/CSRF) saat admin lain membuka daftar fasilitas.</p>
+<div class="rec"><strong>Rekomendasi:</strong> jangan interpolasi ke inline JS. Pakai <code>data-*</code> + listener, mis. <code>&lt;form data-name="{{ $facility-&gt;name }}" class="js-deactivate"&gt;</code> lalu <code>confirm(el.dataset.name)</code>; atau <code>@json($facility-&gt;name)</code>. Kontras: <code>confirm()</code> statis di <code>petugas/laporan/show:169,179</code>, <code>admin/pengguna/index:39</code>, <code>verifikasi:41</code> sudah aman.</div>
+</div>
+
+<div class="finding med">
+<h3>A2 — Bypass kuota 2 pending/hari via race condition <span class="badge b-med">Medium</span></h3>
+<p class="meta">OWASP A04 Insecure Design • <code>app/Services/ReservationService.php:35-60</code> • <code>app/Rules/PendingQuota.php:23-30</code> • BR-4</p>
+<pre>// Validasi kuota BERADA DI LUAR transaksi:
+Validator::make([... new PendingQuota($user-&gt;id, $start) ...])-&gt;validate(); // count() tanpa lock
+return DB::transaction(function () {
+    $conflict = Reservation::approved()-&gt;overlap(...)-&gt;lockForUpdate()-&gt;exists(); // hanya overlap dicek ulang
+    ...
+});</pre>
+<p>Tiga request paralel saat <code>count=1</code> semuanya lolos validasi lalu masuk transaksi — kuota tidak pernah dihitung ulang dengan lock. Hasil: 3–4 pending di hari yang sama (spam antrean, beban petugas). Overlap justru sudah benar polanya (cek ulang + <code>lockForUpdate</code> di <code>create:53-60</code> dan <code>approve:86-111</code>) — kuota belum meniru pola itu.</p>
+<div class="rec"><strong>Rekomendasi:</strong> hitung ulang kuota di dalam transaksi dengan <code>lockForUpdate()</code> (atau kunci logis per user+tanggal), atau tegakkan via constraint DB + tangani 409. Uji dengan 3 POST paralel saat kuota tersisa 1.</div>
+</div>
+
+<div class="finding med">
+<h3>A3 — Cookie sesi tanpa <code>Secure</code>, sesi tak terenkripsi, <code>APP_URL http</code> <span class="badge b-med">Medium*</span></h3>
+<p class="meta">OWASP A02/A05 • <code>config/session.php:50 ('encrypt' =&gt; env SESSION_ENCRYPT false)</code>, <code>:172 ('secure' =&gt; env SESSION_SECURE_COOKIE)</code> • <code>.env: SESSION_SECURE_COOKIE</code> unset, <code>SESSION_ENCRYPT=false</code>, <code>APP_URL=http://localhost:8000</code></p>
+<p>Default <code>http_only=true</code> dan <code>same_site=lax</code> sudah baik (anti akses JS + mitigasi CSRF dasar). Namun tanpa <code>Secure</code> + via http, cookie sesi bisa disadap di jaringan tak tepercaya; tanpa enkripsi, payload sesi DB/file lebih mudah dibaca bila storage bocor. Di lokal ini wajar; wajib diubah saat demo publik/produksi (https).</p>
+<div class="rec"><strong>Rekomendasi produksi:</strong> <code>SESSION_SECURE_COOKIE=true</code>, pertimbangkan <code>SESSION_ENCRYPT=true</code>, <code>APP_URL=https://...</code>. Jangan set <code>Secure</code> saat masih http-lokal (cookie tak terkirim).</div>
+</div>
+
+<div class="finding med">
+<h3>A4 — <code>APP_DEBUG=true</code> + <code>LOG_LEVEL=debug</code> <span class="badge b-med">Medium*</span></h3>
+<p class="meta">OWASP A05/A09 • <code>.env:4 (APP_DEBUG=true)</code>, <code>.env:21 (LOG_LEVEL=debug)</code> • <code>config/app.php:42</code></p>
+<p>Debug aktif menampilkan stack trace + path absolut (<code>D:/Praktikum/...</code> terlihat di <code>storage/logs/laravel.log</code>) ke browser saat error — membocorkan struktur app, versi, query. Cocok untuk dev, berbahaya bila file <code>.env</code> ini terbawa ke server demo/produksi.</p>
+<div class="rec"><strong>Rekomendasi:</strong> produksi/demo publik wajib <code>APP_DEBUG=false</code>, <code>LOG_LEVEL=warning|error</code>. Verifikasi dengan memicu 404/500 dan pastikan halaman error generik.</div>
+</div>
+
+<div class="finding low">
+<h3>A5 — Foto laporan/fasilitas publik tanpa kontrol akses <span class="badge b-low">Low</span></h3>
+<p class="meta">OWASP A01 • <code>ReportService.php:30-32 (store 'reports','public')</code> • <code>Admin/FacilityController.php:125-132</code> • <code>config/filesystems.php:41-48</code> • view <code>laporan/show:54</code>, <code>petugas/laporan/show:63</code>, <code>admin/fasilitas/index:59</code></p>
+<p>Nama file acak (<code>hashName()</code>) sehingga tak bisa ditebak — mitigasi parsial yang baik. Tetapi siapa pun pemegang URL <code>/storage/...</code> bisa GET tanpa <code>auth</code>/Gate; URL bisa bocor via log/referer/share. Foto laporan bisa sensitif (kerusakan + lokasi).</p>
+<div class="rec"><strong>Rekomendasi:</strong> putuskan klasifikasi: bila sensitif → pindah ke disk <code>local</code> + route unduh ber-Gate (atau signed URL sementara); bila memang publik → dokumentasikan sebagai keputusan sadar.</div>
+</div>
+
+<div class="finding low">
+<h3>A6 — <code>$fillable</code> over-permissive <span class="badge b-low">Low</span> (defense-in-depth)</h3>
+<p class="meta">OWASP A01 • <code>User.php:15 (role, account_status, verified_by/at, rejected_by/at)</code> • <code>Reservation.php:12 (user_id, status, decided_by...)</code> • <code>Report.php:13 (status, handled_by...)</code></p>
+<p><strong>Saat ini aman:</strong> <code>RegisterController:51-59</code> memaksa <code>role=pengguna,status=pending</code>; <code>BaseAccountController:60-68</code> memaksa role+status server-side; <code>ReservationService:62-69</code> dan <code>ReportService:34-41</code> set <code>user_id/status</code> dari objek. Risikonya ke depan: satu <code>$request-&gt;all()</code>/`create($validated)` lalai = eskalasi role/status.</p>
+<div class="rec"><strong>Rekomendasi:</strong> keluarkan kolom otorisasi dari <code>$fillable</code> (set via <code>forceFill</code>/service), atau pertahankan dengan komentar penjaga + test mass-assignment (<code>POST /register</code> dengan <code>role=admin</code> harus tetap <code>pengguna/pending</code>).</div>
+</div>
+
+<div class="finding low">
+<h3>A7 — Tanpa <code>throttle</code> di endpoint tulis <span class="badge b-low">Low</span></h3>
+<p class="meta">OWASP A07 • <code>routes/web.php:30,33</code> (hanya login/register <code>throttle:10,1</code>) vs <code>:41 (reservasi.store)</code>, <code>:47 (laporan.store)</code>, <code>:59-64 (petugas.*)</code>, <code>:82-110 (admin.*)</code> tanpa throttle</p>
+<p>Login sudah berlapis baik: middleware <code>throttle:10,1</code> + <code>RateLimiter 5/menit</code> per email|IP (<code>LoginController:38-46</code>). Endpoint tulis tanpa batas mempermudah spam reservasi/laporan (menguatkan A2) dan enumerasi <code>facility_id</code>.</p>
+<div class="rec"><strong>Rekomendasi:</strong> tambah <code>throttle</code> wajar mis. <code>throttle:30,1</code> untuk <code>reservasi.store/laporan.store</code> dan aksi petugas/admin.</div>
+</div>
+
+<div class="finding low">
+<h3>A8 — Wildcard <code>LIKE</code> tanpa escape + filter tanpa allowlist/batas <span class="badge b-low">Low</span></h3>
+<p class="meta">OWASP A04 • <code>Admin/FacilityController.php:24,28 ("%{$keyword}%")</code> • <code>ReservationController.php:39-43 (status tanpa in:)</code> • <code>Facility.php:43-47 (scopeSearch)</code></p>
+<p>Parameter ter-binding (aman dari SQLi — terbukti tak ada <code>DB::raw/whereRaw</code> berisi input user; satu-satunya <code>orderByRaw/selectRaw</code> bersifat statis) dan output ter-escape (<code>value="{{ $keyword }}"</code>). Namun <code>%</code>/<code>_</code> dari user berfungsi sebagai wildcard (match-all / query berat), <code>q</code> admin tanpa <code>max</code>, dan <code>status</code> riwayat pengguna tanpa allowlist (vs versi petugas <code>Officer/ReservationController:36-39</code> yang sudah <code>in:...</code> — bagus).</p>
+<div class="rec"><strong>Rekomendasi:</strong> samakan dengan <code>FacilityController (publik):54-65</code> — <code>q max:100</code>, escape via <code>addcslashes($keyword,'%_\\')</code>, <code>status Rule::in([...])</code>.</div>
+</div>
+
+<div class="finding low">
+<h3>A9 — Otorisasi andalkan middleware saja <span class="badge b-low">Low</span></h3>
+<p class="meta">OWASP A01 • <code>UpdateReportStatusRequest.php:15-17 (hanya user()!==null)</code> • <code>Officer/ReservationController.php:56-79 (tanpa Gate)</code> • <code>StoreReservation/StoreReportRequest::authorize</code> tanpa cek role</p>
+<p>Aman <strong>selama</strong> grup route tak berubah (<code>role:petugas/admin/pengguna</code> di <code>routes/web.php:36,51,67</code> + <code>EnsureRole:25-27</code> strict). Sekali route salah pasang, endpoint mutasi terbuka lintas role. Inkonsistensi: <code>Reject/Cancel*Request:21</code> membolehkan <code>isPetugas||isAdmin</code> padahal middleware <code>role:petugas</code> menolak admin — dead-code yang membingungkan. Kontras baik: <code>FacilityRequest:22</code> dan <code>AdminAccountRequest:27</code> sudah cek role di <code>authorize()</code>; <code>Officer/ReportController:show:52</code>, <code>ReservationController:show:114</code>, <code>ReportController:show:58</code> sudah <code>Gate::authorize('view')</code>.</p>
+<div class="rec"><strong>Rekomendasi:</strong> tambahkan cek role di <code>UpdateReportStatusRequest::authorize()</code> (+ <code>Store*Request</code>) dan <code>Gate::authorize</code> di aksi officer sebagai kunci kedua yang murah.</div>
+</div>
+
+<div class="finding low">
+<h3>A10 — Security headers hilang <span class="badge b-low">Low</span></h3>
+<p class="meta">OWASP A05 • <code>bootstrap/app.php</code> (tanpa middleware header kustom) • <code>docker/nginx/default.conf</code> (hanya <code>deny /\.ht</code>, tanpa <code>X-Frame-Options/CSP/HSTS/X-Content-Type-Options/Referrer-Policy</code>) • tanpa <code>config/cors.php</code></p>
+<p>Aplikasi rentan clickjacking (tidak ada <code>X-Frame-Options/DENY</code> atau <code>frame-ancestors</code>) dan MIME-sniffing; HSTS tak relevan selama http. Risiko clickjacking nyata untuk aksi POST (approve/reject) bila admin/petugas dibujuk membuka halaman jebakan — sebagian termitigasi oleh <code>SameSite=lax</code> + CSRF token.</p>
+<div class="rec"><strong>Rekomendasi produksi:</strong> tambah header via middleware/nginx: <code>X-Frame-Options: DENY</code> (atau CSP <code>frame-ancestors 'none'</code>), <code>X-Content-Type-Options: nosniff</code>, <code>Referrer-Policy: strict-origin-when-cross-origin</code>, dan <code>HSTS</code> setelah https aktif.</div>
+</div>
+
+<div class="finding info">
+<h3>A11 — Inkonsistensi panjang <code>cancel_reason</code> <span class="badge b-info">Info</span></h3>
+<p class="meta"><code>ReservationController.php:130-135 (min:5)</code> vs <code>RejectReservationRequest.php:32 / CancelReservationOfficerRequest.php:32 (min:10)</code> • view <code>reservasi/show:148 (minlength=5)</code></p>
+<p>Bukan lubang (server tetap enforce), tapi drift aturan BR-8/BR-9 menyulitkan audit dan pengujian.</p>
+</div>
+
+<div class="finding info">
+<h3>A12 — Enumerasi akun via pesan validasi <span class="badge b-info">Info</span></h3>
+<p class="meta"><code>RegisterController.php:44-48</code>, <code>AdminAccountRequest.php:39-45 (unique email/identity/phone)</code></p>
+<p>Login sudah baik (pesan generik <code>"Email atau password salah"</code>, <code>LoginController:51-53</code>). Pendaftaran/admin-create wajar membocorkan keberadaan email/identitas via pesan <code>unique</code> — standar industri, diterima. Flash <code>"Akun {email} berhasil..."</code> di area admin hanya terlihat admin.</p>
+</div>
+
+<div class="finding info">
+<h3>A13 — Invalidasi sesi hanya driver <code>database</code> <span class="badge b-info">Info</span></h3>
+<p class="meta"><code>app/Observers/UserObserver.php:18-34</code> (terdaftar di <code>AppServiceProvider.php:24</code>) • <code>.env:30 SESSION_DRIVER=database</code></p>
+<p>Implementasi sudah memenuhi spec §5.2 untuk konfigurasi saat ini: hapus baris <code>sessions</code> + null-kan <code>remember_token</code> saat <code>role/account_status</code> berubah, plus <code>EnsureAccountActive</code> menendang sesi basi di request berikutnya dan <code>LoginController:62-70</code> menolak pending/ditolak + membersihkan token. Bila driver diganti ke <code>file</code>, invalidasi menyeluruh tak berlaku (sudah didokumentasikan di komentar kode).</p>
+</div>
+
+<div class="finding info">
+<h3>A14 — Tanpa alur reset password <span class="badge b-info">Info</span></h3>
+<p class="meta"><code>database/migrations/0001_01_01_000000_create_users_table.php:24-29 (password_reset_tokens)</code> • <code>routes/web.php</code> nihil route reset</p>
+<p>Tidak ada rute lupa/reset password — pemulihan akun hanya via admin. Bukan celah, tapi risiko ketersediaan/UX + godaan reset manual via DB.</p>
+</div>
+
+<div class="finding info">
+<h3>A15 — Higiene secret lokal <span class="badge b-info">Info</span> (positif + catatan)</h3>
+<p class="meta"><code>.env</code> (APP_KEY terisi, DB root + password dev lemah — disensor) • <code>.gitignore:48 (.env diabaikan)</code> • <code>git ls-files</code>: hanya <code>.env.example</code> terlacak; <code>git log --all -- .env</code> kosong • <code>.dockerignore:5-6</code> mengecualikan <code>.env</code> dari image</p>
+<p>Tidak ada secret ter-commit — baik. Catatan: password DB dev lemah untuk akun <code>root</code> (dapat diterima di laptop dev, wajib diganti di server bersama/produksi; bedakan kredensial per lingkungan via <code>DB_PASSWORD</code>/<code>DB_ROOT_PASSWORD</code> di <code>docker-compose.yml</code>). File <code>report-code-main.html</code> tak terlacak di root — periksa isinya sebelum commit.</p>
+</div>
+</div>
+
+<div class="card" id="aman">
+<h2>6. Hal yang AMAN (dengan bukti — jangan dirusak saat perbaikan)</h2>
+<table>
+<tr><th>Area</th><th>Bukti</th></tr>
+<tr><td>Hash password</td><td><code>Hash::make</code> di <code>RegisterController:54</code>, <code>BaseAccountController:63</code>; cast <code>'password'=&gt;'hashed'</code> (<code>User.php:32</code>); <code>BCRYPT_ROUNDS=12</code>; <code>Password::min(8)</code> + <code>confirmed/same</code>.</td></tr>
+<tr><td>Session fixation &amp; logout</td><td><code>session()-&gt;regenerate()</code> setelah login (<code>LoginController:73</code>); <code>logout+invalidate+regenerateToken</code> terpusat (<code>AccountStatusGate:42-47</code>); penolakan pending/ditolak membersihkan <code>remember_token</code> (<code>LoginController:66</code>).</td></tr>
+<tr><td>Throttle login</td><td><code>RateLimiter 5/menit</code> per email|IP (<code>LoginController:38-46,87-90</code>) + middleware <code>throttle:10,1</code> login/register (<code>routes/web.php:30,33</code>).</td></tr>
+<tr><td>Isolasi role</td><td>Grup eksklusif <code>role:pengguna|petugas|admin</code> (<code>routes/web.php:36,51,67</code>); <code>EnsureRole</code> strict (<code>:25-27</code>); dashboard admin agregat read-only (<code>Admin/DashboardController:22-31</code>); registrasi paksa pengguna/pending (BR-15).</td></tr>
+<tr><td>IDOR terkendali</td><td><code>Gate::authorize('view')</code> + Policy pemilik-atau-petugas (<code>ReservationPolicy:24-28</code>, <code>ReportPolicy:24-27</code>); index di-scope <code>user_id=auth</code>; <code>destroy</code> cek pemilik ganda (controller + <code>cancelByUser:187-189</code>).</td></tr>
+<tr><td>CSRF</td><td><code>@csrf</code> di semua form mutasi (36+ titik: auth, reservasi, laporan, petugas, admin, logout layout); tanpa mutasi via GET; <code>VerifyCsrfToken</code> bawaan aktif.</td></tr>
+<tr><td>SQL injection</td><td>Nihil <code>DB::raw/whereRaw</code> berisi input user; <code>orderByRaw/selectRaw</code> statis (<code>Dashboard:15,20</code>, <code>Home:57</code>, <code>Officer/Reservation:45</code>); scope overlap/search memakai binding.</td></tr>
+<tr><td>XSS (umum)</td><td>Nihil <code>{!! !!}/echo</code> mentah di views; semua data user via <code>{{ }}</code>; <code>@json($slots)</code> ter-escape HEX; satu-satunya celah konteks-JS adalah A1.</td></tr>
+<tr><td>Upload</td><td><code>image+mimes:jpg,jpeg,png+max:2048</code> (<code>StoreReportRequest:30</code>, <code>FacilityRequest:38</code>) menolak SVG/PHP; nama hash acak (<code>store()</code>) kebal traversal/overwrite; hapus foto lama aman (path dari DB).</td></tr>
+<tr><td>Anti-bentrok</td><td>Validasi + cek ulang transaksi + <code>lockForUpdate</code>, 409 saat balapan (<code>ReservationService:53-60,81-121</code>); status fasilitas dikunci saat approve (BR-12).</td></tr>
+<tr><td>Verifikasi akun</td><td>Transaksi + lock, guard role pengguna, 404-vs-409 tepat, audit <code>verified_by/at</code> + tabel riwayat (<code>AccountVerificationService:26-122</code>).</td></tr>
+<tr><td>Privasi publik (BR-13)</td><td>Grid publik hanya state slot, tanpa nama/tujuan (<code>FacilityController:129-157</code>, <code>HomeController:77-104</code>, <code>fasilitas/jadwal</code>).</td></tr>
+<tr><td>Open redirect</td><td>Hanya <code>redirect()-&gt;intended($home)</code> internal per-role (<code>LoginController:78-84</code>); tanpa <code>?next=</code>/URL dari input.</td></tr>
+<tr><td>Secret &amp; build</td><td><code>.env</code> gitignored + tak ada di histori; <code>.dockerignore</code> kecualikan <code>.env/logs/sessions/views</code>; <code>nginx</code> tolak <code>/\.ht</code>.</td></tr>
+</table>
+</div>
+
+<div class="card" id="deploy">
+<h2>7. Checklist Konfigurasi &amp; Deployment</h2>
+<table>
+<tr><th>Item</th><th>Status</th><th>Aksi</th></tr>
+<tr><td><code>APP_DEBUG</code></td><td>❌ <code>true</code> di <code>.env</code> lokal</td><td>Set <code>false</code> di produksi/demo publik</td></tr>
+<tr><td><code>APP_KEY</code></td><td>✅ terisi</td><td>Jangan rotasi sembarangan (sesi/cookie invalid); simpan di secret manager</td></tr>
+<tr><td><code>SESSION_SECURE_COOKIE</code></td><td>⚠️ unset (false)</td><td><code>true</code> setelah https aktif</td></tr>
+<tr><td><code>SESSION_ENCRYPT</code></td><td>⚠️ <code>false</code></td><td>Pertimbangkan <code>true</code> di produksi</td></tr>
+<tr><td><code>SESSION_DRIVER</code></td><td>✅ <code>database</code> (mendukung invalidasi A13)</td><td>Jangan ganti ke <code>file</code> tanpa pengganti invalidasi</td></tr>
+<tr><td>Security headers</td><td>❌ nihil</td><td>Tambah di nginx/middleware (A10)</td></tr>
+<tr><td>Throttle tulis</td><td>⚠️ parsial</td><td>Tambah per A7</td></tr>
+<tr><td>Kredensial DB dev</td><td>⚠️ <code>root</code> + password lemah (lokal)</td><td>Bedakan per env; user least-privilege di server</td></tr>
+<tr><td><code>storage/logs/laravel.log</code> 595KB</td><td>⚠️ ada stack trace path lokal</td><td>Rotasi log; pastikan tak tersaji via web</td></tr>
+<tr><td>Ekspor CSV/XLSX/PDF, RecapService</td><td>➖ tidak ada di kode (spec §13 belum diimplementasikan)</td><td>Saat dibangun: waspadai formula-injection CSV + otorisasi admin + content-type</td></tr>
+</table>
+</div>
+
+<div class="card" id="roadmap">
+<h2>8. Roadmap Perbaikan Prioritas (tanpa mengubah desain spec)</h2>
+<ol>
+  <li><strong>Sekarang (≤1 hari):</strong> A1 (hapus interpolasi di <code>onsubmit</code>), A4 (<code>APP_DEBUG=false</code> di env produksi), A10 (header dasar nginx).</li>
+  <li><strong>Berikutnya:</strong> A2 (kuota dalam transaksi + test paralel), A7 (throttle endpoint tulis), A8 (escape <code>LIKE</code> + allowlist <code>status</code>).</li>
+  <li><strong>Hardening:</strong> A5 (keputusan klasifikasi foto), A6 (rampingkan <code>$fillable</code> + test), A9 (kunci kedua otorisasi), A3 (https + <code>Secure</code>/enkripsi sesi).</li>
+</ol>
+<p class="meta">Estimasi kasar: batch 1 &lt; 2 jam kerja + verifikasi; batch 2 setengah hari + test konkurensi; batch 3 mengikuti jadwal rilis.</p>
+</div>
+
+<div class="card" id="lampiran">
+<h2>9. Lampiran</h2>
+<h3>File yang diperiksa (±60 berkas)</h3>
+<p><code>routes/web.php</code>; <code>bootstrap/app.php</code>; <code>Auth/Login|Register|LogoutController</code>; <code>Middleware/EnsureRole|EnsureAccountActive</code>; <code>Policies/Reservation|ReportPolicy</code>; <code>Providers/AppServiceProvider</code>; <code>Observers/UserObserver</code>; <code>Models/User|Reservation|Report|Facility</code>; <code>Services/Reservation|Report|AccountVerification|AccountStatusGate</code>; <code>Support/AccountAttributes</code>; seluruh <code>Http/Requests/*</code> &amp; <code>Rules/*</code>; controller pengguna/petugas/admin; <code>Facility|Home|DashboardController</code>; seluruh <code>resources/views/**/*.blade.php</code>; <code>config/app|session|filesystems|database</code>; <code>.env</code>/<code>.env.example</code>; <code>composer.json</code>; <code>Dockerfile</code>/<code>.dockerignore</code>/<code>docker-compose.yml</code>/<code>docker/nginx/default.conf</code>; <code>.gitignore</code>; migrasi <code>0001_01_01_000000</code> + migrasi role/status/un Space; <code>storage/logs/laravel.log</code> (tail).</p>
+<h3>Bukti tak-ubah</h3>
+<p>Pra-laporan: <code>git status --short</code> hanya menampilkan file tak terlacak yang sudah ada (<code>GLOSSARY.md, MISSION.md, NOTES.md, RESOURCES.md, assets/, docs/panduan-*.html, learning-records/, lessons/, reference/, report-code-main.html</code>) — tidak ada <code>M</code> (modified). Audit ini tidak menjalankan <code>migrate/test/build</code> maupun edit file. Verifikasi akhir: pastikan <code>git status</code> hanya bertambah satu file tak terlacak baru (<code>docs/audit-keamanan-report.html</code>).</p>
+<h3>Batasan</h3>
+<p>Audit statis + penalaran eksploitasi; tanpa eksekusi PoC destruktif, tanpa uji beban paralel aktual, tanpa review <code>vendor/</code>. Rating severity memakai konteks aplikasi kampus (data sensitif sedang, peran admin terbatas).</p>
+</div>
+
+</div></main>
+<footer>Laporan audit read-only • 16 Sep 2026 • Tidak ada kode yang diubah — perbaikan menunggu persetujuan dan dikerjakan di branch fitur per-milestone.</footer>
+</body>
+</html>

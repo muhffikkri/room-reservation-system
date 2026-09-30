@@ -18,6 +18,14 @@ use Illuminate\View\View;
  */
 class DashboardController extends Controller
 {
+    /**
+     * Jumlah baris antrean yang ditampilkan di ringkasan. Batasnya dibawa ke
+     * SQL: sebelumnya seluruh antrean dimuat lalu dipotong di memori, jadi
+     * halaman ini men.transfer seluruh tabel hanya untuk menampilkannya lima
+     * baris.
+     */
+    private const QUEUE_PREVIEW = 5;
+
     public function __construct(private readonly ReservationService $reservations) {}
 
     public function __invoke(Request $request): View
@@ -35,6 +43,7 @@ class DashboardController extends Controller
             ->with(['user', 'facility'])
             ->orderBy('created_at', 'desc')
             ->orderBy('start_time', 'asc')
+            ->take(self::QUEUE_PREVIEW)
             ->get();
 
         $newReportCount = Report::where('status', 'baru')->count();
@@ -43,6 +52,7 @@ class DashboardController extends Controller
             ->with(['user', 'facility'])
             ->orderByRaw('CASE status WHEN "baru" THEN 0 WHEN "diproses" THEN 1 WHEN "selesai" THEN 2 WHEN "ditolak" THEN 3 ELSE 4 END')
             ->latest()
+            ->take(self::QUEUE_PREVIEW)
             ->get();
 
         $processedReports = Report::query()
@@ -54,12 +64,12 @@ class DashboardController extends Controller
             ->count();
 
         return view('petugas.dashboard', [
-            'pendingReservationCount' => $pendingReservations->count(),
+            'pendingReservationCount' => Reservation::pending()->count(),
             'newReportCount' => $newReportCount,
             'processedReportCount' => $processedReports,
             'repairFacilityCount' => $repairFacilities,
-            'pendingReservations' => $pendingReservations->take(5),
-            'queueReports' => $queueReports->take(5),
+            'pendingReservations' => $pendingReservations,
+            'queueReports' => $queueReports,
         ]);
     }
 }

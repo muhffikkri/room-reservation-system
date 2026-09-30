@@ -57,6 +57,8 @@ class ReportController extends Controller
             ->paginate(10)
             ->withQueryString();
 
+        // Kartu ringkasan dihapus saat antrean redesigned, jadi tidak ada lagi
+        // angka yang perlu dihitung di sini.
         return view('petugas.laporan.index', [
             'reports' => $reports,
             'status' => $status,

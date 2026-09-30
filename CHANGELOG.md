@@ -10,6 +10,7 @@ Perubahan penting pada setiap rilis dicatat di sini. Detail commit dan pull requ
 - Penolakan otomatis dan notifikasi untuk reservasi pending yang overlap setelah reservasi lain disetujui.
 - Filter dan pengurutan antrian reservasi petugas.
 - Pencarian fasilitas dan pratinjau jadwal pada landing page.
+- Favicon logo REKSA pada seluruh halaman, diturunkan dari `public/images/reksa-logo.png` dengan latar transparan dan ukuran 16, 32, 48, serta 180 piksel.
 
 ### Fixed
 
@@ -21,6 +22,10 @@ Perubahan penting pada setiap rilis dicatat di sini. Detail commit dan pull requ
 - Pulihkan fasilitas terkait ketika laporan kerusakan ditolak.
 - Batasi lagi opsi lokasi pada filter publik dan endpoint AJAX ke 50 nilai unik.
 - Sediakan `Facility::photo_url` sebagai URL absolut agar kartu hasil pencarian langsung dan halaman publik tidak lagi memakai path relatif yang rusak.
+- Arahkan tombol Dashboard pada halaman publik ke beranda milik role masing-masing lewat `User::homeRoute()` supaya admin dan petugas tidak lagi mendarat di 403.
+- Batasi deskripsi fasilitas maksimal 30 kata dan tolak input admin yang lebih panjang lewat `Facility::MAX_DESCRIPTION_WORDS`.
+- Beri tinggi tetap pada blok deskripsi card dan container grid landing supaya hasil pencarian kosong tidak menggeser komponen di bawahnya, dan card hasil pencarian kini dirender oleh server lewat partial yang sama dengan render awal.
+- Satukan label tipe fasilitas dan gambar cadangan pada `Facility::TYPE_LABELS` serta `Facility::TYPE_FALLBACK_IMAGES` supaya label tipe tidak lagi disalin di lima tempat.
 
 ## v1.2.3 — 2026-09-23
 

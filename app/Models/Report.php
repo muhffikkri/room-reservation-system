@@ -75,16 +75,21 @@ class Report extends Model
         return $query->where('status', $status);
     }
 
-    public function categoryLabel(): string
-    {
-        return self::categoryLabelFor($this->category);
-    }
-
     /**
-     * Label kategori dari nilai enum, untuk data rekap yang sudah berupa array.
+     * Label humans untuk satu nilai kategori, baik dari instance maupun
+     * dari peta slug => jumlah di laporan rekap.
+     *
+     * Fallback dipakai kalau DB punya nilai yang belum masuk CATEGORIES,
+     * supaya enum di migrasi dan daftar di sini bisa tertinggal tanpa
+     * membuat tampilan kosong.
      */
-    public static function categoryLabelFor(?string $category): string
+    public static function labelForCategory(?string $category): string
     {
         return self::CATEGORIES[$category ?? ''] ?? ucfirst(str_replace('_', ' ', (string) $category));
+    }
+
+    public function categoryLabel(): string
+    {
+        return self::labelForCategory($this->category);
     }
 }

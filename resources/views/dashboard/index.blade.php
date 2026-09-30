@@ -1,16 +1,9 @@
-@extends('layouts.app')
+﻿@extends('layouts.app')
 
 @section('title', 'Ringkasan REKSA')
 
 @section('content')
     @php
-        $facilityFallbackImages = [
-            'aula' => 'aula.webp',
-            'laboratorium' => 'lab-komputer.webp',
-            'lapangan' => 'lapangan-futsal.webp',
-            'ruang_kelas' => 'ruang-kelas.webp',
-            'alat' => 'proyektor.webp',
-        ];
         $reservationStatuses = [
             'pending' => ['label' => 'Menunggu', 'class' => 'bg-amber-50 text-amber-700'],
             'approved' => ['label' => 'Disetujui', 'class' => 'bg-emerald-50 text-emerald-700'],
@@ -72,7 +65,7 @@
                     @forelse ($recentReservations as $reservation)
                         @php($status = $reservationStatuses[$reservation->status] ?? ['label' => ucfirst($reservation->status), 'class' => 'bg-slate-100 text-slate-600'])
                         <a href="{{ route('reservasi.show', $reservation) }}" class="dashboard-clay-list clay-pressable flex items-center justify-between gap-3 rounded-2xl p-4 focus:outline-none focus:ring-2 focus:ring-blue-500">
-                            <span class="flex min-w-0 items-center gap-3"><span class="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-blue-100 bg-white p-1 shadow-sm"><img src="{{ $reservation->facility?->photo_url ?: asset('images/'.($facilityFallbackImages[$reservation->facility?->type] ?? 'aula.webp')) }}" alt="" class="h-full w-full rounded-lg object-cover"></span><span class="min-w-0"><span class="block truncate text-sm font-bold text-slate-800">{{ $reservation->facility?->name ?? 'Fasilitas dihapus' }}</span><span class="mt-1 block text-xs text-slate-500">{{ $reservation->start_time->format('d M Y, H.i') }}–{{ $reservation->end_time->format('H.i') }}</span></span></span>
+                            <span class="flex min-w-0 items-center gap-3"><span class="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-blue-100 bg-white p-1 shadow-sm"><img src="{{ $reservation->facility?->photo_url ?: $reservation->facility?->display_image_url }}" alt="" class="h-full w-full rounded-lg object-cover"></span><span class="min-w-0"><span class="block truncate text-sm font-bold text-slate-800">{{ $reservation->facility?->name ?? 'Fasilitas dihapus' }}</span><span class="mt-1 block text-xs text-slate-500">{{ $reservation->start_time->format('d M Y, H.i') }}–{{ $reservation->end_time->format('H.i') }}</span></span></span>
                             <span class="shrink-0 rounded-full px-2.5 py-1 text-[10px] font-bold {{ $status['class'] }}">{{ $status['label'] }}</span>
                         </a>
                     @empty
@@ -87,7 +80,7 @@
                     @forelse ($recentReports as $report)
                         @php($status = $reportStatuses[$report->status] ?? ['label' => ucfirst($report->status), 'class' => 'bg-slate-100 text-slate-600'])
                         <a href="{{ route('laporan.show', $report) }}" class="dashboard-clay-list clay-pressable flex items-center justify-between gap-3 rounded-2xl p-4 focus:outline-none focus:ring-2 focus:ring-blue-500">
-                            <span class="flex min-w-0 items-center gap-3"><span class="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-blue-100 bg-white p-1 shadow-sm"><img src="{{ $report->facility?->photo_url ?: asset('images/'.($facilityFallbackImages[$report->facility?->type] ?? 'aula.webp')) }}" alt="" class="h-full w-full rounded-lg object-cover"></span><span class="min-w-0"><span class="block truncate text-sm font-bold text-slate-800">{{ $report->facility?->name ?? 'Fasilitas dihapus' }}</span><span class="mt-1 block truncate text-xs text-slate-500">{{ $report->categoryLabel() }} · {{ $report->created_at->format('d M Y') }}</span></span></span>
+                            <span class="flex min-w-0 items-center gap-3"><span class="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-blue-100 bg-white p-1 shadow-sm"><img src="{{ $report->facility?->photo_url ?: $report->facility?->display_image_url }}" alt="" class="h-full w-full rounded-lg object-cover"></span><span class="min-w-0"><span class="block truncate text-sm font-bold text-slate-800">{{ $report->facility?->name ?? 'Fasilitas dihapus' }}</span><span class="mt-1 block truncate text-xs text-slate-500">{{ $report->categoryLabel() }} · {{ $report->created_at->format('d M Y') }}</span></span></span>
                             <span class="shrink-0 rounded-full px-2.5 py-1 text-[10px] font-bold {{ $status['class'] }}">{{ $status['label'] }}</span>
                         </a>
                     @empty

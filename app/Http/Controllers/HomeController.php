@@ -8,6 +8,7 @@ use App\Services\ReservationAvailability;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Collection;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
@@ -63,7 +64,7 @@ class HomeController extends Controller
         return view('landing.index', [
             'facilities' => $facilities,
             'filters' => $filters,
-            'typeLabels' => Facility::TYPES,
+            'typeLabels' => Facility::TYPE_LABELS,
             'locationOptions' => Facility::query()->publicLocationOptions()->pluck('location'),
             'totalFacilities' => $totalFacilities,
         ]);
@@ -71,13 +72,23 @@ class HomeController extends Controller
 
     public function ajaxFacilities(Request $request): JsonResponse
     {
+        // Jendela yang sama dengan jadwal publik di FacilityController::jadwal
+        // (±365 hari), supaya kedua halaman tidak menerima rentang berbeda
+        // untuk hal yang sama.
+        $today = Carbon::now(config('app.timezone'))->startOfDay();
+
         $filters = $request->validate([
             'q' => ['nullable', 'string', 'max:120'],
-            'type' => ['nullable', 'string', Rule::in(array_keys(Facility::TYPES))],
+            'type' => ['nullable', 'string', Rule::in(array_keys(Facility::TYPE_LABELS))],
             'location' => ['nullable', 'string', 'max:120'],
             'capacity' => ['nullable', 'string', Rule::in(array_keys(self::CAPACITY_RANGES))],
             'facility_id' => ['nullable', 'integer'],
-            'date' => ['nullable', 'date'],
+            'date' => [
+                'nullable',
+                'date_format:Y-m-d',
+                'after_or_equal:'.$today->copy()->subDays($this->availability->maxLookaheadDays())->toDateString(),
+                'before_or_equal:'.$today->copy()->addDays($this->availability->maxLookaheadDays())->toDateString(),
+            ],
         ]);
 
         [$minCapacity, $maxCapacity] = self::CAPACITY_RANGES[$filters['capacity'] ?? ''] ?? [null, null];
@@ -99,7 +110,7 @@ class HomeController extends Controller
                 ->get(['facility_id', 'start_time', 'end_time'])
                 ->groupBy('facility_id');
 
-            $grids = [$facility->id => $this->availability->bookingSlots(
+            $grids = [$facility->id => $this->availability->publicScheduleSlots(
                 $facility,
                 $targetDate,
                 $approvedByFacility->get($facility->id, collect()),
@@ -109,6 +120,7 @@ class HomeController extends Controller
                 'facilities' => [$facility],
                 'grids' => $grids,
                 'total' => 1,
+                'html' => $this->renderGrid(collect([$facility])),
             ]);
         }
 
@@ -139,7 +151,7 @@ class HomeController extends Controller
         }
 
         $grids = $facilities->mapWithKeys(fn (Facility $facility) => [
-            $facility->id => $this->availability->bookingSlots(
+            $facility->id => $this->availability->publicScheduleSlots(
                 $facility,
                 now(),
                 $approvedByFacility->get($facility->id, collect()),
@@ -150,6 +162,20 @@ class HomeController extends Controller
             'facilities' => $facilities,
             'grids' => $grids,
             'total' => $facilities->count(),
+            'html' => $this->renderGrid($facilities),
         ]);
+    }
+
+    /**
+     * Render isi grid fasilitas memakai partial yang sama dengan render awal.
+     *
+     * Pencarian langsung menuliskan hasilnya lewat innerHTML, sehingga markup
+     * card tidak boleh disusun ulang di JavaScript. Dengan HTML dari server,
+     * batas kata deskripsi, tinggi card, dan pesan kosong tidak punya dua
+     * pemilik.
+     */
+    private function renderGrid(Collection $facilities): string
+    {
+        return view('landing._facility-grid', ['facilities' => $facilities])->render();
     }
 }

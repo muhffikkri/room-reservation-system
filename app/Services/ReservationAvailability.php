@@ -41,6 +41,29 @@ class ReservationAvailability
         return self::MAX_DURATION_SLOTS;
     }
 
+    /**
+     * Jam operasional per hari, turunan dari slot yang sama dengan yang
+     * dipakai membangun jadwal (26 slot x 30 menit = 13 jam, yaitu
+     * 07.00-20.00).
+     *
+     * Dipakai rekap okupansi untuk menghitung jam maksimum yang mungkin,
+     * supaya angka itu tidak bisa menyimpang dari jadwal yang benar-benar
+     * dibukakan.
+     */
+    public function operationalHoursPerDay(): int
+    {
+        return intdiv(self::SLOT_COUNT * self::SLOT_MINUTES, 60);
+    }
+
+    /**
+     * Rentang hari ke depan yang boleh dipesan/dipilih. Dipakai juga oleh
+     * halaman publik agar keduanya menerima rentang tanggal yang sama.
+     */
+    public function maxLookaheadDays(): int
+    {
+        return self::MAX_LOOKAHEAD_DAYS;
+    }
+
     public function dayStart(Carbon $date): Carbon
     {
         return $date->copy()->startOfDay()->setTime(self::OPEN_HOUR, 0);

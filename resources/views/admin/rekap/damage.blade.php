@@ -1,4 +1,4 @@
-@extends('layouts.app')
+﻿@extends('layouts.app')
 
 @use('App\Models\Facility')
 @use('App\Models\Report')
@@ -181,7 +181,7 @@
                                     <td class="{{ $clayTableCell }} font-bold text-[#10264a]">
                                         {{ $item['facility_name'] }}</td>
                                     <td class="{{ $clayTableCell }} text-slate-700">
-                                        {{ Facility::typeLabelFor($item['facility_type']) }}</td>
+                                        {{ \App\Models\Facility::TYPE_LABELS[$item['facility_type']] ?? $item['facility_type'] }}</td>
                                     <td class="{{ $clayTableCell }} text-slate-700">{{ $item['facility_location'] }}</td>
                                     <td class="{{ $clayTableCell }}">
                                         <x-ui.badge :status="$item['status']" dot />
@@ -254,7 +254,7 @@
                                 @foreach ($recap['summary']['by_category'] as $category => $count)
                                     <tr class="transition-colors hover:bg-white/70">
                                         <td class="{{ $clayTableCell }} font-bold text-[#10264a]">
-                                            {{ Report::categoryLabelFor($category) }}
+                                            {{ \App\Models\Report::labelForCategory($category) }}
                                         </td>
                                         <td class="{{ $clayTableCell }} text-right">{{ $count }}</td>
                                     </tr>

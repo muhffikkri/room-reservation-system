@@ -1,4 +1,4 @@
-@extends('layouts.app')
+﻿@extends('layouts.app')
 
 @section('title', 'Daftar Laporan Kerusakan')
 
@@ -40,13 +40,6 @@
                 </div>
             @else
                 @php
-                    $facilityFallbackImages = [
-                        'aula' => 'aula.webp',
-                        'laboratorium' => 'lab-komputer.webp',
-                        'lapangan' => 'lapangan-futsal.webp',
-                        'ruang_kelas' => 'ruang-kelas.webp',
-                        'alat' => 'proyektor.webp',
-                    ];
                     $reportStatuses = [
                         'baru' => ['label' => 'Baru', 'class' => 'bg-sky-50 text-sky-700'],
                         'diproses' => ['label' => 'Diproses', 'class' => 'bg-amber-50 text-amber-700'],
@@ -62,7 +55,7 @@
                             <span class="flex min-w-0 items-center gap-3.5">
                                 <span
                                     class="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-blue-100 bg-white p-1 shadow-sm">
-                                    <img src="{{ $report->facility?->photo_url ?: asset('images/' . ($facilityFallbackImages[$report->facility?->type] ?? 'aula.webp')) }}"
+                                    <img src="{{ $report->facility?->photo_url ?: $report->facility?->display_image_url }}"
                                         alt="" class="h-full w-full rounded-lg object-cover">
                                 </span>
                                 <span class="min-w-0">

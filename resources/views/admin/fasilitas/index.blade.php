@@ -81,7 +81,7 @@
                                             <p class="font-bold text-[#10264a]">{{ $facility->name }}</p>
                                         </div>
                                     </td>
-                                    <td class="{{ $clayTableCell }} text-slate-700">{{ $facility->typeLabel() }}</td>
+                                    <td class="{{ $clayTableCell }} text-slate-700">{{ \App\Models\Facility::TYPE_LABELS[$facility->type] ?? \Illuminate\Support\Str::headline($facility->type) }}</td>
                                     <td class="{{ $clayTableCell }} text-slate-700">{{ $facility->location }}</td>
                                     <td class="{{ $clayTableCell }} text-right font-bold text-[#10264a]">
                                         {{ $facility->capacity }}</td>

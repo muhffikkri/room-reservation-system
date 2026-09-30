@@ -97,3 +97,405 @@ it('exports occupancy csv from array-backed recap data', function (): void {
 
     expect($response->streamedContent())->toContain($facility->name);
 });
+
+it('serves the occupancy PDF export as a real PDF document', function (): void {
+    $admin = User::factory()->create(['role' => 'admin', 'account_status' => 'aktif']);
+    Facility::factory()->create();
+
+    $response = $this->actingAs($admin)->get(route('admin.rekap.occupancy.export.pdf', [
+        'start_date' => '2026-09-01',
+        'end_date' => '2026-09-10',
+    ]));
+
+    $response->assertOk()->assertHeader('Content-Type', 'application/pdf');
+
+    // sebelumnya union return type tidak memuat Response, jadi TypeError
+    // tertangkap fallback dan unduhan berisi HTML.
+    expect($response->getContent())->toStartWith('%PDF');
+});
+
+it('serves the damage PDF export as a real PDF document', function (): void {
+    $admin = User::factory()->create(['role' => 'admin', 'account_status' => 'aktif']);
+    Facility::factory()->create();
+
+    $response = $this->actingAs($admin)->get(route('admin.rekap.damage.export.pdf', [
+        'start_date' => '2026-09-01',
+        'end_date' => '2026-09-10',
+    ]));
+
+    $response->assertOk()->assertHeader('Content-Type', 'application/pdf');
+
+    expect($response->getContent())->toStartWith('%PDF');
+});
+
+it('keeps remote resource loading off while still producing a PDF', function (): void {
+    $admin = User::factory()->create(['role' => 'admin', 'account_status' => 'aktif']);
+    Facility::factory()->create();
+
+    $response = $this->actingAs($admin)
+        ->get(route('admin.rekap.occupancy.export.pdf', [
+            'start_date' => '2026-09-01',
+            'end_date' => '2026-09-10',
+        ]));
+
+    // Config harus tetap menolak akses remote. Override di controller tidak
+    // bisa diuji dari sini: dompdf.wrapper di-bind dengan bind(), bukan
+    // singleton(), jadi mutasi option tidak terlihat dari container.
+    // Yang diuji di sini: config-nya salah, dan PDF tetap berhasil dibuat.
+    expect(config('dompdf.options.enable_remote'))->toBeFalse();
+
+    $response->assertOk()
+        ->assertHeader('Content-Type', 'application/pdf');
+
+    expect($response->getContent())->toStartWith('%PDF');
+});
+
+it('leaves PDF JavaScript and PHP execution disabled', function (): void {
+    // Rekap tidak pernah menyertakan <script> atau PHP, jadi tidak ada
+    // kebutuhan yang terbukti. Menyalakannya hanya menambah permukaan
+    // eksekusi di pembaca PDF untuk dokumen yang dibangun dari nilai database.
+    expect(config('dompdf.options.enable_javascript'))->toBeFalse()
+        ->and(config('dompdf.options.enable_php'))->toBeFalse();
+});
+
+it('rejects a recap date range that is only half given', function (): void {
+    $admin = User::factory()->create(['role' => 'admin', 'account_status' => 'aktif']);
+
+    // end_date saja menghasilkan rentang terbalik: start 2026-09-29 s/d
+    // 2026-09-10, dengan max_possible_hours negatif.
+    $this->actingAs($admin)
+        ->get(route('admin.rekap.occupancy', ['end_date' => '2026-09-10']))
+        ->assertSessionHasErrors('start_date');
+
+    $this->actingAs($admin)
+        ->get(route('admin.rekap.occupancy', ['start_date' => '2026-09-10']))
+        ->assertSessionHasErrors('end_date');
+});
+
+it('excludes inactive facilities from the average occupancy rate', function (): void {
+    $admin = User::factory()->create(['role' => 'admin', 'account_status' => 'aktif']);
+
+    $bookable = Facility::factory()->create(['status' => 'aktif']);
+    Facility::factory()->create(['status' => 'perbaikan']);
+
+    // 13 jam operasional per hari, jadi 3 jam = 3/13 = 23.08% untuk satu hari.
+    Reservation::factory()->approved()->create([
+        'user_id' => $admin->id,
+        'facility_id' => $bookable->id,
+        'start_time' => Carbon::parse('2026-09-01 08:00', config('app.timezone')),
+        'end_time' => Carbon::parse('2026-09-01 11:00', config('app.timezone')),
+    ]);
+
+    $recap = app(RecapService::class)->getOccupancyRecap(
+        Carbon::parse('2026-09-01', config('app.timezone'))->startOfDay(),
+        Carbon::parse('2026-09-01', config('app.timezone'))->endOfDay(),
+    );
+
+    // Fasilitas yang bisa dipakai: 23.08%. Jika nonaktif ikut dihitung,
+    // rata-rata turun jadi 11.54% karena penyebut bertambah tanpa
+    // kemungkinan okupansi.
+    expect($recap['summary']['average_occupancy_rate'])->toBe(23.08)
+        ->and($recap['summary']['total_facilities'])->toBe(2);
+});
+
+it('still reports every facility in the per-facility rows', function (): void {
+    $admin = User::factory()->create(['role' => 'admin', 'account_status' => 'aktif']);
+    $bookable = Facility::factory()->create(['status' => 'aktif', 'name' => 'Ruang Aktif']);
+    Facility::factory()->create(['status' => 'perbaikan', 'name' => 'Ruang Perbaikan']);
+
+    $recap = app(RecapService::class)->getOccupancyRecap(
+        Carbon::parse('2026-09-01', config('app.timezone'))->startOfDay(),
+        Carbon::parse('2026-09-01', config('app.timezone'))->endOfDay(),
+    );
+
+    $names = array_column($recap['data'], 'facility_name');
+
+    expect($names)->toContain('Ruang Aktif')
+        ->and($names)->toContain('Ruang Perbaikan')
+        ->and($recap['data'])->toHaveCount(2);
+});
+
+it('still accepts a complete range and no range at all', function (): void {
+    $admin = User::factory()->create(['role' => 'admin', 'account_status' => 'aktif']);
+    Facility::factory()->create();
+
+    $this->actingAs($admin)
+        ->get(route('admin.rekap.occupancy', ['start_date' => '2026-09-01', 'end_date' => '2026-09-10']))
+        ->assertOk()
+        ->assertSessionHasNoErrors();
+
+    // Tanpa filter, rekap memakai rentang bawaan.
+    $this->actingAs($admin)
+        ->get(route('admin.rekap.occupancy'))
+        ->assertOk()
+        ->assertSessionHasNoErrors();
+});
+
+it('refuses to format one report type as the other', function (): void {
+    Facility::factory()->create(['status' => 'aktif']);
+
+    $service = app(RecapService::class);
+    $period = [
+        Carbon::parse('2026-09-01', config('app.timezone'))->startOfDay(),
+        Carbon::parse('2026-09-01', config('app.timezone'))->endOfDay(),
+    ];
+
+    $damage = $service->getDamageRecap(...$period);
+
+    // Tanpa penjaga, rekap kerusakan yang diformat sebagai ekspor okupansi
+    // lolos secara tipe dan menghasilkan baris kosong tanpa error.
+    expect(fn () => $service->exportOccupancyCsv($damage))
+        ->toThrow(InvalidArgumentException::class);
+
+    expect(fn () => $service->exportOccupancyHtml($damage))
+        ->toThrow(InvalidArgumentException::class);
+
+    // Arah sebaliknya juga ditolak.
+    expect(fn () => $service->exportDamageCsv($service->getOccupancyRecap(...$period)))
+        ->toThrow(InvalidArgumentException::class);
+});
+
+it('derives CSV and PDF columns from one definition, in the same order', function (): void {
+    $admin = User::factory()->create(['role' => 'admin', 'account_status' => 'aktif']);
+    Facility::factory()->create(['status' => 'aktif', 'name' => 'Ruang A', 'location' => 'Gedung 1']);
+    Facility::factory()->create(['status' => 'aktif', 'name' => 'Ruang B', 'location' => 'Gedung 2']);
+
+    $service = app(RecapService::class);
+    $period = [
+        Carbon::parse('2026-09-01', config('app.timezone'))->startOfDay(),
+        Carbon::parse('2026-09-01', config('app.timezone'))->endOfDay(),
+    ];
+
+    $occupancy = $service->getOccupancyRecap(...$period);
+    $lines = explode("\n", $service->exportOccupancyCsv($occupancy));
+    $html = $service->exportOccupancyHtml($occupancy);
+
+    // Baris pertama diawali BOM UTF-8.
+    $csvHeader = str_getcsv(substr($lines[0], 3), ';', '"', '');
+    $csvFirstRow = str_getcsv($lines[1], ';', '"', '');
+    preg_match_all('/<th>(.*?)<\/th>/', $html, $matches);
+
+    // Satu definisi kolom menjadi CSV, PDF dan halaman tidak bisa
+    // berbeda urutan maupun jumlah kolom.
+    expect($csvHeader)->toBe([
+        'Nama Fasilitas', 'Tipe', 'Lokasi', 'Kapasitas', 'Status', 'Disetujui',
+        'Pending', 'Ditolak', 'Dibatalkan', 'Total Reservasi', 'Total Jam (Disetujui)',
+        'Max Jam Operasional', 'Tingkat Okupansi (%)',
+    ]);
+
+    // PDF memakai label yang dipendekkan, urutan kolomnya sama.
+    expect($matches[1])->toBe([
+        'Nama Fasilitas', 'Tipe', 'Lokasi', 'Kapasitas', 'Status', 'Disetujui',
+        'Pending', 'Ditolak', 'Dibatalkan', 'Total', 'Jam Disetujui', 'Max Jam',
+        'Okupansi (%)',
+    ]);
+
+    expect($csvFirstRow)->toHaveCount(count($csvHeader))
+        ->and($matches[1])->toHaveCount(count($csvHeader));
+});
+
+it('escapes database values in the exported HTML', function (): void {
+    Facility::factory()->create([
+        'name' => '<b>Gedung</b> <script>alert(1)</script>',
+        'type' => 'ruang_kelas',
+        'location' => 'Lantai 3 "A" & B',
+    ]);
+
+    $service = app(RecapService::class);
+    $recap = $service->getOccupancyRecap(
+        Carbon::parse('2026-09-01', config('app.timezone'))->startOfDay(),
+        Carbon::parse('2026-09-01', config('app.timezone'))->endOfDay(),
+    );
+
+    $html = $service->exportOccupancyHtml($recap);
+
+    // Nama dan lokasi fasilitas berasal dari database, jadi harus keluar
+    // sebagai teks, bukan markup yang lolos ke dokumen.
+    expect($html)->not->toContain('<script>alert(1)</script>')
+        ->and($html)->not->toContain('<b>Gedung</b>')
+        ->and($html)->toContain('&lt;script&gt;alert(1)&lt;/script&gt;')
+        ->and($html)->toContain('&amp;');
+});
+
+it('neutralises spreadsheet formulas in a CSV export', function (): void {
+    $admin = User::factory()->create(['role' => 'admin', 'account_status' => 'aktif']);
+    Facility::factory()->create(['name' => '=cmd|\' /C calc\'!A1']);
+
+    $response = $this->actingAs($admin)->get(route('admin.rekap.occupancy.export.csv', [
+        'start_date' => '2026-09-01',
+        'end_date' => '2026-09-10',
+    ]));
+
+    $response->assertOk();
+
+    $csv = $response->streamedContent();
+
+    // Sel yang diawali operator rumus harus dibaca sebagai teks, bukan
+    // dieksekusi saat CSV dibuka di Excel/LibreOffice/Sheets. Yang penting
+    // adalah sel tidak diawali '='; teks sel tetap ada setelah kutip
+    // tunggal, jadi '=cmd|' sendiri masih muncul sebagai substring.
+    expect($csv)->not->toContain('"=cmd|')
+        ->and($csv)->toContain("\"'=cmd|");
+});
+
+it('emits a CSV without the fputcsv deprecation', function (): void {
+    $admin = User::factory()->create(['role' => 'admin', 'account_status' => 'aktif']);
+    Facility::factory()->create();
+
+    $deprecations = [];
+    set_error_handler(function (int $level, string $message) use (&$deprecations): bool {
+        $deprecations[] = $message;
+
+        return true;
+    }, E_DEPRECATED | E_USER_DEPRECATED);
+
+    try {
+        $csv = $this->actingAs($admin)
+            ->get(route('admin.rekap.occupancy.export.csv', [
+                'start_date' => '2026-09-01',
+                'end_date' => '2026-09-10',
+            ]))
+            ->streamedContent();
+    } finally {
+        restore_error_handler();
+    }
+
+    expect($csv)->toContain('Nama Fasilitas')
+        ->and(array_filter($deprecations, fn ($m) => str_contains($m, 'fputcsv')))->toBeEmpty();
+});
+
+it('separates CSV columns with a semicolon', function (): void {
+    $admin = User::factory()->create(['role' => 'admin', 'account_status' => 'aktif']);
+    Facility::factory()->create(['name' => 'Ruang Kimia', 'location' => 'Gedung B Lantai 2']);
+
+    $response = $this->actingAs($admin)->get(route('admin.rekap.occupancy.export.csv', [
+        'start_date' => '2026-09-01',
+        'end_date' => '2026-09-10',
+    ]));
+
+    $csv = $response->streamedContent();
+
+    // Excel Indonesia memakai koma sebagai pemisah desimal, jadi koma juga
+    // memecah kolom. Spesifikasi §13 mewajibkan titik koma.
+    $headerLine = strtok($csv, "\n");
+
+    expect($headerLine)->toContain('"Nama Fasilitas";')
+        ->and($headerLine)->not->toContain('"Nama Fasilitas",')
+        // BOM UTF-8 tetap ada agar karakter non-ASCII terbaca.
+        ->and($csv)->toStartWith("\xEF\xBB\xBF")
+        ->and($csv)->toContain('Gedung B Lantai 2');
+});
+
+it('rate limits recap exports per admin', function (): void {
+    $admin = User::factory()->create(['role' => 'admin', 'account_status' => 'aktif']);
+    Facility::factory()->create();
+
+    $query = ['start_date' => '2026-09-01', 'end_date' => '2026-09-10'];
+
+    // Enam ekspor per menit lolos, ketujuh ditolak.
+    foreach (range(1, 6) as $ignored) {
+        $this->actingAs($admin)
+            ->get(route('admin.rekap.occupancy.export.pdf', $query))
+            ->assertOk();
+    }
+
+    $this->actingAs($admin)
+        ->get(route('admin.rekap.occupancy.export.pdf', $query))
+        ->assertStatus(429);
+});
+
+it('still serves the recap pages themselves without the export limit', function (): void {
+    $admin = User::factory()->create(['role' => 'admin', 'account_status' => 'aktif']);
+    Facility::factory()->create();
+
+    // Halaman rekap murah dan harus tetap bisa dibuka berulang; yang dibatasi
+    // hanya ekspor.
+    foreach (range(1, 8) as $ignored) {
+        $this->actingAs($admin)->get(route('admin.rekap.occupancy'))->assertOk();
+    }
+});
+
+it('names an export after the selected range rather than today', function (): void {
+    $admin = User::factory()->create(['role' => 'admin', 'account_status' => 'aktif']);
+    Facility::factory()->create();
+
+    $this->actingAs($admin)
+        ->get(route('admin.rekap.occupancy.export.csv', [
+            'start_date' => '2026-09-01',
+            'end_date' => '2026-09-10',
+        ]))
+        ->assertHeader(
+            'content-disposition',
+            'attachment; filename=rekap-okupansi-2026-09-01-sd-2026-09-10.csv'
+        );
+
+    $this->actingAs($admin)
+        ->get(route('admin.rekap.damage.export.pdf', [
+            'start_date' => '2026-09-01',
+            'end_date' => '2026-09-10',
+        ]))
+        ->assertHeader(
+            'content-disposition',
+            'attachment; filename=rekap-kerusakan-2026-09-01-sd-2026-09-10.pdf'
+        );
+});
+
+it('shows the category label, not the stored slug, everywhere the breakdown appears', function (): void {
+    $admin = User::factory()->create(['role' => 'admin', 'account_status' => 'aktif']);
+    $facility = Facility::factory()->create(['status' => 'aktif']);
+    $user = User::factory()->create(['account_status' => 'aktif']);
+    Report::factory()->create([
+        'facility_id' => $facility->id,
+        'user_id' => $user->id,
+        'category' => 'sarana_prasarana',
+        'status' => 'baru',
+        'created_at' => '2026-09-05 09:00:00',
+    ]);
+
+    $query = ['start_date' => '2026-09-01', 'end_date' => '2026-09-10'];
+    $label = Report::CATEGORIES['sarana_prasarana'];
+
+    // Halaman rekap.
+    $this->actingAs($admin)
+        ->get(route('admin.rekap.damage', $query))
+        ->assertOk()
+        ->assertSee($label)
+        ->assertDontSee('sarana_prasarana');
+
+    // Ekspor CSV.
+    $csv = $this->actingAs($admin)
+        ->get(route('admin.rekap.damage.export.csv', $query))
+        ->streamedContent();
+
+    expect($csv)->toContain($label)->not->toContain('sarana_prasarana');
+
+    // Ekspor PDF, lewat HTML yang sama persis dengan yang dicetak. Di sini
+    // label ikut di-escape, jadi "&" menjadi "&amp;".
+    $html = app(RecapService::class)->exportDamageHtml(
+        app(RecapService::class)->getDamageRecap(
+            Carbon::parse($query['start_date'], config('app.timezone'))->startOfDay(),
+            Carbon::parse($query['end_date'], config('app.timezone'))->endOfDay(),
+        )
+    );
+
+    expect($html)->toContain(e($label))->not->toContain('sarana_prasarana');
+});
+
+it('gives the two report types different filenames for the same range', function (): void {
+    $admin = User::factory()->create(['role' => 'admin', 'account_status' => 'aktif']);
+    Facility::factory()->create();
+
+    $query = ['start_date' => '2026-09-01', 'end_date' => '2026-09-10'];
+
+    $occupancy = $this->actingAs($admin)
+        ->get(route('admin.rekap.occupancy.export.csv', $query))
+        ->headers->get('content-disposition');
+
+    $damage = $this->actingAs($admin)
+        ->get(route('admin.rekap.damage.export.csv', $query))
+        ->headers->get('content-disposition');
+
+    // Tanpa segmen jenis keduanya bernama sama dan unduhan kedua menimpa
+    // yang pertama.
+    expect($occupancy)->not->toBe($damage);
+});

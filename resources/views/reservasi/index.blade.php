@@ -1,4 +1,4 @@
-@extends('layouts.app')
+﻿@extends('layouts.app')
 
 @use('App\Models\Reservation')
 
@@ -34,21 +34,12 @@
                     <a href="{{ route('reservasi.create') }}" class="landing-button mt-4 inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-blue-600 to-blue-500 px-5 py-2.5 text-xs font-bold text-white shadow-sm">Ajukan reservasi sekarang →</a>
                 </div>
             @else
-                @php
-                    $facilityFallbackImages = [
-                        'aula' => 'aula.webp',
-                        'laboratorium' => 'lab-komputer.webp',
-                        'lapangan' => 'lapangan-futsal.webp',
-                        'ruang_kelas' => 'ruang-kelas.webp',
-                        'alat' => 'proyektor.webp',
-                    ];
-                @endphp
                 <div class="space-y-3">
                     @foreach ($reservations as $res)
                         <a href="{{ route('reservasi.show', $res) }}" class="dashboard-clay-list clay-pressable flex items-center justify-between gap-4 rounded-2xl p-4.5 focus:outline-none focus:ring-2 focus:ring-blue-500">
                             <span class="flex min-w-0 items-center gap-3.5">
                                 <span class="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-blue-100 bg-white p-1 shadow-sm">
-                                    <img src="{{ $res->facility?->photo_url ?: asset('images/'.($facilityFallbackImages[$res->facility?->type] ?? 'aula.webp')) }}" alt="" class="h-full w-full rounded-lg object-cover">
+                                    <img src="{{ $res->facility?->photo_url ?: $res->facility?->display_image_url }}" alt="" class="h-full w-full rounded-lg object-cover">
                                 </span>
                                 <span class="min-w-0">
                                     <span class="block truncate text-sm font-bold text-slate-800 sm:text-base">{{ $res->facility?->name ?? 'Fasilitas dihapus' }}</span>

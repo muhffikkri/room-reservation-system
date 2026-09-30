@@ -1,4 +1,4 @@
-@extends('layouts.app')
+﻿@extends('layouts.app')
 
 @use('App\Models\Facility')
 
@@ -39,7 +39,7 @@
                     <select id="type" name="type" required
                         class="landing-input mt-1.5 block h-11 w-full rounded-2xl px-4 text-sm text-slate-900 focus:outline-none focus:ring-4 focus:ring-blue-500/15">
                         <option value="">Pilih tipe</option>
-                        @foreach (Facility::TYPES as $typeValue => $typeLabel)
+                        @foreach (Facility::TYPE_LABELS as $typeValue => $typeLabel)
                             <option value="{{ $typeValue }}" @selected(old('type', $facility->type) === $typeValue)>
                                 {{ $typeLabel }}
                             </option>
@@ -75,6 +75,7 @@
                     <textarea id="description" name="description" rows="4" maxlength="2000"
                         placeholder="Informasi tambahan fasilitas (opsional)"
                         class="landing-input mt-1.5 block w-full rounded-2xl px-4 py-3 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-4 focus:ring-blue-500/15">{{ old('description', $facility->description) }}</textarea>
+                    <p class="mt-1.5 text-xs text-slate-500">Maksimal {{ \App\Models\Facility::MAX_DESCRIPTION_WORDS }} kata agar card fasilitas tetap rapi.</p>
                     @error('description')
                         <p class="mt-1.5 text-xs text-rose-600">{{ $message }}</p>
                     @enderror

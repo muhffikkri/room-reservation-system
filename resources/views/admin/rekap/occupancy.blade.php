@@ -1,4 +1,4 @@
-@extends('layouts.app')
+﻿@extends('layouts.app')
 
 @use('App\Models\Facility')
 
@@ -198,7 +198,7 @@
                                     <td class="{{ $clayTableCell }} font-bold text-[#10264a]">
                                         {{ $item['facility_name'] }}</td>
                                     <td class="{{ $clayTableCell }} text-slate-700">
-                                        {{ Facility::typeLabelFor($item['facility_type']) }}</td>
+                                        {{ \App\Models\Facility::TYPE_LABELS[$item['facility_type']] ?? $item['facility_type'] }}</td>
                                     <td class="{{ $clayTableCell }} text-slate-700">{{ $item['facility_location'] }}</td>
                                     <td class="{{ $clayTableCell }} text-right text-slate-700">{{ $item['capacity'] }}</td>
                                     <td class="{{ $clayTableCell }}">

@@ -14,8 +14,6 @@ use Illuminate\View\View;
  */
 class FacilityController extends Controller
 {
-    private const MAX_SCHEDULE_LOOKAHEAD_DAYS = 365;
-
     /** @var array<string, array{int, int}> */
     private const CAPACITY_RANGES = [
         'lt_40' => [1, 39],
@@ -43,7 +41,7 @@ class FacilityController extends Controller
 
         $validated = $request->validate([
             'q' => ['nullable', 'string', 'max:100'],
-            'tipe' => ['nullable', 'string', Rule::in(array_keys(Facility::TYPES))],
+            'tipe' => ['nullable', 'string', Rule::in(array_keys(Facility::TYPE_LABELS))],
             'lokasi' => ['nullable', 'string', 'max:100'],
             'kapasitas' => ['nullable', 'string', Rule::in(array_keys(self::CAPACITY_RANGES))],
             'kapasitas_min' => ['nullable', 'integer', 'min:1'],
@@ -77,7 +75,7 @@ class FacilityController extends Controller
 
         return view('fasilitas.index', [
             'facilities' => $facilities,
-            'types' => Facility::TYPES,
+            'types' => Facility::TYPE_LABELS,
             'locations' => $locations,
             'filters' => $validated,
             'from' => $validated['from'] ?? 'home',
@@ -91,7 +89,7 @@ class FacilityController extends Controller
     {
         return view('fasilitas.show', [
             'facility' => $facility,
-            'types' => Facility::TYPES,
+            'types' => Facility::TYPE_LABELS,
         ]);
     }
 
@@ -107,7 +105,7 @@ class FacilityController extends Controller
                 'nullable',
                 'date_format:Y-m-d',
                 'after_or_equal:'.$today->toDateString(),
-                'before_or_equal:'.$today->copy()->addDays(self::MAX_SCHEDULE_LOOKAHEAD_DAYS)->toDateString(),
+                'before_or_equal:'.$today->copy()->addDays($this->availability->maxLookaheadDays())->toDateString(),
             ],
             'from' => ['nullable', 'string', Rule::in(['home', 'all'])],
         ]);
@@ -130,7 +128,7 @@ class FacilityController extends Controller
             'facility' => $facility,
             'selectedDate' => $selectedDate,
             'slots' => $slots,
-            'types' => Facility::TYPES,
+            'types' => Facility::TYPE_LABELS,
             'from' => $validated['from'] ?? 'all',
         ]);
     }

@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 
 #[Fillable(['name', 'type', 'location', 'capacity', 'description', 'photo', 'status', 'repair_report_id'])]
 class Facility extends Model
@@ -24,20 +25,47 @@ class Facility extends Model
     public const MAX_PUBLIC_FILTER_OPTIONS = 50;
 
     /**
-     * Tipe fasilitas yang sah beserta label yang ditampilkan ke pengguna.
+     * Batas panjang deskripsi fasilitas yang diizinkan dan dirender.
      *
-     * Satu-satunya pemilik nilai ini: enum di migrasi, validasi form admin,
-     * filter katalog publik, landing page, dan tabel rekap membaca dari sini
-     * sehingga daftar tipe tidak pernah berbeda antar halaman.
+     * Satu-satunya pemilik nilai ini: validasi admin, kartu grid landing, kartu
+     * katalog, halaman detail, dan renderer pencarian langsung (AJAX) semuanya
+     * membaca dari konstanta yang sama sehingga tidak ada jalur yang meloloskan
+     * deskripsi panjang dan membuat card tidak rapi.
+     */
+    public const MAX_DESCRIPTION_WORDS = 30;
+
+    /**
+     * Label resmi untuk setiap tipe fasilitas.
+     *
+     * Satu-satunya pemilik nilai ini: landing page, katalog, halaman detail,
+     * form admin, dan renderer pencarian langsung (AJAX) memakainya, sehingga
+     * tidak ada daftar tipe yang bisa berbeda antar halaman.
      *
      * @var array<string, string>
      */
-    public const TYPES = [
+    public const TYPE_LABELS = [
         'ruang_kelas' => 'Ruang Kelas',
         'aula' => 'Aula',
         'laboratorium' => 'Laboratorium',
         'alat' => 'Alat',
         'lapangan' => 'Lapangan',
+    ];
+
+    /**
+     * Nama berkas gambar cadangan per tipe, dipakai saat fasilitas belum punya
+     * foto unggahan.
+     *
+     * Satu-satunya pemilik nilai ini: seluruh card, halaman detail, dan halaman
+     * jadwal memakai accessor display_image_url, bukan menyalin daftar sendiri.
+     *
+     * @var array<string, string>
+     */
+    public const TYPE_FALLBACK_IMAGES = [
+        'ruang_kelas' => 'ruang-kelas.webp',
+        'aula' => 'aula.webp',
+        'laboratorium' => 'lab-komputer.webp',
+        'alat' => 'proyektor.webp',
+        'lapangan' => 'lapangan-futsal.webp',
     ];
 
     /**
@@ -120,18 +148,32 @@ class Facility extends Model
     }
 
     /**
-     * Label tipe fasilitas yang aman dibaca dari blade dan export.
+     * Deskripsi facilities yang dipangkas ke batas kata yang sah.
+     *
+     * Validasi admin sudah menolak deskripsi di atas batas, jadi pemotongan ini
+     * adalah jaring pengaman untuk baris lama yang dibuat sebelum aturan itu
+     * ada. Satu-satunya pemilik pemotongan: seluruh card dan halaman detail
+     * memakai nilai ini, bukan memanggil Str::words dengan angka sendiri.
      */
-    public function typeLabel(): string
+    public function getShortDescriptionAttribute(): string
     {
-        return self::typeLabelFor($this->type);
+        return Str::words((string) $this->description, self::MAX_DESCRIPTION_WORDS);
     }
 
     /**
-     * Label tipe dari nilai enum, untuk data rekap yang sudah berupa array.
+     * URL gambar yang selalu bisa dipakai di atribut src: foto unggahan bila
+     * ada, selain itu gambar cadangan sesuai tipe fasilitas.
+     *
+     * Satu-satunya pemilik pemilihan gambar: card grid landing, card katalog,
+     * halaman detail, dan halaman jadwal memakai nilai ini. Accessor photo_url
+     * tetap kosong bila tidak ada foto, karena ia menggambarkan kolom disk.
      */
-    public static function typeLabelFor(?string $type): string
+    public function getDisplayImageUrlAttribute(): string
     {
-        return self::TYPES[$type ?? ''] ?? ucfirst(str_replace('_', ' ', (string) $type));
+        if ($this->photo_url !== '') {
+            return $this->photo_url;
+        }
+
+        return asset('images/'.(self::TYPE_FALLBACK_IMAGES[$this->type] ?? self::TYPE_FALLBACK_IMAGES['aula']));
     }
 }

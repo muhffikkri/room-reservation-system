@@ -28,10 +28,13 @@ class NotificationController extends Controller
 
     /**
      * Tandai seluruh notifikasi milik pengguna yang sedang login.
+     *
+     * Satu operasi update, bukan satu tulis per notifikasi: collections
+     * markAsRead() menyimpan tiap baris satu per satu.
      */
     public function markAllRead(Request $request): RedirectResponse
     {
-        $request->user()->unreadNotifications->markAsRead();
+        $request->user()->unreadNotifications()->update(['read_at' => now()]);
 
         return back();
     }
