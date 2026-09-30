@@ -1,0 +1,852 @@
+<!doctype html>
+<html lang="id">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="Panduan belajar arsitektur dan alur kode Sistem Reservasi Fasilitas Kampus.">
+    <title>Field Guide — Sistem Reservasi Fasilitas Kampus</title>
+    <style>
+        :root {
+            --ink: #102238;
+            --muted: #617084;
+            --paper: #f7f4ed;
+            --paper-2: #fffdf8;
+            --line: #dce1e7;
+            --navy: #102d4f;
+            --navy-2: #173f69;
+            --blue: #1264a3;
+            --cyan: #bfe9e2;
+            --orange: #ee8d4d;
+            --yellow: #f7d98a;
+            --green: #2e8c72;
+            --red: #bf4d45;
+            --shadow: 0 20px 60px rgba(20, 39, 61, .12);
+            --radius: 18px;
+            --mono: "Cascadia Code", "SFMono-Regular", Consolas, monospace;
+        }
+
+        * { box-sizing: border-box; }
+        html { scroll-behavior: smooth; }
+        body {
+            margin: 0;
+            color: var(--ink);
+            background:
+                radial-gradient(circle at 95% 0%, rgba(191, 233, 226, .55), transparent 24rem),
+                linear-gradient(135deg, rgba(247, 217, 138, .11), transparent 35rem),
+                var(--paper);
+            font-family: "Palatino Linotype", Palatino, Georgia, serif;
+            line-height: 1.65;
+        }
+        body::before {
+            position: fixed;
+            z-index: -1;
+            inset: 0;
+            opacity: .25;
+            pointer-events: none;
+            content: "";
+            background-image: radial-gradient(rgba(16, 34, 56, .2) .6px, transparent .6px);
+            background-size: 7px 7px;
+            mask-image: linear-gradient(to bottom, black, transparent 78%);
+        }
+        a { color: var(--blue); text-decoration-thickness: 1px; text-underline-offset: 3px; }
+        a:hover { color: var(--orange); }
+        button, input { font: inherit; }
+        .shell { display: grid; grid-template-columns: 275px minmax(0, 1fr); min-height: 100vh; }
+        .rail {
+            position: sticky;
+            top: 0;
+            align-self: start;
+            height: 100vh;
+            overflow-y: auto;
+            color: #eaf4f5;
+            background: linear-gradient(160deg, rgba(255, 255, 255, .08), transparent 30%), var(--navy);
+            border-right: 1px solid rgba(255, 255, 255, .12);
+        }
+        .rail-inner { padding: 28px 22px 26px; }
+        .mark {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 42px;
+            height: 42px;
+            margin-bottom: 18px;
+            color: var(--navy);
+            background: var(--cyan);
+            border-radius: 13px 13px 13px 4px;
+            font-weight: 900;
+            letter-spacing: -.08em;
+        }
+        .eyebrow {
+            margin: 0 0 7px;
+            color: var(--orange);
+            font: 700 11px/1.2 var(--mono);
+            letter-spacing: .14em;
+            text-transform: uppercase;
+        }
+        .rail h2 { margin: 0; color: #fff; font-size: 22px; line-height: 1.1; letter-spacing: -.04em; }
+        .rail-copy { margin: 12px 0 24px; color: #b7c9d6; font-size: 13px; line-height: 1.55; }
+        .rail nav { display: grid; gap: 3px; }
+        .rail nav a {
+            display: block;
+            padding: 7px 9px;
+            color: #b7c9d6;
+            border-left: 2px solid transparent;
+            font-size: 13px;
+            text-decoration: none;
+            transition: .18s ease;
+        }
+        .rail nav a:hover, .rail nav a.active {
+            padding-left: 13px;
+            color: #fff;
+            background: rgba(191, 233, 226, .09);
+            border-left-color: var(--orange);
+        }
+        .rail-foot {
+            display: grid;
+            gap: 8px;
+            margin-top: 26px;
+            padding-top: 18px;
+            color: #91a9bb;
+            border-top: 1px solid rgba(255, 255, 255, .13);
+            font: 11px/1.5 var(--mono);
+        }
+        .rail-foot span { color: #d8e8ee; }
+        .main { width: min(1150px, 100%); margin: 0 auto; padding: 30px clamp(20px, 4vw, 66px) 90px; }
+        .topbar { display: flex; align-items: center; justify-content: space-between; gap: 18px; margin-bottom: 28px; }
+        .crumb { color: var(--muted); font: 11px var(--mono); letter-spacing: .08em; text-transform: uppercase; }
+        .toolbar { display: flex; align-items: center; gap: 8px; }
+        .search {
+            width: min(300px, 46vw);
+            padding: 9px 12px;
+            color: var(--ink);
+            background: rgba(255, 253, 248, .78);
+            border: 1px solid var(--line);
+            border-radius: 10px;
+            outline: none;
+            font: 12px var(--mono);
+        }
+        .search:focus { border-color: var(--blue); box-shadow: 0 0 0 3px rgba(18, 100, 163, .12); }
+        .tool-button {
+            padding: 9px 11px;
+            color: var(--navy);
+            background: var(--paper-2);
+            border: 1px solid var(--line);
+            border-radius: 10px;
+            cursor: pointer;
+            font: 12px var(--mono);
+        }
+        .tool-button:hover { border-color: var(--orange); }
+        .hero {
+            position: relative;
+            overflow: hidden;
+            padding: clamp(28px, 5vw, 62px);
+            color: #f9ffff;
+            background:
+                radial-gradient(circle at 85% 15%, rgba(191, 233, 226, .23), transparent 15rem),
+                radial-gradient(circle at 10% 100%, rgba(238, 141, 77, .28), transparent 18rem),
+                var(--navy);
+            border-radius: 25px 25px 25px 7px;
+            box-shadow: var(--shadow);
+        }
+        .hero::after {
+            position: absolute;
+            right: -64px;
+            bottom: -110px;
+            width: 275px;
+            height: 275px;
+            border: 1px solid rgba(191, 233, 226, .28);
+            border-radius: 50%;
+            box-shadow: 0 0 0 25px rgba(191, 233, 226, .05), 0 0 0 50px rgba(191, 233, 226, .04);
+            content: "";
+        }
+        .hero .eyebrow { color: var(--cyan); }
+        .hero h1 { max-width: 760px; margin: 0; color: #fff; font-size: clamp(35px, 6vw, 70px); line-height: .99; letter-spacing: -.065em; }
+        .hero p { max-width: 730px; margin: 22px 0 0; color: #c7dce4; font-size: clamp(15px, 1.8vw, 19px); }
+        .snapshot { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 27px; }
+        .chip { display: inline-flex; align-items: center; min-height: 27px; padding: 4px 9px; color: var(--navy); background: var(--cyan); border-radius: 999px; font: 700 11px var(--mono); }
+        .chip.warm { background: var(--yellow); }
+        .chip.dim { color: #d8e8ee; background: rgba(255, 255, 255, .1); }
+        .section { scroll-margin-top: 20px; margin-top: 64px; }
+        .section-heading { display: flex; align-items: end; justify-content: space-between; gap: 18px; margin-bottom: 18px; }
+        .section-heading h2 { margin: 0; font-size: clamp(26px, 3vw, 39px); line-height: 1.05; letter-spacing: -.055em; }
+        .section-heading p { max-width: 520px; margin: 0; color: var(--muted); font-size: 14px; }
+        .section-kicker { margin: 0 0 7px; color: var(--orange); font: 700 11px var(--mono); letter-spacing: .12em; text-transform: uppercase; }
+        .callout { margin: 18px 0; padding: 15px 17px; background: rgba(255, 253, 248, .8); border: 1px solid var(--line); border-left: 4px solid var(--blue); border-radius: 0 13px 13px 0; }
+        .callout strong { color: var(--navy); }
+        .callout.warn { border-left-color: var(--orange); }
+        .callout.ok { border-left-color: var(--green); }
+        .grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+        .grid.three { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+        .card { padding: 20px; background: rgba(255, 253, 248, .78); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: 0 7px 24px rgba(16, 34, 56, .045); }
+        .card h3 { margin: 0 0 8px; color: var(--navy); font-size: 20px; line-height: 1.15; letter-spacing: -.035em; }
+        .card h4 { margin: 18px 0 5px; color: var(--navy-2); font-size: 15px; }
+        .card p { margin: 7px 0; color: #40556b; font-size: 14px; }
+        .card ul, .card ol { margin: 9px 0 0; padding-left: 20px; color: #40556b; font-size: 14px; }
+        .card li + li { margin-top: 5px; }
+        .file { display: inline-block; padding: 2px 6px; color: var(--navy-2); background: #e8f0f2; border-radius: 5px; font: 11px var(--mono); overflow-wrap: anywhere; }
+        .evidence { margin: 13px 0 0; padding: 12px 14px; color: #dceff0; background: #102238; border-radius: 12px; overflow-x: auto; font: 12px/1.6 var(--mono); }
+        .evidence .comment { color: #90b8ae; }
+        .evidence .key { color: #f7d98a; }
+        .evidence .value { color: #bfe9e2; }
+        .evidence-title { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin: 16px 0 0; color: var(--muted); font: 11px var(--mono); }
+        .copy { padding: 3px 6px; color: var(--cyan); background: transparent; border: 1px solid rgba(191, 233, 226, .28); border-radius: 5px; cursor: pointer; font: 10px var(--mono); }
+        .copy:hover { color: #fff; border-color: var(--cyan); }
+        .stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; margin: 20px 0; }
+        .stat { padding: 14px; background: var(--paper-2); border: 1px solid var(--line); border-radius: 13px; }
+        .stat strong { display: block; color: var(--navy); font-size: 26px; line-height: 1; }
+        .stat span { display: block; margin-top: 5px; color: var(--muted); font: 10px var(--mono); text-transform: uppercase; }
+        .flow { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 18px 0; }
+        .flow-box { flex: 1 1 130px; min-width: 120px; padding: 13px 12px; color: var(--navy); background: var(--paper-2); border: 1px solid var(--line); border-top: 3px solid var(--blue); border-radius: 11px; text-align: center; font-size: 13px; line-height: 1.3; }
+        .flow-box.orange { border-top-color: var(--orange); }
+        .flow-box.green { border-top-color: var(--green); }
+        .arrow { color: var(--orange); font: 700 20px var(--mono); }
+        .matrix { width: 100%; border-collapse: collapse; overflow: hidden; background: var(--paper-2); border: 1px solid var(--line); border-radius: 13px; font-size: 13px; }
+        .matrix th, .matrix td { padding: 10px 12px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; }
+        .matrix th { color: #fff; background: var(--navy); font: 700 11px var(--mono); letter-spacing: .05em; text-transform: uppercase; }
+        .matrix tr:last-child td { border-bottom: 0; }
+        .yes { color: var(--green); font-weight: 700; }
+        .no { color: var(--red); font-weight: 700; }
+        details { margin: 12px 0; background: rgba(255, 253, 248, .72); border: 1px solid var(--line); border-radius: 13px; }
+        details[open] { background: var(--paper-2); }
+        summary { padding: 13px 15px; color: var(--navy); cursor: pointer; font-weight: 700; }
+        details > div { padding: 0 15px 15px; }
+        .module-tag { display: inline-block; margin-right: 7px; padding: 2px 6px; color: var(--navy); background: var(--cyan); border-radius: 5px; font: 10px var(--mono); text-transform: uppercase; }
+        .module-tag.future { background: #f4d4b6; }
+        .module-tag.audit { background: var(--yellow); }
+        .timeline { position: relative; display: grid; gap: 0; margin: 20px 0; }
+        .timeline::before { position: absolute; top: 13px; bottom: 13px; left: 9px; width: 1px; background: var(--line); content: ""; }
+        .timeline-item { position: relative; padding: 0 0 21px 34px; }
+        .timeline-item::before { position: absolute; top: 6px; left: 4px; width: 11px; height: 11px; background: var(--orange); border: 3px solid var(--paper); border-radius: 50%; box-shadow: 0 0 0 1px var(--orange); content: ""; }
+        .timeline-item strong { display: block; color: var(--navy); font-size: 16px; }
+        .timeline-item span { display: block; color: var(--muted); font-size: 13px; }
+        .footer { margin-top: 78px; padding-top: 20px; color: var(--muted); border-top: 1px solid var(--line); font-size: 13px; }
+        .hidden-by-search { display: none !important; }
+        body[data-theme="night"] { --ink: #e8f1f3; --muted: #a8bac2; --paper: #0c1b2a; --paper-2: #12263a; --line: #294154; --navy: #061321; --navy-2: #cfe5ea; --blue: #83c9e5; }
+        body[data-theme="night"] .card p, body[data-theme="night"] .card ul, body[data-theme="night"] .card ol, body[data-theme="night"] .section-heading p { color: #b4c8d0; }
+        @media (max-width: 930px) {
+            .shell { display: block; }
+            .rail { position: relative; height: auto; }
+            .rail-inner { padding: 20px; }
+            .rail nav { display: flex; flex-wrap: wrap; gap: 2px 6px; }
+            .rail nav a { padding: 5px 7px; border-left: 0; border-bottom: 2px solid transparent; }
+            .rail nav a:hover, .rail nav a.active { padding-left: 7px; border-bottom-color: var(--orange); }
+            .rail-foot { display: flex; flex-wrap: wrap; gap: 9px 18px; }
+        }
+        @media (max-width: 700px) {
+            .main { padding: 20px 15px 65px; }
+            .topbar, .section-heading { align-items: flex-start; flex-direction: column; }
+            .toolbar, .search { width: 100%; }
+            .toolbar { display: grid; grid-template-columns: 1fr auto; }
+            .grid, .grid.three { grid-template-columns: 1fr; }
+            .stats { grid-template-columns: repeat(2, 1fr); }
+            .hero h1 { font-size: 40px; }
+            .arrow { width: 100%; transform: rotate(90deg); text-align: center; }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="shell">
+        <aside class="rail">
+            <div class="rail-inner">
+                <div class="mark" aria-hidden="true">SR</div>
+                <p class="eyebrow">Field guide / 01</p>
+                <h2>Belajar dari alur kode</h2>
+                <p class="rail-copy">Peta arsitektur, bukti file, dan perjalanan data dari browser sampai database.</p>
+                <nav aria-label="Daftar isi">
+                    <a href="#mulai">Mulai di sini</a>
+                    <a href="#peta">Peta arsitektur</a>
+                    <a href="#request">Siklus request</a>
+                    <a href="#auth">Auth & akun</a>
+                    <a href="#roles">Role & akses</a>
+                    <a href="#pengguna">Modul pengguna</a>
+                    <a href="#petugas">Modul petugas</a>
+                    <a href="#admin">Modul admin</a>
+                    <a href="#audit">Audit history</a>
+                    <a href="#data">Database & model</a>
+                    <a href="#validasi">Validasi & rules</a>
+                    <a href="#ui">View & JavaScript</a>
+                    <a href="#testing">Testing</a>
+                    <a href="#gap">Batasan saat ini</a>
+                    <a href="#belajar">Urutan belajar</a>
+                </nav>
+                <div class="rail-foot">
+                    <div>Framework <span>Laravel 13</span></div>
+                    <div>UI <span>Blade + Tailwind/Vite</span></div>
+                    <div>Database <span>MySQL</span></div>
+                    <div>Snapshot <span>15 Sep 2026</span></div>
+                </div>
+            </div>
+        </aside>
+
+        <main class="main">
+            <div class="topbar">
+                <div class="crumb">sistem-reservasi / local learning document</div>
+                <div class="toolbar">
+                    <input id="search" class="search" type="search" placeholder="Cari modul, file, atau istilah..." aria-label="Cari isi panduan">
+                    <button class="tool-button" type="button" data-theme-toggle>Mode gelap</button>
+                </div>
+            </div>
+
+            <header class="hero" id="mulai">
+                <p class="eyebrow">Panduan belajar kode · snapshot lokal</p>
+                <h1>Satu sistem.<br> Banyak alur.<br> Satu peta.</h1>
+                <p>Dokumen ini menjelaskan keseluruhan kode Sistem Reservasi Fasilitas Kampus: siapa memanggil siapa, data bergerak ke mana, aturan berada di lapisan apa, dan file mana yang menjadi buktinya.</p>
+                <div class="snapshot">
+                    <span class="chip">Laravel 13</span>
+                    <span class="chip">PHP 8.3+</span>
+                    <span class="chip warm">Branch feat/account-verification-history</span>
+                    <span class="chip dim">commit 79c2574</span>
+                </div>
+            </header>
+
+            <div class="callout warn">
+                <strong>Cara membaca snapshot:</strong> branch lokal ini berisi tambahan audit history dari PR #45. <code>dev</code> terakhir berada pada <code>0a2b6c8</code>; perubahan audit table belum tentu sudah masuk ke <code>dev</code> sampai PR #45 di-merge. Bagian tersebut diberi tag <span class="module-tag audit">audit</span>.
+            </div>
+
+            <section class="section" id="peta" data-search="arsitektur modul struktur folder laravel mvc">
+                <div class="section-heading">
+                    <div><p class="section-kicker">01 / Orientasi</p><h2>Peta besar aplikasi</h2></div>
+                    <p>Aplikasi memakai MVC Laravel dengan service layer untuk aturan bisnis yang tidak boleh tersebar di controller.</p>
+                </div>
+                <div class="stats">
+                    <div class="stat"><strong>3</strong><span>role utama</span></div>
+                    <div class="stat"><strong>4</strong><span>service inti</span></div>
+                    <div class="stat"><strong>9</strong><span>form request</span></div>
+                    <div class="stat"><strong>168</strong><span>test lokal terakhir</span></div>
+                </div>
+                <div class="grid three">
+                    <article class="card">
+                        <h3>Browser / View</h3>
+                        <p>Blade menampilkan halaman. Form mengirim request HTTP; JavaScript memberi validasi UX, dialog konfirmasi, menu mobile, dan preview foto.</p>
+                        <p><span class="file">resources/views/</span><br><span class="file">resources/js/app.js</span></p>
+                    </article>
+                    <article class="card">
+                        <h3>HTTP / Controller</h3>
+                        <p>Route memilih controller. Controller mengambil input tervalidasi, memanggil service/policy, lalu mengembalikan view atau redirect.</p>
+                        <p><span class="file">routes/web.php</span><br><span class="file">app/Http/Controllers/</span></p>
+                    </article>
+                    <article class="card">
+                        <h3>Domain / Database</h3>
+                        <p>Model menyimpan relasi dan query scope. Service memegang transaksi, lock, transisi status, dan aturan konflik.</p>
+                        <p><span class="file">app/Models/</span><br><span class="file">app/Services/</span></p>
+                    </article>
+                </div>
+                <div class="flow" aria-label="Alur lapisan aplikasi">
+                    <div class="flow-box">User membuka halaman</div><div class="arrow">→</div>
+                    <div class="flow-box">Route + middleware</div><div class="arrow">→</div>
+                    <div class="flow-box orange">Controller + FormRequest</div><div class="arrow">→</div>
+                    <div class="flow-box">Policy + Service</div><div class="arrow">→</div>
+                    <div class="flow-box green">Model + Database</div>
+                </div>
+                <div class="callout ok"><strong>Prinsip penting:</strong> model bukan tempat aturan bisnis besar. Contoh, <span class="file">Reservation</span> memiliki scope overlap, tetapi keputusan approve dan race condition berada di <span class="file">ReservationService</span>.</div>
+            </section>
+
+            <section class="section" id="request" data-search="request lifecycle route middleware controller form request policy service response">
+                <div class="section-heading">
+                    <div><p class="section-kicker">02 / Cara kerja</p><h2>Satu request dari ujung ke ujung</h2></div>
+                    <p>Gunakan pola ini saat membaca fitur apa pun: mulai dari route, ikuti middleware, lihat controller, lalu cari service dan model yang disentuh.</p>
+                </div>
+                <div class="timeline">
+                    <div class="timeline-item"><strong>1. Route menerima URL dan method</strong><span>Contoh: PATCH /admin/pengguna/{user}/verifikasi diarahkan ke AccountVerificationController@verify.</span></div>
+                    <div class="timeline-item"><strong>2. Middleware menyaring request</strong><span>auth memastikan sudah login, active memastikan status akun aktif, role:admin memastikan role admin.</span></div>
+                    <div class="timeline-item"><strong>3. Route model binding mengisi model</strong><span>{user} berubah menjadi instance User. Jika ID tidak ada, Laravel memberi 404.</span></div>
+                    <div class="timeline-item"><strong>4. Controller menjadi adapter tipis</strong><span>Controller meneruskan model dan actor ke service, menangkap conflict, lalu membuat redirect + flash message.</span></div>
+                    <div class="timeline-item"><strong>5. Service mengubah state dengan aman</strong><span>Service membuka transaksi, mengunci baris bila perlu, memeriksa status/role, mengubah data, dan mencatat audit.</span></div>
+                    <div class="timeline-item"><strong>6. Response kembali ke Blade</strong><span>View membaca data baru dan menampilkan status sukses/error. Test feature memverifikasi hasil yang terlihat user.</span></div>
+                </div>
+                <div class="evidence-title"><span>Bukti: kelompok route admin dan pemisahan middleware</span><a href="../routes/web.php#L67" target="_blank" rel="noreferrer">routes/web.php · L67–113</a></div>
+                <pre class="evidence"><code>Route::middleware([<span class="value">'auth'</span>, <span class="value">'active'</span>, <span class="value">'role:admin'</span>])
+    -&gt;prefix(<span class="value">'admin'</span>)-&gt;group(function (): void {
+    Route::patch(<span class="value">'/pengguna/{user}/verifikasi'</span>, [
+        AccountVerificationController::class, <span class="value">'verify'</span>
+    ])-&gt;name(<span class="value">'admin.pengguna.verify'</span>);
+});</code></pre>
+            </section>
+
+            <section class="section" id="auth" data-search="auth autentikasi register login logout akun pending aktif ditolak throttle session remember token">
+                <div class="section-heading">
+                    <div><p class="section-kicker">03 / Fondasi akses</p><h2>Auth & akun</h2></div>
+                    <p>Auth custom memakai session guard Laravel. Admin verification bukan email verification: status akun ditentukan sistem oleh admin.</p>
+                </div>
+                <div class="grid">
+                    <article class="card">
+                        <h3>Registrasi mandiri</h3>
+                        <ol>
+                            <li>Input email, identity, dan phone dinormalisasi.</li>
+                            <li>Server memvalidasi format, panjang, dan keunikan.</li>
+                            <li>Field role/status dari request diabaikan.</li>
+                            <li>Akun selalu dibuat sebagai pengguna + pending.</li>
+                            <li>User diarahkan ke login, tetapi belum bisa masuk.</li>
+                        </ol>
+                        <p><span class="file">app/Http/Controllers/Auth/RegisterController.php · L31–64</span></p>
+                        <div class="evidence-title"><span>Role/status dipaksa oleh server</span><a href="../app/Http/Controllers/Auth/RegisterController.php#L51" target="_blank" rel="noreferrer">buka file</a></div>
+                        <pre class="evidence"><code>User::create([
+    <span class="key">'role'</span> =&gt; <span class="value">'pengguna'</span>,
+    <span class="key">'account_status'</span> =&gt; <span class="value">'pending'</span>,
+]);</code></pre>
+                    </article>
+                    <article class="card">
+                        <h3>Login</h3>
+                        <ol>
+                            <li>Validasi email/password.</li>
+                            <li>Rate limit internal 5 percobaan per email + IP; route juga memiliki throttle.</li>
+                            <li>Auth::attempt mencocokkan credential.</li>
+                            <li>AccountStatusGate menolak pending/ditolak dan membersihkan session.</li>
+                            <li>Login sukses meregenerasi session dan redirect sesuai role.</li>
+                        </ol>
+                        <p><span class="file">app/Http/Controllers/Auth/LoginController.php · L31–84</span></p>
+                        <div class="evidence-title"><span>Redirect role-aware</span><a href="../app/Http/Controllers/Auth/LoginController.php#L78" target="_blank" rel="noreferrer">buka file</a></div>
+                        <pre class="evidence"><code><span class="key">$home</span> = match (<span class="key">$user</span>-&gt;role) {
+    <span class="value">'petugas'</span> =&gt; route(<span class="value">'petugas.dashboard'</span>),
+    <span class="value">'admin'</span> =&gt; route(<span class="value">'admin.dashboard'</span>),
+    <span class="key">default</span> =&gt; route(<span class="value">'dashboard'</span>),
+};</code></pre>
+                    </article>
+                    <article class="card">
+                        <h3>Status gate</h3>
+                        <p>AccountStatusGate adalah satu pemilik keputusan status. Middleware dan login sama-sama bertanya ke class ini, sehingga pesan pending/ditolak tidak berbeda.</p>
+                        <p>Jika request sudah terautentikasi tetapi status berubah menjadi tidak aktif, middleware logout, invalidate session, regenerate token, lalu redirect login.</p>
+                        <p><span class="file">app/Services/AccountStatusGate.php · L18–46</span></p>
+                    </article>
+                    <article class="card">
+                        <h3>Session observer</h3>
+                        <p>UserObserver dipasang di AppServiceProvider. Saat role/status berubah melalui Eloquent, session database dengan user_id terkait dihapus dan remember_token dibersihkan.</p>
+                        <p><span class="file">app/Observers/UserObserver.php · L18–33</span><br><span class="file">app/Providers/AppServiceProvider.php · L18–21</span></p>
+                    </article>
+                </div>
+                <div class="flow">
+                    <div class="flow-box">register</div><div class="arrow">→</div>
+                    <div class="flow-box orange">pending</div><div class="arrow">→</div>
+                    <div class="flow-box green">admin verify</div><div class="arrow">→</div>
+                    <div class="flow-box">aktif → login</div>
+                </div>
+                <div class="callout"><strong>Mengapa status dicek dua kali?</strong> Cek di login mencegah akun pending memperoleh session valid walau hanya sesaat. Cek di middleware menangani status yang berubah setelah user sudah login.</div>
+            </section>
+
+            <section class="section" id="roles" data-search="role admin petugas pengguna middleware authorization 403 route isolation">
+                <div class="section-heading">
+                    <div><p class="section-kicker">04 / Batas kewenangan</p><h2>Tiga role, tiga dunia kerja</h2></div>
+                    <p>Role tidak diwariskan. Admin boleh mengelola akun/master/rekap; petugas mengerjakan operasi; pengguna mengajukan kebutuhan sendiri.</p>
+                </div>
+                <table class="matrix">
+                    <thead><tr><th>Role</th><th>Route utama</th><th>Fokus</th><th>Tidak boleh</th></tr></thead>
+                    <tbody>
+                        <tr><td><strong>pengguna</strong></td><td>/dashboard, /reservasi, /laporan</td><td>Reservasi dan laporan milik sendiri</td><td class="no">Admin/petugas route</td></tr>
+                        <tr><td><strong>petugas</strong></td><td>/petugas/*</td><td>Antrean reservasi dan laporan</td><td class="no">Admin route dan alur pengguna</td></tr>
+                        <tr><td><strong>admin</strong></td><td>/admin/*</td><td>Akun, fasilitas, ringkasan, rekap</td><td class="no">Detail/aksi operasional petugas</td></tr>
+                    </tbody>
+                </table>
+                <div class="grid">
+                    <article class="card">
+                        <h3>Guard route</h3>
+                        <p>EnsureRole membandingkan role model dengan daftar parameter middleware secara strict. Route saat ini tidak memakai role gabungan; admin dan petugas dipisahkan.</p>
+                        <div class="evidence-title"><span>Route groups aktual</span><a href="../routes/web.php#L36" target="_blank" rel="noreferrer">routes/web.php · L36, L51, L67</a></div>
+                        <pre class="evidence"><code><span class="comment">// pengguna</span>
+Route::middleware([<span class="value">'auth'</span>, <span class="value">'active'</span>, <span class="value">'role:pengguna'</span>])-&gt;group(...);
+<span class="comment">// petugas</span>
+Route::middleware([<span class="value">'auth'</span>, <span class="value">'active'</span>, <span class="value">'role:petugas'</span>])-&gt;prefix(<span class="value">'petugas'</span>)-&gt;group(...);
+<span class="comment">// admin</span>
+Route::middleware([<span class="value">'auth'</span>, <span class="value">'active'</span>, <span class="value">'role:admin'</span>])-&gt;prefix(<span class="value">'admin'</span>)-&gt;group(...);</code></pre>
+                    </article>
+                    <article class="card">
+                        <h3>Kepemilikan data</h3>
+                        <p>Route role belum cukup untuk data milik user. ReservationPolicy dan ReportPolicy memeriksa apakah user adalah owner; petugas boleh melihat detail operasional; admin tidak dimasukkan ke policy operasional.</p>
+                        <p><span class="file">app/Policies/ReservationPolicy.php · L24–28</span><br><span class="file">app/Policies/ReportPolicy.php · L23–27</span></p>
+                    </article>
+                </div>
+                <div class="callout ok"><strong>Bukti pengujian:</strong> <span class="file">tests/Feature/RoleIsolationTest.php</span> menguji admin ditolak dari /petugas, petugas ditolak dari /admin, dan admin/petugas ditolak dari alur pengguna. <span class="file">ReportPolicyTest.php</span> menguji admin bukan pemilik detail laporan operasional.</div>
+            </section>
+
+            <section class="section" id="pengguna" data-search="pengguna dashboard reservasi booking slot cancel laporan report photo">
+                <div class="section-heading">
+                    <div><p class="section-kicker">05 / Modul pengguna</p><h2>Pengguna: ajukan, pantau, batalkan</h2></div>
+                    <p>Semua route pengguna berada dalam guard auth + active + role pengguna, dan query riwayat selalu dibatasi user yang sedang login.</p>
+                </div>
+                <div class="grid">
+                    <article class="card">
+                        <h3>Dashboard</h3>
+                        <p>DashboardController mengambil hitungan status reservasi/laporan dari relasi user, serta tiga data terbaru. Tidak ada query global yang mencampur data user lain.</p>
+                        <p><span class="file">app/Http/Controllers/DashboardController.php · L8–32</span></p>
+                    </article>
+                    <article class="card">
+                        <h3>Reservasi</h3>
+                        <p>ReservationController menampilkan riwayat milik sendiri, menyediakan form slot, dan meneruskan create/cancel ke ReservationService. Detail memakai policy.</p>
+                        <p><span class="file">app/Http/Controllers/ReservationController.php · L34–143</span></p>
+                    </article>
+                    <article class="card">
+                        <h3>Laporan kerusakan</h3>
+                        <p>ReportController mengambil laporan milik sendiri. Foto opsional divalidasi maksimal 2 MB dan disimpan oleh ReportService ke disk public.</p>
+                        <p><span class="file">app/Http/Controllers/ReportController.php · L16–63</span><br><span class="file">app/Http/Requests/StoreReportRequest.php · L20–28</span></p>
+                    </article>
+                    <article class="card">
+                        <h3>Publik sebelum login</h3>
+                        <p>Home, daftar fasilitas, detail fasilitas, dan grid jadwal adalah route publik. Pengunjung hanya menerima status slot, bukan nama pemesan atau tujuan reservasi.</p>
+                        <p><span class="file">app/Http/Controllers/FacilityController.php · L32–107</span></p>
+                    </article>
+                </div>
+                <div class="evidence-title"><span>Bukti pembatasan query riwayat ke user login</span><a href="../app/Http/Controllers/ReservationController.php#L40" target="_blank" rel="noreferrer">ReservationController · L40–44</a></div>
+                <pre class="evidence"><code>$reservations = Reservation::with([<span class="value">'facility'</span>])
+    -&gt;where(<span class="value">'user_id'</span>, auth()-&gt;id())
+    -&gt;orderByDesc(<span class="value">'created_at'</span>)
+    -&gt;paginate(10);</code></pre>
+            </section>
+
+            <section class="section" id="petugas" data-search="petugas officer operational reservasi approve reject cancel laporan status fasilitas perbaikan">
+                <div class="section-heading">
+                    <div><p class="section-kicker">06 / Modul operasional</p><h2>Petugas: memproses antrean</h2></div>
+                    <p>Petugas bukan admin. Ia hanya masuk /petugas/* dan menjalankan keputusan operasional yang terekam.</p>
+                </div>
+                <div class="grid">
+                    <article class="card">
+                        <h3>Antrian reservasi</h3>
+                        <p>Officer/ReservationController menampilkan antrean dengan filter status/tanggal. Approve, reject, dan cancel didelegasikan ke ReservationService.</p>
+                        <p>Approve mengunci reservasi dan fasilitas, memeriksa fasilitas aktif serta overlap approved, lalu menyimpan decided_by dan decided_at.</p>
+                        <p><span class="file">app/Http/Controllers/Officer/ReservationController.php · L31–99</span><br><span class="file">app/Services/ReservationService.php · L42–102</span></p>
+                    </article>
+                    <article class="card">
+                        <h3>Antrian laporan</h3>
+                        <p>Officer/ReportController menampilkan laporan dan memanggil ReportService::transition. Transisi valid: baru → diproses → selesai/ditolak.</p>
+                        <p>Setiap perubahan menulis satu baris report_updates; penutupan memerlukan catatan resolusi minimal 10 karakter.</p>
+                        <p><span class="file">app/Services/ReportService.php · L35–111</span></p>
+                    </article>
+                    <article class="card">
+                        <h3>Status fasilitas</h3>
+                        <p>Petugas menandai fasilitas perbaikan saat laporan diproses, lalu mengembalikan ke aktif setelah laporan selesai. Admin menangani aktif ↔ nonaktif, bukan alur perbaikan.</p>
+                        <p><span class="file">app/Services/ReportService.php · L114–169</span><br><span class="file">app/Http/Controllers/Admin/FacilityController.php · L91–122</span></p>
+                    </article>
+                    <article class="card">
+                        <h3>Audit operasional</h3>
+                        <p>Reservasi menyimpan pengambil keputusan dan waktu; laporan menyimpan handler dan riwayat status; report update menyimpan actor, status lama/baru, dan catatan.</p>
+                        <p>Karena audit ditulis di dalam transaksi service, state utama dan jejaknya gagal/berhasil bersama.</p>
+                    </article>
+                </div>
+                <div class="flow"><div class="flow-box">pending reservation</div><div class="arrow">→</div><div class="flow-box orange">lock + cek overlap</div><div class="arrow">→</div><div class="flow-box green">approved / rejected</div></div>
+            </section>
+
+            <section class="section" id="admin" data-search="admin dashboard akun verification verify reject restore audit facility master data recap">
+                <div class="section-heading">
+                    <div><p class="section-kicker">07 / Modul administrasi</p><h2>Admin: mengatur sistem</h2></div>
+                    <p>Admin mengelola akun dan data master. Dashboard admin hanya agregat read-only; detail/aksi antrean tetap milik petugas.</p>
+                </div>
+                <div class="grid">
+                    <article class="card">
+                        <h3>Dashboard admin</h3>
+                        <p>Controller hanya menghitung jumlah pending reservation, laporan baru/diproses, fasilitas perbaikan, dan akun pending. Tidak memuat detail pemohon.</p>
+                        <p><span class="file">app/Http/Controllers/Admin/DashboardController.php · L18–34</span></p>
+                    </article>
+                    <article class="card">
+                        <h3>Pembuatan akun</h3>
+                        <p>BaseAccountController memusatkan query index, view create, dan persist. Tiga subclass memilih role dan view:</p>
+                        <ul>
+                            <li>AdminAccountController → admin</li>
+                            <li>OfficerAccountController → petugas</li>
+                            <li>UserAccountController → pengguna</li>
+                        </ul>
+                        <p>Semua akun buatan admin langsung aktif; registrasi mandiri petugas/admin tidak tersedia.</p>
+                    </article>
+                    <article class="card">
+                        <h3>CRUD fasilitas</h3>
+                        <p>Admin/FacilityController membuat, mengedit, mengaktifkan, dan menonaktifkan fasilitas. “Hapus” bersifat soft-disable agar histori reservasi/laporan tetap memiliki referensi.</p>
+                        <p><span class="file">app/Http/Controllers/Admin/FacilityController.php · L20–122</span></p>
+                    </article>
+                    <article class="card">
+                        <h3>Verifikasi akun</h3>
+                        <p>AccountVerificationController hanya mengatur redirect. Aturan berada di AccountVerificationService: lock target, pastikan role pengguna, pastikan pending, ubah status, dan tulis actor/waktu.</p>
+                        <p><span class="file">app/Http/Controllers/Admin/AccountVerificationController.php · L23–75</span></p>
+                    </article>
+                </div>
+                <div class="callout"><strong>Verifikasi vs restore:</strong> verify mengubah pending → aktif; reject mengubah pending → ditolak; restore mengubah ditolak → pending. Restore tidak memberi akses login sebelum admin melakukan verify lagi.</div>
+                <div class="evidence-title"><span>Bukti race-condition handling</span><a href="../app/Services/AccountVerificationService.php#L25" target="_blank" rel="noreferrer">AccountVerificationService · L25–45</a></div>
+                <pre class="evidence"><code><span class="key">return</span> DB::transaction(<span class="key">function</span> () <span class="key">use</span> (<span class="key">$target</span>, <span class="key">$admin</span>): User {
+    <span class="key">$locked</span> = User::whereKey(<span class="key">$target</span>-&gt;id)
+        -&gt;lockForUpdate()-&gt;firstOrFail();
+
+    <span class="key">if</span> (<span class="key">$locked</span>-&gt;account_status !== <span class="value">'pending'</span>) {
+        <span class="key">throw</span> <span class="key">new</span> ConflictHttpException(...);
+    }
+    <span class="comment">// state update + audit terjadi di transaction yang sama</span>
+});</code></pre>
+            </section>
+
+            <section class="section" id="audit" data-search="account verification actions audit history table migration model restored verified rejected">
+                <div class="section-heading">
+                    <div><p class="section-kicker">08 / Tambahan branch lokal</p><h2>Audit history verifikasi</h2></div>
+                    <p>Ini adalah perubahan pada branch lokal saat ini: riwayat tindakan tidak lagi bergantung pada snapshot di tabel users.</p>
+                </div>
+                <div class="grid">
+                    <article class="card">
+                        <h3>Tabel baru</h3>
+                        <p><span class="file">account_verification_actions</span> menyimpan:</p>
+                        <ul>
+                            <li><span class="file">target_user_id</span> — akun yang diproses</li>
+                            <li><span class="file">actor_id</span> — admin pelaku</li>
+                            <li><span class="file">action</span> — verified, rejected, restored</li>
+                            <li><span class="file">acted_at</span> — waktu tindakan</li>
+                        </ul>
+                        <p>Foreign key memakai restrictOnDelete agar account/user tidak menghapus jejak audit secara tidak sengaja.</p>
+                        <p><span class="file">database/migrations/2026_09_15_162709_create_account_verification_actions_table.php</span></p>
+                    </article>
+                    <article class="card">
+                        <h3>Model & relasi</h3>
+                        <p>AccountVerificationAction memiliki relasi targetUser() dan actor(). Model User memiliki relasi inverse verificationActions() dan performedVerificationActions().</p>
+                        <p><span class="file">app/Models/AccountVerificationAction.php</span><br><span class="file">app/Models/User.php · L49–59</span></p>
+                    </article>
+                    <article class="card">
+                        <h3>Service recording</h3>
+                        <p>Setelah update status berhasil, service memanggil recordAction. Karena pemanggilan berada di dalam DB::transaction, jika update atau insert audit gagal, semuanya rollback.</p>
+                        <p><span class="file">app/Services/AccountVerificationService.php · L38–44, L67–73, L99–116</span></p>
+                    </article>
+                    <article class="card">
+                        <h3>Contoh histori</h3>
+                        <div class="flow"><div class="flow-box">rejected<br><small>Admin A</small></div><div class="arrow">→</div><div class="flow-box orange">restored<br><small>Admin B</small></div><div class="arrow">→</div><div class="flow-box green">verified<br><small>Admin B</small></div></div>
+                        <p>Snapshot di users menyimpan state terakhir; tabel audit menyimpan seluruh perjalanan.</p>
+                    </article>
+                </div>
+                <div class="evidence-title"><span>Bukti tiga aksi dicatat</span><a href="../app/Services/AccountVerificationService.php#L108" target="_blank" rel="noreferrer">service · L108–116</a></div>
+                <pre class="evidence"><code><span class="key">private function</span> recordAction(User <span class="key">$target</span>, User <span class="key">$admin</span>, <span class="key">string</span> <span class="key">$action</span>): <span class="key">void</span>
+{
+    AccountVerificationAction::create([
+        <span class="key">'target_user_id'</span> =&gt; <span class="key">$target</span>-&gt;id,
+        <span class="key">'actor_id'</span> =&gt; <span class="key">$admin</span>-&gt;id,
+        <span class="key">'action'</span> =&gt; <span class="key">$action</span>,
+        <span class="key">'acted_at'</span> =&gt; now(),
+    ]);
+}</code></pre>
+                <div class="callout warn"><strong>Status branch:</strong> PR #45 berisi commit 79c2574 feat(auth): preserve account verification history. Jika yang ingin dipelajari hanya isi dev, abaikan bagian ini sampai PR tersebut digabung.</div>
+            </section>
+
+            <section class="section" id="data" data-search="database migration model schema user facility reservation report report update seeder factory">
+                <div class="section-heading">
+                    <div><p class="section-kicker">09 / Data</p><h2>Database, model, dan seed</h2></div>
+                    <p>Migration mendefinisikan bentuk data; model menjadi pintu relasi/query; seeder memberi dunia demo yang konsisten.</p>
+                </div>
+                <div class="grid">
+                    <article class="card">
+                        <h3>Users</h3>
+                        <p>Kolom penting: role (pengguna, petugas, admin), account_status (pending, aktif, ditolak), identity unik, phone unik, dan snapshot audit verifikasi.</p>
+                        <p><span class="file">database/migrations/2026_08_30_151449_add_role_and_status_to_users_table.php</span><br><span class="file">database/migrations/2026_09_15_152716_add_unique_identity_phone_to_users_table.php</span></p>
+                    </article>
+                    <article class="card">
+                        <h3>Fasilitas</h3>
+                        <p>Memiliki nama, tipe, lokasi, kapasitas, foto, dan status (aktif, perbaikan, nonaktif). Scope aktif dipakai agar user hanya memilih fasilitas yang bookable.</p>
+                        <p><span class="file">app/Models/Facility.php</span><br><span class="file">database/migrations/2026_08_30_151450_create_facilities_table.php</span></p>
+                    </article>
+                    <article class="card">
+                        <h3>Reservations</h3>
+                        <p>Menghubungkan user dan fasilitas, menyimpan tujuan, waktu mulai/selesai, status, alasan, dan actor keputusan. Scope approved, pending, overlap, blockingOverlap dipakai service.</p>
+                        <p><span class="file">app/Models/Reservation.php</span></p>
+                    </article>
+                    <article class="card">
+                        <h3>Reports & updates</h3>
+                        <p>Report menyimpan status terbaru; ReportUpdate menyimpan histori transisi. Relasi updates.user menunjukkan siapa yang melakukan perubahan.</p>
+                        <p><span class="file">app/Models/Report.php</span><br><span class="file">app/Models/ReportUpdate.php</span></p>
+                    </article>
+                </div>
+                <details>
+                    <summary>Seed akun demo dan maknanya</summary>
+                    <div>
+                        <table class="matrix">
+                            <thead><tr><th>Role</th><th>Email</th><th>Status</th><th>Tujuan belajar</th></tr></thead>
+                            <tbody>
+                                <tr><td>admin</td><td>admin@kampus.test</td><td>aktif</td><td>Menguji dashboard/admin account/fasilitas</td></tr>
+                                <tr><td>petugas</td><td>petugas@kampus.test</td><td>aktif</td><td>Menguji antrean operasional</td></tr>
+                                <tr><td>pengguna</td><td>budi@student.kampus.test</td><td>aktif</td><td>Menguji reservasi dan laporan</td></tr>
+                                <tr><td>pengguna</td><td>pending@kampus.test</td><td>pending</td><td>Menguji gate login dan verifikasi admin</td></tr>
+                            </tbody>
+                        </table>
+                        <p><span class="file">database/seeders/UserSeeder.php · L19–47</span></p>
+                    </div>
+                </details>
+            </section>
+
+            <section class="section" id="validasi" data-search="validation form request rules slot overlap lead time quota facility bookable phone email identity">
+                <div class="section-heading">
+                    <div><p class="section-kicker">10 / Guardrail</p><h2>Validasi & business rules</h2></div>
+                    <p>Validasi bentuk input berada di FormRequest. Validasi yang membutuhkan state database dan transaksi berada di Service atau Rule object.</p>
+                </div>
+                <div class="grid">
+                    <article class="card">
+                        <h3>FormRequest</h3>
+                        <ul>
+                            <li><span class="file">AdminAccountRequest</span>: name, email, password confirmed, identity, phone.</li>
+                            <li><span class="file">StoreReservationRequest</span>: date, waktu, purpose, facility ID.</li>
+                            <li><span class="file">StoreReportRequest</span>: kategori, deskripsi, foto nullable/image/max 2 MB.</li>
+                            <li><span class="file">UpdateReportStatusRequest</span>: status dan catatan untuk status akhir.</li>
+                        </ul>
+                        <p>Client-side validation hanya membantu UX; server tetap sumber kebenaran.</p>
+                    </article>
+                    <article class="card">
+                        <h3>Rule reservasi</h3>
+                        <ul>
+                            <li><span class="file">SlotTimeValid</span>: rentang 07.00–20.00, interval 30 menit, maksimal 4 jam.</li>
+                            <li><span class="file">BookingLeadTime</span>: mulai minimal 30 menit dari sekarang.</li>
+                            <li><span class="file">FacilityBookable</span>: fasilitas harus aktif.</li>
+                            <li><span class="file">PendingQuota</span>: kuota pending harian user.</li>
+                            <li><span class="file">NoApprovedOverlap</span>: tidak bentrok dengan approved.</li>
+                        </ul>
+                    </article>
+                </div>
+                <div class="flow">
+                    <div class="flow-box">FormRequest<br><small>bentuk input</small></div><div class="arrow">→</div>
+                    <div class="flow-box orange">Rule object<br><small>cek domain</small></div><div class="arrow">→</div>
+                    <div class="flow-box">Service transaction<br><small>cek ulang state</small></div><div class="arrow">→</div>
+                    <div class="flow-box green">create/update<br><small>database</small></div>
+                </div>
+                <div class="callout"><strong>Contoh anti-race:</strong> validasi awal bisa lolos untuk dua user yang meminta slot sama. Saat approve, service mengunci baris reservasi + fasilitas dan mengecek overlap lagi. Jika kondisi berubah, response menjadi conflict, bukan data salah.</div>
+            </section>
+
+            <section class="section" id="ui" data-search="blade view tailwind css vite javascript layout navbar dialog photo preview frontend">
+                <div class="section-heading">
+                    <div><p class="section-kicker">11 / Permukaan UI</p><h2>View, layout, dan JavaScript</h2></div>
+                    <p>Blade memetakan domain ke halaman. Layout membaca role untuk menampilkan menu yang sesuai, tetapi keamanan sebenarnya tetap berada di route middleware.</p>
+                </div>
+                <div class="grid">
+                    <article class="card">
+                        <h3>Layout utama</h3>
+                        <p><span class="file">resources/views/layouts/app.blade.php</span> memuat Vite assets, navbar responsive, flash message, dan menu berbeda untuk pengguna, petugas, dan admin.</p>
+                        <p>Class active memakai request route sehingga highlight menu mengikuti route yang sedang tampil.</p>
+                    </article>
+                    <article class="card">
+                        <h3>Komponen reusable</h3>
+                        <p><span class="file">resources/views/components/ui/</span> berisi card, badge, select, table. <span class="file">components/reservation/slot-picker.blade.php</span> mengisolasi picker slot.</p>
+                    </article>
+                    <article class="card">
+                        <h3>JavaScript</h3>
+                        <p><span class="file">resources/js/app.js</span> menangani dialog konfirmasi, preview file foto, mobile menu, dan tab/jadwal sesuai kebutuhan UI.</p>
+                    </article>
+                    <article class="card">
+                        <h3>CSS & bundling</h3>
+                        <p><span class="file">resources/css/app.css</span> adalah entry Tailwind. Vite membangun asset ke public build. Saat perubahan UI tidak terlihat, jalankan npm run build atau npm run dev.</p>
+                    </article>
+                </div>
+                <div class="callout warn"><strong>Bedakan UX dan security:</strong> menu admin yang disembunyikan dari petugas hanya UX. Request manual ke URL tetap harus ditolak oleh middleware/policy; itulah alasan test route isolation lebih penting daripada sekadar mengecek menu.</div>
+            </section>
+
+            <section class="section" id="testing" data-search="test pest feature unit refresh database quality verification pint migrate seed composer audit">
+                <div class="section-heading">
+                    <div><p class="section-kicker">12 / Bukti kerja</p><h2>Testing dan quality gate</h2></div>
+                    <p>Test membaca sistem melalui endpoint/service publik. Gunakan nama test sebagai daftar perilaku yang sudah dianggap penting oleh proyek.</p>
+                </div>
+                <div class="grid three">
+                    <article class="card"><h3>Feature tests</h3><p>Memeriksa request nyata: login, register, role isolation, verifikasi, pembuatan akun, fasilitas, reservasi, laporan, dan policy.</p><p><span class="file">tests/Feature/</span></p></article>
+                    <article class="card"><h3>Unit tests</h3><p>Memeriksa peta transisi laporan dan logika slot/overlap secara terisolasi.</p><p><span class="file">tests/Unit/</span></p></article>
+                    <article class="card"><h3>Migration proof</h3><p>Migration baru sudah diuji dari database kosong dan seeder berhasil berjalan.</p><p><span class="file">database/migrations/</span></p></article>
+                </div>
+                <div class="evidence-title"><span>Perintah verifikasi terakhir pada snapshot ini</span></div>
+                <pre class="evidence"><code>vendor/bin/pint --dirty --format agent
+php artisan test --compact
+<span class="comment">// hasil: 168 passed, 627 assertions</span>
+php artisan migrate:fresh --seed --no-interaction --force
+composer audit --no-interaction
+<span class="comment">// hasil audit dependency: no security vulnerability advisories found</span></code></pre>
+                <div class="callout ok"><strong>Interpretasi:</strong> test hijau berarti perilaku yang sudah ditulis dalam test bekerja. Itu belum otomatis berarti semua requirement selesai; lihat bagian Batasan saat ini untuk gap implementasi.</div>
+            </section>
+
+            <section class="section" id="gap" data-search="gap belum selesai missing not implemented recap export xlsx security actor phone session policy">
+                <div class="section-heading">
+                    <div><p class="section-kicker">13 / Kejujuran snapshot</p><h2>Yang belum selesai di kode</h2></div>
+                    <p>Bagian ini membedakan implementasi nyata dari daftar requirement/dokumentasi, supaya bahan belajar tidak mengira semuanya sudah tersedia.</p>
+                </div>
+                <table class="matrix">
+                    <thead><tr><th>Status</th><th>Area</th><th>Bukti / penjelasan</th></tr></thead>
+                    <tbody>
+                        <tr><td><span class="yes">Ada</span></td><td>Isolasi route role</td><td>Route groups di <span class="file">routes/web.php</span> memakai role tunggal; test isolation lulus.</td></tr>
+                        <tr><td><span class="yes">Ada</span></td><td>Verifikasi dengan lock</td><td><span class="file">AccountVerificationService</span> memakai transaction + lockForUpdate + target role pengguna.</td></tr>
+                        <tr><td><span class="yes">Ada</span></td><td>Audit history lokal</td><td>Tabel <span class="file">account_verification_actions</span> ada di branch ini dan dicatat untuk verified/rejected/restored.</td></tr>
+                        <tr><td><span class="yes">Ada</span></td><td>CRUD fasilitas dasar</td><td>Admin create/edit/activate/deactivate tersedia; tidak ada hard delete.</td></tr>
+                        <tr><td><span class="no">Belum</span></td><td>Rekap dan export</td><td><span class="file">RecapController</span>, <span class="file">RecapService</span>, route /admin/rekap, serta CSV/XLSX/PDF belum ada di daftar file kode saat ini; masih requirement.</td></tr>
+                        <tr><td><span class="no">Hardening</span></td><td>Actor check di service</td><td>HTTP route sudah admin-only, tetapi service menerima object admin dan belum mengecek isAdmin() sendiri. Boundary masih bergantung route caller.</td></tr>
+                        <tr><td><span class="no">Hardening</span></td><td>Phone validation</td><td><span class="file">normalizePhone()</span> mengembalikan input non-prefix apa adanya; FormRequest baru memeriksa required/string/max/unique.</td></tr>
+                        <tr><td><span class="no">Hardening</span></td><td>Session lintas driver</td><td><span class="file">UserObserver</span> menghapus row secara langsung hanya saat driver database; default lokal memang database.</td></tr>
+                        <tr><td><span class="no">Audit design</span></td><td>Snapshot user</td><td>Restore masih membersihkan rejected_by/at pada users, tetapi histori tidak hilang karena sudah masuk tabel audit baru.</td></tr>
+                    </tbody>
+                </table>
+                <div class="callout warn"><strong>Kesimpulan keamanan:</strong> jalur HTTP admin/auth saat ini aman untuk demo dan seluruh suite hijau, tetapi aman untuk demo berbeda dari production hardening lengkap. Temuan hardening di atas adalah kandidat milestone berikutnya.</div>
+            </section>
+
+            <section class="section" id="belajar" data-search="cara belajar urutan study path debugging tracing flow">
+                <div class="section-heading">
+                    <div><p class="section-kicker">14 / Metode belajar</p><h2>Urutan membaca yang paling masuk akal</h2></div>
+                    <p>Jangan mulai dari semua file sekaligus. Pilih satu alur kecil, telusuri sampai database, lalu ulangi dengan modul lain.</p>
+                </div>
+                <div class="grid">
+                    <article class="card">
+                        <h3>Rute belajar 1 — login</h3>
+                        <ol>
+                            <li>Baca <span class="file">routes/web.php</span> bagian guest.</li>
+                            <li>Baca <span class="file">LoginController</span>.</li>
+                            <li>Ikuti <span class="file">AccountStatusGate</span>.</li>
+                            <li>Lihat <span class="file">User</span> dan config auth/session.</li>
+                            <li>Buka <span class="file">AuthFlowTest</span>.</li>
+                        </ol>
+                    </article>
+                    <article class="card">
+                        <h3>Rute belajar 2 — verify</h3>
+                        <ol>
+                            <li>Mulai dari route PATCH admin.</li>
+                            <li>Lihat controller hanya redirect.</li>
+                            <li>Telusuri service: lock, guard role, status, update.</li>
+                            <li>Ikuti observer session.</li>
+                            <li>Bandingkan snapshot users dengan audit actions.</li>
+                        </ol>
+                    </article>
+                    <article class="card">
+                        <h3>Rute belajar 3 — approve</h3>
+                        <ol>
+                            <li>Baca FormRequest officer.</li>
+                            <li>Ikuti ReservationService::approve.</li>
+                            <li>Pahami lockForUpdate dan overlap.</li>
+                            <li>Lihat actor decided_by/at.</li>
+                            <li>Baca test approval dan overlap.</li>
+                        </ol>
+                    </article>
+                </div>
+                <div class="callout ok"><strong>Teknik tracing:</strong> untuk setiap method, catat empat hal: input, guard/validasi, perubahan state, dan response. Jika salah satu tidak jelas, cari file yang dipanggil method tersebut—bukan langsung menambah kode baru.</div>
+            </section>
+
+            <footer class="footer">
+                <p><strong>Dokumen lokal untuk belajar.</strong> Sumber kebenaran teknis proyek tetap <a href="spesifikasi-sistem-reservasi.md">docs/spesifikasi-sistem-reservasi.md</a>. File ini adalah peta penjelas berdasarkan kode yang ada pada snapshot lokal, bukan pengganti source code atau spesifikasi.</p>
+                <p>Generated locally · no external assets · buka file ini langsung di browser.</p>
+            </footer>
+        </main>
+    </div>
+
+    <script>
+        (function () {
+            var search = document.getElementById("search");
+            var sections = Array.prototype.slice.call(document.querySelectorAll("[data-search]"));
+            var navLinks = Array.prototype.slice.call(document.querySelectorAll(".rail nav a"));
+            var themeButton = document.querySelector("[data-theme-toggle]");
+
+            function filterSections() {
+                var query = search.value.trim().toLowerCase();
+                sections.forEach(function (section) {
+                    var matches = !query || (section.dataset.search + " " + section.textContent).toLowerCase().indexOf(query) !== -1;
+                    section.classList.toggle("hidden-by-search", !matches);
+                });
+            }
+
+            search.addEventListener("input", filterSections);
+            themeButton.addEventListener("click", function () {
+                var isNight = document.body.dataset.theme === "night";
+                document.body.dataset.theme = isNight ? "day" : "night";
+                themeButton.textContent = isNight ? "Mode gelap" : "Mode terang";
+            });
+
+            var observer = new IntersectionObserver(function (entries) {
+                entries.forEach(function (entry) {
+                    if (!entry.isIntersecting) { return; }
+                    navLinks.forEach(function (link) {
+                        link.classList.toggle("active", link.getAttribute("href") === "#" + entry.target.id);
+                    });
+                });
+            }, { rootMargin: "-20% 0px -70% 0px" });
+
+            sections.forEach(function (section) { observer.observe(section); });
+        }());
+    </script>
+</body>
+
+</html>

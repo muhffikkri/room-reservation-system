@@ -24,7 +24,9 @@ class AccountController extends Controller
         $accounts = User::query()
             ->where('role', $type['role'])
             ->orderBy('name')
-            ->get();
+            ->orderBy('id')
+            ->paginate(15)
+            ->withQueryString();
 
         return view($type['view'].'.index', [$type['variable'] => $accounts]);
     }

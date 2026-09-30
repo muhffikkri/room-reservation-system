@@ -24,7 +24,9 @@ class AccountVerificationController extends Controller
     {
         $pendingUsers = User::pendingPengguna()
             ->orderBy('created_at')
-            ->get();
+            ->orderBy('id')
+            ->paginate(15)
+            ->withQueryString();
 
         return view('admin.pengguna.verifikasi', ['pendingUsers' => $pendingUsers]);
     }

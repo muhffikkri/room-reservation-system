@@ -34,12 +34,12 @@ class DashboardController extends Controller
             ->groupBy('status')
             ->pluck('total', 'status');
         $recentReservations = $user->reservations()
-            ->with('facility:id,name')
+            ->with('facility:id,name,type,photo')
             ->latest('start_time')
             ->take(3)
             ->get();
         $recentReports = $user->reports()
-            ->with('facility:id,name')
+            ->with('facility:id,name,type,photo')
             ->latest()
             ->take(3)
             ->get();

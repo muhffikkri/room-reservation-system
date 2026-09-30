@@ -18,7 +18,7 @@
     <section class="landing-panel grid gap-5 overflow-hidden rounded-3xl p-5 shadow-[0_10px_30px_-5px_rgba(186,215,248,0.45),0_0_0_1px_rgba(255,255,255,0.8)_inset] sm:grid-cols-[240px_1fr] sm:p-7">
         <div class="overflow-hidden rounded-2xl bg-blue-50"><img src="{{ $facilityImage }}" alt="{{ $facility->name }}" class="h-full min-h-48 w-full object-cover"></div>
         <div class="flex flex-col justify-center gap-3">
-            <div class="flex flex-wrap items-center gap-2"><span class="rounded-full border border-blue-100 bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-700">{{ $typeLabel }}</span><span class="rounded-full px-3 py-1 text-xs font-semibold {{ $facility->status === 'aktif' ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700' }}">{{ ucfirst($facility->status) }}</span></div>
+            <div class="flex flex-wrap items-center gap-2"><span class="rounded-full border border-blue-100 bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-700">{{ $typeLabel }}</span><x-ui.badge :status="$facility->status" dot /></div>
             <h1 class="text-2xl font-extrabold tracking-tight text-slate-900 sm:text-3xl">{{ $facility->name }}</h1>
             <p class="text-sm text-slate-600">{{ $facility->location }} <span class="px-1 text-blue-300">•</span> Kapasitas {{ $facility->capacity }} orang</p>
             @if ($facility->description)<p class="line-clamp-4 max-w-3xl text-sm leading-relaxed text-slate-600">{{ $facility->short_description }}</p>@endif
@@ -51,7 +51,7 @@
         <div data-schedule-slots class="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6">
             @foreach ($slots as $slot)
                 @if ($slot['state'] === 'available' && $facility->status === 'aktif')
-                    <a href="{{ route('login') }}" data-slot-state="available" title="Pilih slot ini untuk melanjutkan login" class="flex min-h-20 flex-col items-center justify-center rounded-2xl border p-3 text-center shadow-sm transition hover:-translate-y-1 hover:bg-emerald-100 hover:shadow-md focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-600 {{ $slotClasses['available'] }}">
+                    <a href="{{ route('reservasi.create', ['facility_id' => $facility->id, 'date' => $selectedDate->toDateString(), 'start_time' => $slot['start'], 'end_time' => $slot['end']]) }}" data-slot-state="available" title="Pilih slot ini untuk mengajukan reservasi" class="flex min-h-20 flex-col items-center justify-center rounded-2xl border p-3 text-center shadow-sm transition hover:-translate-y-1 hover:bg-emerald-100 hover:shadow-md focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-600 {{ $slotClasses['available'] }}">
                         <span class="text-sm font-semibold">{{ $slot['start'] }} – {{ $slot['end'] }}</span><span class="mt-1 text-xs font-semibold">Tersedia · pilih</span>
                     </a>
                 @else
@@ -66,7 +66,7 @@
             <p class="max-w-2xl text-xs leading-relaxed text-slate-500">Ketersediaan jadwal ditampilkan untuk publik tanpa identitas pemohon. Login diperlukan untuk mengajukan reservasi.</p>
             @if ($facility->status === 'aktif')
                 @auth<a href="{{ route('reservasi.create', ['facility_id' => $facility->id, 'date' => $selectedDate->toDateString()]) }}" class="landing-button rounded-full bg-gradient-to-r from-blue-600 to-blue-500 px-5 py-2.5 text-xs font-semibold text-white">Ajukan Reservasi</a>
-                @else<a href="{{ route('login') }}" class="landing-button rounded-full bg-gradient-to-r from-blue-600 to-blue-500 px-5 py-2.5 text-xs font-semibold text-white">Login untuk Reservasi</a>@endauth
+                @else<a href="{{ route('reservasi.create', ['facility_id' => $facility->id, 'date' => $selectedDate->toDateString()]) }}" class="landing-button rounded-full bg-gradient-to-r from-blue-600 to-blue-500 px-5 py-2.5 text-xs font-semibold text-white">Login untuk Reservasi</a>@endauth
             @endif
         </div>
     </section>

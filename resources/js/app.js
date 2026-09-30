@@ -1,5 +1,208 @@
 import { initializeReservationForm } from './reservation-form';
 
+// =========================================================================
+// Cursor tail spring physics
+// =========================================================================
+const TRAIL_COUNT = 7;
+const SPACING = 22;
+const TENSION = 0.055;
+const DAMPING = 0.75;
+const RETRACT_TENSION = 0.09;
+const RETRACT_DAMPING = 0.72;
+const trailPool = [];
+let mouseX = -200;
+let mouseY = -200;
+let lastMoveTime = 0;
+const tailCanvas = document.createElement('canvas');
+const tailContext = tailCanvas.getContext('2d');
+let tailPixelRatio = Math.min(window.devicePixelRatio || 1, 2);
+
+tailCanvas.className = 'cursor-tail-canvas';
+tailCanvas.setAttribute('aria-hidden', 'true');
+document.body.appendChild(tailCanvas);
+
+function resizeTailCanvas() {
+    tailPixelRatio = Math.min(window.devicePixelRatio || 1, 2);
+    tailCanvas.width = Math.round(window.innerWidth * tailPixelRatio);
+    tailCanvas.height = Math.round(window.innerHeight * tailPixelRatio);
+    tailCanvas.style.width = `${window.innerWidth}px`;
+    tailCanvas.style.height = `${window.innerHeight}px`;
+    tailContext.setTransform(tailPixelRatio, 0, 0, tailPixelRatio, 0, 0);
+}
+
+function drawCursorTail() {
+    tailContext.clearRect(0, 0, window.innerWidth, window.innerHeight);
+
+    if (mouseX < -100) {
+        return;
+    }
+
+    const points = [{ x: mouseX, y: mouseY, emerge: 1 }];
+
+    trailPool.forEach((node) => {
+        if (node.emerge > 0.03) {
+            points.push({ x: node.x, y: node.y, emerge: node.emerge });
+        }
+    });
+
+    if (points.length < 2) {
+        return;
+    }
+
+    const leftEdge = [];
+    const rightEdge = [];
+    const lastPointIndex = points.length - 1;
+
+    points.forEach((point, index) => {
+        const previousPoint = points[Math.max(0, index - 1)];
+        const nextPoint = points[Math.min(lastPointIndex, index + 1)];
+        const tangentX = nextPoint.x - previousPoint.x;
+        const tangentY = nextPoint.y - previousPoint.y;
+        const tangentLength = Math.hypot(tangentX, tangentY) || 1;
+        const taper = 1 - index / points.length;
+        const halfWidth = (1.1 + taper * 6.4) * point.emerge;
+        const normalX = -tangentY / tangentLength;
+        const normalY = tangentX / tangentLength;
+
+        leftEdge.push({ x: point.x + normalX * halfWidth, y: point.y + normalY * halfWidth });
+        rightEdge.push({ x: point.x - normalX * halfWidth, y: point.y - normalY * halfWidth });
+    });
+
+    const head = points[0];
+    const tail = points[lastPointIndex];
+    const gradient = tailContext.createLinearGradient(head.x, head.y, tail.x, tail.y);
+
+    gradient.addColorStop(0, 'rgba(51, 156, 255, 0.55)');
+    gradient.addColorStop(0.45, 'rgba(65, 158, 255, 0.3)');
+    gradient.addColorStop(1, 'rgba(89, 181, 255, 0.04)');
+
+    tailContext.beginPath();
+    tailContext.moveTo(leftEdge[0].x, leftEdge[0].y);
+
+    for (let index = 1; index < leftEdge.length - 1; index += 1) {
+        const midpointX = (leftEdge[index].x + leftEdge[index + 1].x) / 2;
+        const midpointY = (leftEdge[index].y + leftEdge[index + 1].y) / 2;
+
+        tailContext.quadraticCurveTo(leftEdge[index].x, leftEdge[index].y, midpointX, midpointY);
+    }
+
+    tailContext.lineTo(leftEdge[lastPointIndex].x, leftEdge[lastPointIndex].y);
+    tailContext.lineTo(rightEdge[lastPointIndex].x, rightEdge[lastPointIndex].y);
+
+    for (let index = rightEdge.length - 2; index > 0; index -= 1) {
+        const midpointX = (rightEdge[index].x + rightEdge[index - 1].x) / 2;
+        const midpointY = (rightEdge[index].y + rightEdge[index - 1].y) / 2;
+
+        tailContext.quadraticCurveTo(rightEdge[index].x, rightEdge[index].y, midpointX, midpointY);
+    }
+
+    tailContext.lineTo(rightEdge[0].x, rightEdge[0].y);
+    tailContext.closePath();
+    tailContext.fillStyle = gradient;
+    tailContext.shadowColor = 'rgba(44, 149, 255, 0.55)';
+    tailContext.shadowBlur = 8;
+    tailContext.fill();
+    tailContext.shadowBlur = 0;
+}
+
+window.addEventListener('resize', resizeTailCanvas, { passive: true });
+resizeTailCanvas();
+
+for (let i = 0; i < TRAIL_COUNT; i++) {
+    trailPool.push({ x: -200, y: -200, vx: 0, vy: 0, emerge: 0 });
+}
+
+function animateTrail() {
+    const now = performance.now();
+    const moving = mouseX > -100 && (now - lastMoveTime) < 80;
+
+    drawCursorTail();
+
+    for (let i = 0; i < TRAIL_COUNT; i++) {
+        const node = trailPool[i];
+        const leader = i === 0 ? { x: mouseX, y: mouseY } : trailPool[i - 1];
+
+        // Sequential emerge: each node waits for the previous to be partially emerged
+        if (moving) {
+            const prevEmerge = i === 0 ? 1 : trailPool[i - 1].emerge;
+            if (prevEmerge > 0.35) {
+                node.emerge = Math.min(1, node.emerge + 0.09);
+            }
+        } else {
+            // Sequential retract: last node shrinks first, then next, etc.
+            const nextEmerge = i === TRAIL_COUNT - 1 ? 0 : trailPool[i + 1].emerge;
+            if (nextEmerge < 0.1) {
+                node.emerge = Math.max(0, node.emerge - 0.055);
+            }
+        }
+
+        // Spring physics — retract toward cursor when collapsing, follow chain when emerged
+        const retracting = !moving && node.emerge < 0.5;
+        const tx = retracting ? mouseX : leader.x;
+        const ty = retracting ? mouseY : leader.y;
+        const t = retracting ? RETRACT_TENSION : TENSION;
+        const d = retracting ? RETRACT_DAMPING : DAMPING;
+
+        node.vx += (tx - node.x) * t;
+        node.vy += (ty - node.y) * t;
+        node.vx *= d;
+        node.vy *= d;
+        node.x += node.vx;
+        node.y += node.vy;
+
+        // Spacing from leader (only when visible)
+        if (node.emerge > 0.05 && moving) {
+            const sx = node.x - leader.x;
+            const sy = node.y - leader.y;
+            const sd = Math.hypot(sx, sy);
+            if (sd > 0 && sd < SPACING) {
+                const push = (SPACING - sd) / sd * 0.4;
+                node.x += sx * push;
+                node.y += sy * push;
+            }
+        }
+
+    }
+
+    requestAnimationFrame(animateTrail);
+}
+
+document.addEventListener('mousemove', (event) => {
+    const target = event.target instanceof Element ? event.target : document.documentElement;
+    const cursorStyle = window.getComputedStyle(target).cursor;
+    let offsetX = 15;
+    let offsetY = 17;
+
+    if (cursorStyle.includes('link_cursor')) {
+        offsetX = 7;
+    } else if (cursorStyle.includes('text_cursor')) {
+        offsetX = 0;
+        offsetY = 0;
+    }
+
+    const newX = event.clientX + offsetX;
+    const newY = event.clientY + offsetY;
+
+    if (mouseX < -100) {
+        trailPool.forEach((n) => { n.x = newX; n.y = newY; n.vx = 0; n.vy = 0; n.emerge = 0; });
+    }
+
+    mouseX = newX;
+    mouseY = newY;
+    lastMoveTime = performance.now();
+}, { passive: true });
+
+document.addEventListener('mouseleave', () => {
+    mouseX = -200;
+    mouseY = -200;
+    lastMoveTime = 0;
+});
+
+if (window.matchMedia('(hover: hover) and (pointer: fine)').matches
+    && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    requestAnimationFrame(animateTrail);
+}
+
 document.addEventListener('click', (event) => {
     const openTrigger = event.target.closest('[data-open-dialog]');
 
@@ -167,32 +370,37 @@ document.querySelectorAll('[data-notification-toggle]').forEach((toggle) => {
         panel.classList.add('hidden');
     });
 });
-
-const petugasFilterForm = document.getElementById('petugasFilterForm');
-const resetFilterBtn = document.getElementById('reset-filter');
 const loadingIndicator = document.getElementById('loading-indicator');
 const reservationBody = document.getElementById('reservation-body');
 const paginationContainer = document.getElementById('pagination-container');
 
-if (petugasFilterForm !== null) {
-    const statusSelect = document.getElementById('status');
-    const dateInput = document.getElementById('date');
-    let debounceTimer = null;
+// Class yang sama dengan view petugas/reservasi/index: baris hasil AJAX harus
+// memakai token clay yang sama dengan render Blade, kalau tidak tampilan
+// berubah begitu tab diganti.
+const clayTableCell = 'px-5 py-4 align-middle';
+// Aksi baris: Tolak (merah seperti tombol Keluar), Setujui (biru), Batalkan
+// (merah), dan Detail (putih) paling kanan.
+const clayDetailChip =
+    'clay-pressable inline-flex h-9 items-center justify-center whitespace-nowrap rounded-full px-4 text-xs font-bold text-slate-600';
+const clayApproveChip =
+    'landing-button inline-flex h-9 items-center justify-center whitespace-nowrap rounded-full bg-gradient-to-r from-blue-600 to-blue-500 px-4 text-xs font-bold text-white';
+const clayRejectChip =
+    'clay-button-danger inline-flex h-9 items-center justify-center whitespace-nowrap rounded-full px-4 text-xs font-bold';
+const dialogShell =
+    'w-full max-w-md rounded-[1.8rem] border border-white/90 bg-gradient-to-br from-white/98 to-blue-50/80 p-6 shadow-[0_24px_60px_rgba(16,38,74,0.24),inset_2px_2px_6px_rgba(255,255,255,0.9)] backdrop:bg-slate-950/40';
 
-    const fetchReservations = () => {
-        const params = new URLSearchParams();
-        const status = statusSelect.value;
-        const date = dateInput.value;
-        const tab = new URLSearchParams(window.location.search).get('tab');
-
-        if (status) params.set('status', status);
-        if (date) params.set('date', date);
-        if (tab) params.set('tab', tab);
+if (reservationBody !== null) {
+    let queueRequest;
+    const fetchReservations = (url) => {
+        const params = new URLSearchParams(new URL(url, window.location.origin).search);
+        queueRequest?.abort();
+        queueRequest = new AbortController();
 
         if (loadingIndicator !== null) loadingIndicator.classList.remove('hidden');
 
         fetch(`/petugas/reservasi/data?${params.toString()}`, {
             headers: { 'X-Requested-With': 'XMLHttpRequest' },
+            signal: queueRequest.signal,
         })
             .then((response) => response.json())
             .then((data) => {
@@ -200,144 +408,179 @@ if (petugasFilterForm !== null) {
 
                 document.querySelectorAll('[data-ajax-dialog]').forEach((dialog) => dialog.remove());
 
-                if (reservationBody !== null) {
-                    reservationBody.innerHTML = '';
-                    if (data.reservations.length === 0) {
-                        reservationBody.innerHTML = `
+                reservationBody.innerHTML = '';
+                if (data.reservations.length === 0) {
+                    reservationBody.innerHTML = `
                             <tr>
-                                <td colspan="6" class="px-6 py-10 text-center">
-                                    <p class="text-sm font-medium text-[#00236f]">Tidak ada reservasi</p>
-                                    <p class="mt-1 text-sm text-slate-500">Reservasi yang diajukan pengguna akan tampil di sini sesuai filter.</p>
+                                <td colspan="6" class="px-5 py-14 text-center">
+                                    <p class="text-base font-bold text-slate-800">Tidak ada reservasi</p>
+                                    <p class="mt-1 text-sm text-slate-500">Belum ada reservasi pada tab ini.</p>
                                 </td>
                             </tr>`;
-                    } else {
-                        data.reservations.forEach((res) => {
-                            const row = document.createElement('tr');
-                            row.className = 'transition-colors hover:bg-[#F8FAFC]';
+                } else {
+                    data.reservations.forEach((res) => {
+                        const row = document.createElement('tr');
+                        row.className = 'transition-colors hover:bg-white/70';
 
-                            const statusHtml = getStatusBadge(res.status);
-                            const actionsHtml = getActionsHtml(res);
+                        const statusHtml = res.status_html;
+                        const actionsHtml = getActionsHtml(res);
 
-                            row.innerHTML = `
-                                <td class="px-6 py-3">
-                                    <p class="font-semibold text-[#00236f]">${escapeHtml(res.user.name)}</p>
-                                    <p class="text-xs text-slate-600">${escapeHtml(res.user.email)}</p>
+                        row.innerHTML = `
+                                <td class="${clayTableCell}">
+                                    <p class="font-bold text-[#10264a]">${escapeHtml(res.user.name)}</p>
+                                    <p class="text-xs text-slate-500">${escapeHtml(res.user.email)}</p>
                                 </td>
-                                <td class="px-6 py-3">
-                                    <p class="font-medium text-[#00236f]">${escapeHtml(res.facility.name)}</p>
-                                    <p class="text-xs text-slate-600">${escapeHtml(res.facility.location)}</p>
+                                <td class="${clayTableCell}">
+                                    <p class="font-bold text-[#10264a]">${escapeHtml(res.facility.name)}</p>
+                                    <p class="text-xs text-slate-500">${escapeHtml(res.facility.location)}</p>
                                 </td>
-                                <td class="whitespace-nowrap px-6 py-3 text-slate-700">
+                                <td class="${clayTableCell} whitespace-nowrap text-slate-700">
                                     ${formatDate(res.start_time)}
-                                    <br>
-                                    <span class="text-xs text-slate-600">${formatTime(res.start_time)} – ${formatTime(res.end_time)}</span>
+                                    <span class="mt-0.5 block text-xs text-slate-500">${formatTime(res.start_time)} – ${formatTime(res.end_time)} WIB</span>
                                 </td>
-                                <td class="px-6 py-3">${statusHtml}</td>
-                                <td class="px-6 py-3 text-slate-600 text-xs whitespace-nowrap">${formatDate(res.created_at)}</td>
-                                <td class="px-6 py-3">${actionsHtml}</td>
+                                <td class="${clayTableCell}">${statusHtml}</td>
+                                <td class="${clayTableCell} whitespace-nowrap text-xs text-slate-500">${formatDate(res.created_at)} WIB</td>
+                                <td class="${clayTableCell}">
+                                    ${actionsHtml}
+                                </td>
                             `;
-                            reservationBody.appendChild(row);
+                        reservationBody.appendChild(row);
 
-                            const dialogHtml = `
-                                <dialog data-ajax-dialog id="approve-${res.id}" class="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl backdrop:bg-slate-950/40">
-                                    <h3 class="text-lg font-semibold text-[#00236f]">Setujui reservasi?</h3>
-                                    <p class="mt-1 text-sm text-slate-600">${escapeHtml(res.facility.name)} · ${formatDate(res.start_time)} ${formatTime(res.start_time)} – ${formatTime(res.end_time)}</p>
-                                    <form method="POST" action="/petugas/reservasi/${res.id}/approve" class="mt-4">
-                                        <input type="hidden" name="_token" value="${document.querySelector('meta[name="csrf-token"]')?.content ?? ''}">
+                        const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content ?? '';
+                        const schedule = `${escapeHtml(res.facility.name)} · ${formatDate(res.start_time)}, ${formatTime(res.start_time)} – ${formatTime(res.end_time)} WIB`;
+                        const dialogs = [];
+
+                        if (res.status === 'pending') {
+                            dialogs.push(`
+                                <dialog data-ajax-dialog id="approve-${res.id}" class="${dialogShell}" aria-labelledby="approve-${res.id}-title">
+                                    <h3 id="approve-${res.id}-title" class="text-lg font-extrabold tracking-tight text-[#10264a]">Setujui reservasi?</h3>
+                                    <p class="mt-1 text-sm leading-relaxed text-slate-600">${schedule}</p>
+                                    <form method="POST" action="/petugas/reservasi/${res.id}/approve" class="mt-5">
+                                        <input type="hidden" name="_token" value="${csrfToken}">
+                                        <p class="clay-inset rounded-2xl p-3 text-xs leading-relaxed text-slate-600">Menyetujui mengunci slot dan menolak reservasi lain yang bertabrakan.</p>
                                         <div class="mt-4 flex items-center justify-end gap-2">
-                                            <button type="button" data-close-dialog="approve-${res.id}" class="inline-flex h-10 items-center justify-center rounded-lg border border-[#D6DDF8] bg-white px-4 text-sm font-semibold text-[#00236f] transition-colors hover:bg-[#F2F3FF]">Kembali</button>
-                                            <button type="submit" class="inline-flex h-10 items-center justify-center rounded-lg bg-[#0051d5] px-4 text-sm font-semibold text-white transition-colors hover:bg-[#00236f]">Konfirmasi Setujui</button>
+                                            <button type="button" data-close-dialog="approve-${res.id}" class="clay-pressable inline-flex h-10 items-center justify-center rounded-full px-5 text-sm font-semibold text-blue-700">Kembali</button>
+                                            <button type="submit" class="landing-button inline-flex h-10 items-center justify-center rounded-full bg-gradient-to-r from-blue-600 to-blue-500 px-5 text-sm font-bold text-white">Konfirmasi Setujui</button>
                                         </div>
                                     </form>
                                 </dialog>
-                                <dialog data-ajax-dialog id="reject-${res.id}" class="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl backdrop:bg-slate-950/40">
-                                    <h3 class="text-lg font-semibold text-[#00236f]">Tolak reservasi?</h3>
-                                    <p class="mt-1 text-sm text-slate-600">${escapeHtml(res.facility.name)} · ${formatDate(res.start_time)} ${formatTime(res.start_time)} – ${formatTime(res.end_time)}</p>
-                                    <form method="POST" action="/petugas/reservasi/${res.id}/reject" class="mt-4">
-                                        <input type="hidden" name="_token" value="${document.querySelector('meta[name="csrf-token"]')?.content ?? ''}">
-                                        <div class="mb-3">
-                                            <label class="mb-1 block text-sm font-medium text-slate-700">Alasan penolakan</label>
-                                            <textarea name="reason" rows="3" required minlength="10" maxlength="255" class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 transition focus:border-[#0051d5] focus:outline-none focus:ring-4 focus:ring-[#E2E7FF]" placeholder="Jelaskan alasan penolakan (min. 10 karakter)"></textarea>
+                                <dialog data-ajax-dialog id="reject-${res.id}" class="${dialogShell}" aria-labelledby="reject-${res.id}-title">
+                                    <h3 id="reject-${res.id}-title" class="text-lg font-extrabold tracking-tight text-[#10264a]">Tolak reservasi?</h3>
+                                    <p class="mt-1 text-sm leading-relaxed text-slate-600">${schedule}</p>
+                                    <form method="POST" action="/petugas/reservasi/${res.id}/reject" class="mt-5">
+                                        <input type="hidden" name="_token" value="${csrfToken}">
+                                        <div>
+                                            <label for="reject-reason-${res.id}" class="block text-sm font-semibold text-slate-700">Alasan penolakan</label>
+                                            <textarea id="reject-reason-${res.id}" name="reason" rows="3" required minlength="10" maxlength="255" placeholder="Jelaskan alasan penolakan (min. 10 karakter)" class="landing-input mt-1.5 block w-full rounded-2xl px-4 py-3 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-4 focus:ring-rose-500/15"></textarea>
                                         </div>
                                         <div class="mt-4 flex items-center justify-end gap-2">
-                                            <button type="button" data-close-dialog="reject-${res.id}" class="inline-flex h-10 items-center justify-center rounded-lg border border-[#D6DDF8] bg-white px-4 text-sm font-semibold text-[#00236f] transition-colors hover:bg-[#F2F3FF]">Kembali</button>
-                                            <button type="submit" class="inline-flex h-10 items-center justify-center rounded-lg bg-red-600 px-4 text-sm font-semibold text-white transition-colors hover:bg-red-700">Tolak Reservasi</button>
+                                            <button type="button" data-close-dialog="reject-${res.id}" class="clay-pressable inline-flex h-10 items-center justify-center rounded-full px-5 text-sm font-semibold text-blue-700">Kembali</button>
+                                            <button type="submit" class="clay-button-danger inline-flex h-10 items-center justify-center rounded-full px-5 text-sm font-bold">Tolak Reservasi</button>
                                         </div>
                                     </form>
-                                </dialog>
-                                <dialog data-ajax-dialog id="cancel-${res.id}" class="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl backdrop:bg-slate-950/40">
-                                    <h3 class="text-lg font-semibold text-[#00236f]">Batalkan reservasi?</h3>
-                                    <p class="mt-1 text-sm text-slate-600">${escapeHtml(res.facility.name)} · ${formatDate(res.start_time)} ${formatTime(res.start_time)} – ${formatTime(res.end_time)}</p>
-                                    <form method="POST" action="/petugas/reservasi/${res.id}/cancel" class="mt-4">
-                                        <input type="hidden" name="_token" value="${document.querySelector('meta[name="csrf-token"]')?.content ?? ''}">
-                                        <div class="mb-3">
-                                            <label class="mb-1 block text-sm font-medium text-slate-700">Alasan pembatalan</label>
-                                            <textarea name="cancel_reason" rows="3" required minlength="10" maxlength="255" class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 transition focus:border-[#0051d5] focus:outline-none focus:ring-4 focus:ring-[#E2E7FF]" placeholder="Jelaskan alasan pembatalan (min. 10 karakter)"></textarea>
+                                </dialog>`);
+                        }
+
+                        if (res.status === 'approved') {
+                            dialogs.push(`
+                                <dialog data-ajax-dialog id="cancel-${res.id}" class="${dialogShell}" aria-labelledby="cancel-${res.id}-title">
+                                    <h3 id="cancel-${res.id}-title" class="text-lg font-extrabold tracking-tight text-[#10264a]">Batalkan reservasi?</h3>
+                                    <p class="mt-1 text-sm leading-relaxed text-slate-600">${schedule}</p>
+                                    <form method="POST" action="/petugas/reservasi/${res.id}/cancel" class="mt-5">
+                                        <input type="hidden" name="_token" value="${csrfToken}">
+                                        <div>
+                                            <label for="cancel-reason-${res.id}" class="block text-sm font-semibold text-slate-700">Alasan pembatalan</label>
+                                            <textarea id="cancel-reason-${res.id}" name="cancel_reason" rows="3" required minlength="10" maxlength="255" placeholder="Jelaskan alasan pembatalan (min. 10 karakter)" class="landing-input mt-1.5 block w-full rounded-2xl px-4 py-3 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-4 focus:ring-rose-500/15"></textarea>
                                         </div>
                                         <div class="mt-4 flex items-center justify-end gap-2">
-                                            <button type="button" data-close-dialog="cancel-${res.id}" class="inline-flex h-10 items-center justify-center rounded-lg border border-[#D6DDF8] bg-white px-4 text-sm font-semibold text-[#00236f] transition-colors hover:bg-[#F2F3FF]">Kembali</button>
-                                            <button type="submit" class="inline-flex h-10 items-center justify-center rounded-lg bg-red-600 px-4 text-sm font-semibold text-white transition-colors hover:bg-red-700">Batalkan Reservasi</button>
+                                            <button type="button" data-close-dialog="cancel-${res.id}" class="clay-pressable inline-flex h-10 items-center justify-center rounded-full px-5 text-sm font-semibold text-blue-700">Kembali</button>
+                                            <button type="submit" class="clay-button-danger inline-flex h-10 items-center justify-center rounded-full px-5 text-sm font-bold">Batalkan Reservasi</button>
                                         </div>
                                     </form>
-                                </dialog>`;
-                            document.body.insertAdjacentHTML('beforeend', dialogHtml);
-                        });
-                    }
+                                </dialog>`);
+                        }
+
+                        document.body.insertAdjacentHTML('beforeend', dialogs.join(''));
+                    });
                 }
 
                 if (paginationContainer !== null) {
-                    paginationContainer.style.display = data.pagination.total > 0 ? 'block' : 'none';
+                    paginationContainer.innerHTML = data.pagination_html;
+                    paginationContainer.classList.toggle('hidden', data.pagination.last_page <= 1);
+                }
+                history.pushState({}, '', url);
+
+                const activeTab = params.get('tab');
+
+                if (activeTab !== null) {
+                    setActiveQueueTab(activeTab);
                 }
             })
             .catch((error) => {
+                if (error.name === 'AbortError') return;
                 if (loadingIndicator !== null) loadingIndicator.classList.add('hidden');
                 console.error('Failed to fetch reservations:', error);
             });
     };
 
-    const scheduleDebounce = (fn, delay) => {
-        return () => {
-            clearTimeout(debounceTimer);
-            debounceTimer = setTimeout(fn, delay);
-        };
-    };
+    // Tab dan pagination antrean dimuat lewat AJAX; klik dimodifikasi tetap
+    // membuka tab browser sepertita biasanya.
+    document.addEventListener('click', (event) => {
+        if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) {
+            return;
+        }
 
-    statusSelect.addEventListener('change', scheduleDebounce(fetchReservations, 300));
-    dateInput.addEventListener('change', scheduleDebounce(fetchReservations, 300));
+        const link = event.target.closest('a[data-queue-tab], #pagination-container a[href]');
 
-    if (resetFilterBtn !== null) {
-        resetFilterBtn.addEventListener('click', () => {
-            statusSelect.value = '';
-            dateInput.value = '';
-            fetchReservations();
-        });
-    }
-}
+        if (link === null) {
+            return;
+        }
 
-function getStatusBadge(status) {
-    const badges = {
-        pending: '<span class="inline-flex items-center rounded-full bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-700 ring-1 ring-inset ring-amber-200">Menunggu Persetujuan</span>',
-        approved: '<span class="inline-flex items-center rounded-full bg-green-50 px-2.5 py-1 text-xs font-semibold text-green-700 ring-1 ring-inset ring-green-200">Disetujui</span>',
-        rejected: '<span class="inline-flex items-center rounded-full bg-red-50 px-2.5 py-1 text-xs font-semibold text-red-700 ring-1 ring-inset ring-red-200">Ditolak</span>',
-        cancelled_by_user: '<span class="inline-flex items-center rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-600 ring-1 ring-inset ring-slate-200">Dibatalkan Pengguna</span>',
-        cancelled_by_officer: '<span class="inline-flex items-center rounded-full bg-orange-50 px-2.5 py-1 text-xs font-semibold text-orange-700 ring-1 ring-inset ring-orange-200">Dibatalkan Petugas</span>',
-        cancelled_by_system: '<span class="inline-flex items-center rounded-full bg-violet-50 px-2.5 py-1 text-xs font-semibold text-violet-700 ring-1 ring-inset ring-violet-200">Dibatalkan oleh Sistem</span>',
-        rejected_by_system: '<span class="inline-flex items-center rounded-full bg-violet-50 px-2.5 py-1 text-xs font-semibold text-violet-700 ring-1 ring-inset ring-violet-200">Ditolak oleh Sistem</span>',
-    };
-    return badges[status] || status;
+        const url = link.getAttribute('href');
+
+        if (url === null || new URL(url, window.location.href).origin !== window.location.origin) {
+            return;
+        }
+
+        event.preventDefault();
+        fetchReservations(url);
+    });
 }
 
 function getActionsHtml(res) {
-    let html = '<div class="flex flex-wrap gap-2">';
-    html += `<a href="/petugas/reservasi/${res.id}" class="inline-flex h-8 items-center rounded-lg border border-[#D6DDF8] bg-white px-3 text-xs font-semibold text-[#00236f] transition-colors hover:bg-[#F2F3FF]">Detail</a>`;
+    let html = '<div class="flex flex-wrap items-center justify-end gap-2">';
+
     if (res.status === 'pending') {
-        html += `<button type="button" data-open-dialog="approve-${res.id}" class="inline-flex h-8 items-center rounded-lg bg-[#0051d5] px-3 text-xs font-semibold text-white transition-colors hover:bg-[#00236f]">Setujui</button>`;
-        html += `<button type="button" data-open-dialog="reject-${res.id}" class="inline-flex h-8 items-center rounded-lg border border-red-300 bg-white px-3 text-xs font-semibold text-red-600 transition-colors hover:bg-red-50">Tolak</button>`;
+        html += `<button type="button" data-open-dialog="reject-${res.id}" class="${clayRejectChip}">Tolak</button>`;
+        html += `<button type="button" data-open-dialog="approve-${res.id}" class="${clayApproveChip}">Setujui</button>`;
     }
-    if (['pending', 'approved'].includes(res.status)) {
-        html += `<button type="button" data-open-dialog="cancel-${res.id}" class="inline-flex h-8 items-center rounded-lg bg-red-600 px-3 text-xs font-semibold text-white transition-colors hover:bg-red-700">Batalkan</button>`;
+
+    if (res.status === 'approved') {
+        html += `<button type="button" data-open-dialog="cancel-${res.id}" class="${clayRejectChip}">Batalkan</button>`;
     }
+
+    html += `<a href="/petugas/reservasi/${res.id}" class="${clayDetailChip}">Detail</a>`;
+
     return html + '</div>';
+}
+
+function setActiveQueueTab(tabKey) {
+    document.querySelectorAll('a[data-queue-tab]').forEach((link) => {
+        const active = link.dataset.tabActive.split(' ');
+        const inactive = link.dataset.tabInactive.split(' ');
+        const isActive = link.dataset.queueTab === tabKey;
+
+        // Kedua set kelas dilepas dulu supaya tab yang baru tidak aktif tidak
+        // menyisakan gaya gradient dari tab sebelumnya.
+        link.classList.remove(...active, ...inactive);
+        link.classList.add(...(isActive ? active : inactive));
+
+        if (link.dataset.queueTab === tabKey) {
+            link.setAttribute('aria-current', 'page');
+        } else {
+            link.removeAttribute('aria-current');
+        }
+    });
 }
 
 function escapeHtml(str) {
@@ -373,7 +616,10 @@ if (landingPage !== null) {
     const activateNav = (sectionId) => {
         navLinks.forEach((link) => {
             const isActive = link.dataset.landingNav === sectionId;
-            link.className = isActive ? link.dataset.navActive : link.dataset.navInactive;
+            const className = isActive ? link.dataset.navActive : link.dataset.navInactive;
+            if (link.className !== className) {
+                link.className = className;
+            }
 
             if (isActive) {
                 link.setAttribute('aria-current', 'page');
@@ -390,19 +636,90 @@ if (landingPage !== null) {
         link.addEventListener('click', () => activateNav(link.dataset.landingNav));
     });
 
-    if ('IntersectionObserver' in window) {
-        const navObserver = new IntersectionObserver((entries) => {
-            const visibleSections = entries
-                .filter((entry) => entry.isIntersecting)
-                .sort((first, second) => second.intersectionRatio - first.intersectionRatio);
+    const header = landingPage.querySelector('header');
+    let navFrame = null;
+    const updateNav = () => {
+        navFrame = null;
+        const boundary = header.getBoundingClientRect().bottom + 32;
+        const activeSection = sections.filter((section) => section.getBoundingClientRect().top <= boundary).at(-1);
+        activateNav(activeSection?.id ?? 'top');
+    };
+    const scheduleNavUpdate = () => {
+        if (navFrame === null) {
+            navFrame = requestAnimationFrame(updateNav);
+        }
+    };
+    const updateHeaderOffset = () => {
+        document.documentElement.style.setProperty('--landing-header-offset', `${header.getBoundingClientRect().height + 20}px`);
+        scheduleNavUpdate();
+    };
 
-            if (visibleSections[0] !== undefined) {
-                activateNav(visibleSections[0].target.id);
-            }
-        }, { rootMargin: '-20% 0px -60% 0px', threshold: [0, 0.25, 0.5, 0.75, 1] });
+    window.addEventListener('scroll', scheduleNavUpdate, { passive: true });
+    window.addEventListener('resize', updateHeaderOffset);
+    updateHeaderOffset();
+}
 
-        sections.forEach((section) => navObserver.observe(section));
+// Animasi masuk card untuk seluruh halaman: satu pantulan (spring) untuk card
+// di dalam, dan fade untuk card/panel besar. Klasifikasi card memakai pemilik
+// kelas yang sudah ada; nilai gerakan ada di @keyframes clay-card-spring dan
+// clay-panel-fade. Target hanya dianimasikan saat pertama kali masuk viewport.
+const motionReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+const motionTargets = {
+    // Card besar: panel halaman, container, navigasi, dan holder tabel. Elemen
+    // sticky dikecualikan karena tidak pernah keluar viewport, dan kartu di
+    // dalam juga dikecualikan karena beberapa kartu statistik memakai clay-inset
+    // sekaligus.
+    panel: {
+        selector: ':is(.auth-clay-card, .dashboard-clay-card, .landing-panel, .clay-nav, .clay-inset):not(.sticky):not(:is(.dashboard-clay-stat, .dashboard-clay-list, .landing-card, .landing-step-card, .clay-pressable))',
+        className: 'is-faded',
+    },
+    card: {
+        selector: ':is(.dashboard-clay-stat, .dashboard-clay-list, .landing-card, .landing-step-card, .clay-pressable)',
+        className: 'is-springed',
+    },
+};
+let motionObserver = null;
+
+const motionClassFor = (element) => (
+    element.matches(motionTargets.panel.selector) ? motionTargets.panel.className : motionTargets.card.className
+);
+
+const observeMotionCards = (root) => {
+    if (motionObserver === null || root === null) {
+        return;
     }
+
+    Object.values(motionTargets).forEach((target) => {
+        root.querySelectorAll(target.selector).forEach((element) => {
+            if (element.classList.contains(target.className)) {
+                return;
+            }
+            const position = element.parentElement ? [...element.parentElement.children].indexOf(element) : 0;
+
+            element.classList.add('motion-pending');
+            element.style.setProperty('--motion-delay', `${Math.min(Math.max(position, 0), 2) * 70}ms`);
+            motionObserver.observe(element);
+        });
+    });
+};
+
+if (document.body !== null && 'IntersectionObserver' in window && !motionReducedMotion) {
+    document.body.classList.add('motion-ready');
+
+    motionObserver = new IntersectionObserver((entries) => {
+        entries.forEach((entry) => {
+            const element = entry.target;
+            if (!entry.isIntersecting) {
+                return;
+            }
+
+            element.classList.remove('motion-pending');
+            element.classList.add(motionClassFor(element));
+            motionObserver.unobserve(element);
+        });
+    }, { rootMargin: '0px 0px -5% 0px', threshold: 0 });
+
+    observeMotionCards(document);
 }
 
 document.querySelectorAll('[data-facility-filters]').forEach((form) => {
@@ -459,6 +776,9 @@ if (landingFilterForm !== null) {
                 // render awal, termasuk pesan kosong di dalam container.
                 if (landingGridContainer !== null) {
                     landingGridContainer.innerHTML = data.html;
+                    // Card baru dari server perlu observe ulang supaya animasi
+                    // pop saat scroll tetap jalan untuk hasil pencarian.
+                    observeMotionCards(landingGridContainer);
                 }
             })
             .catch((error) => {

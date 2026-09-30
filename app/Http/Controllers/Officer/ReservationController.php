@@ -11,6 +11,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Blade;
 use Illuminate\View\View;
 use Symfony\Component\HttpKernel\Exception\ConflictHttpException;
 
@@ -62,10 +63,16 @@ class ReservationController extends Controller
             ->orderBy('created_at', 'desc')
             ->orderBy('start_time', 'asc')
             ->orderByRaw($this->statusOrderSql())
-            ->paginate(15);
+            ->paginate(15)
+            ->withQueryString()
+            ->withPath(route('petugas.reservasi.index'));
 
         return response()->json([
-            'reservations' => $reservations->items(),
+            'reservations' => $reservations->getCollection()->map(fn (Reservation $reservation): array => [
+                ...$reservation->toArray(),
+                'status_html' => Blade::render('<x-reservation.status-pill :status="$status" plain />', ['status' => $reservation->status]),
+            ]),
+            'pagination_html' => (string) $reservations->links(),
             'pagination' => [
                 'current_page' => $reservations->currentPage(),
                 'last_page' => $reservations->lastPage(),
@@ -79,17 +86,23 @@ class ReservationController extends Controller
 
     /**
      * Filter yang sah untuk antrean: status dari kosakata Reservation dan tab
-     * rekapitulasi.
+     * rekapitulasi. Tanpa status, antrean dibuka pada tab "menunggu".
      *
      * @return array<string, mixed>
      */
     private function filters(Request $request): array
     {
-        return $request->validate([
+        $filters = $request->validate([
             'status' => ['nullable', 'string', 'in:'.implode(',', Reservation::ORDERED_STATUSES)],
             'date' => ['nullable', 'date'],
             'tab' => ['nullable', 'string', 'in:'.implode(',', array_keys($this->tabs()))],
         ]);
+
+        if (($filters['status'] ?? null) === null) {
+            $filters['tab'] ??= 'menunggu';
+        }
+
+        return $filters;
     }
 
     /**

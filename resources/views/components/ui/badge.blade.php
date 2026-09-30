@@ -1,6 +1,8 @@
 @props([
     'status' => null,
     'dot' => false,
+    'plain' => false,
+    'colored' => false,
 ])
 
 @php
@@ -43,7 +45,13 @@
             'ring' => 'ring-slate-200',
             'dot' => 'bg-slate-400',
         ],
-        'cancelled_by_system', 'rejected_by_system' => [
+        'cancelled_by_system' => [
+            'bg' => 'bg-rose-50',
+            'text' => 'text-rose-700',
+            'ring' => 'ring-rose-200',
+            'dot' => 'bg-rose-500',
+        ],
+        'rejected_by_system' => [
             'bg' => 'bg-violet-50',
             'text' => 'text-violet-700',
             'ring' => 'ring-violet-200',
@@ -59,28 +67,24 @@
 
     $defaultLabel = match ($status) {
         'aktif' => 'Aktif',
-        'approved' => 'Disetujui',
         'selesai' => 'Selesai',
-        'pending' => 'Menunggu Persetujuan',
         'diproses' => 'Sedang Diproses',
         'baru' => 'Baru',
         'perbaikan' => 'Perbaikan',
-        'cancelled_by_officer' => 'Dibatalkan Petugas',
-        'rejected', 'ditolak' => 'Ditolak',
+        'ditolak' => 'Ditolak',
         'nonaktif' => 'Nonaktif',
-        'cancelled_by_user' => 'Dibatalkan Pengguna',
-        'cancelled_by_system' => 'Dibatalkan oleh Sistem',
-        'rejected_by_system' => 'Ditolak oleh Sistem',
-        default => ucfirst(str_replace('_', ' ', (string) $status)),
+        default => \App\Models\Reservation::LABELS[$status] ?? ucfirst(str_replace('_', ' ', (string) $status)),
     };
+
+    $label = $slot->isEmpty() ? $defaultLabel : $slot;
 @endphp
 
-<span
-    {{ $attributes->merge([
-        'class' => "inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ring-inset {$palette['bg']} {$palette['text']} {$palette['ring']}",
-    ]) }}>
-    @if ($dot)
-        <span class="h-1.5 w-1.5 rounded-full {{ $palette['dot'] }}"></span>
-    @endif
-    {{ $slot->isEmpty() ? $defaultLabel : $slot }}
-</span>
+{{-- Plain mengikuti warna induk, kecuali pemanggil meminta warna status. --}}
+@if ($plain)
+    <span {{ $attributes->class([$palette['text'] => $colored]) }}>{{ $label }}</span>
+@else
+    <span
+        {{ $attributes->merge([
+            'class' => "inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ring-inset {$palette['bg']} {$palette['text']} {$palette['ring']}",
+        ]) }}>@if ($dot)<span aria-hidden="true" class="h-1.5 w-1.5 shrink-0 rounded-full {{ $palette['dot'] }}"></span>@endif{{ $label }}</span>
+@endif

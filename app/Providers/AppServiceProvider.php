@@ -6,6 +6,7 @@ use App\Models\User;
 use App\Observers\UserObserver;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
+use Illuminate\Pagination\Paginator;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
 
@@ -25,6 +26,7 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         User::observe(UserObserver::class);
+        Paginator::defaultView('pagination.clay');
 
         // Kuota harian laporan milik ReportService::createReport(): satu hari
         // kalender, satu pesan galat. Limiter di sini hanya menahan lonjakan

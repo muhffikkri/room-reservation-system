@@ -39,7 +39,7 @@
             </div>
         </div>
         <a href="{{ route('fasilitas.jadwal', ['facility' => $facility, 'from' => 'home']) }}"
-                class="landing-button flex h-10 w-full items-center justify-center gap-1.5 rounded-xl border border-blue-200 bg-white/80 text-xs font-semibold text-blue-700 transition-colors hover:bg-blue-50">
+                class="clay-button-white flex h-10 w-full items-center justify-center gap-1.5 rounded-xl text-xs font-semibold text-blue-700">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="h-[18px] w-[18px]" aria-hidden="true">
                 <rect x="3" y="5" width="18" height="16" rx="2"/><path d="M8 3v4m8-4v4M3 10h18"/>
             </svg>

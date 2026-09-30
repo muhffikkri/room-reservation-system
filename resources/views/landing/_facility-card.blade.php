@@ -1,7 +1,6 @@
 <article class="landing-card group flex h-full flex-col overflow-hidden rounded-3xl border border-white/80" data-facility-id="{{ $facility->id }}">
     <div class="relative aspect-[16/9] overflow-hidden bg-[#f2f3ff]">
-        <img src="{{ $facility->display_image_url }}" alt="{{ $facility->name }}" loading="lazy" class="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105">
-        @include('landing._facility-status', ['status' => $facility->status, 'class' => 'absolute right-3 top-3'])
+        <img src="{{ $facility->display_image_url }}" alt="{{ $facility->name }}" loading="lazy" class="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105">        @include('landing._facility-status', ['status' => $facility->status, 'class' => 'absolute right-3 top-3'])
     </div>
     <div class="flex flex-1 flex-col justify-between gap-4 p-4 sm:p-5">
         <div class="space-y-2">
@@ -12,6 +11,6 @@
                  pendek; pemotongan kata punya satu pemilik di model. --}}
             <p class="line-clamp-3 min-h-[3.75rem] text-xs leading-relaxed text-slate-500">{{ $facility->short_description }}</p>
         </div>
-        <a href="{{ route('fasilitas.jadwal', ['facility' => $facility, 'from' => $from ?? 'all']) }}" class="landing-button flex h-10 w-full items-center justify-center gap-2 rounded-xl border border-blue-200 bg-white/80 text-xs font-semibold text-blue-700 hover:bg-blue-50">Lihat Jadwal</a>
+        <a href="{{ route('fasilitas.jadwal', ['facility' => $facility, 'from' => $from ?? 'all']) }}" class="clay-button-white flex h-10 w-full items-center justify-center gap-2 rounded-xl text-xs font-semibold text-blue-700">Lihat Jadwal</a>
     </div>
 </article>

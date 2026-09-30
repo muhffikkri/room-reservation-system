@@ -139,7 +139,7 @@ it('shows the cancellation action at and beyond the one-hour cutoff', function (
     $this->actingAs($owner)
         ->get(route('reservasi.show', $tooLate))
         ->assertDontSee('Batalkan Reservasi')
-        ->assertSee('Pembatalan sudah ditutup');
+        ->assertSee('Pembatalan ditutup karena jadwal mulai kurang dari 1 jam');
 
     $this->actingAs($owner)
         ->get(route('reservasi.show', $atCutoff))

@@ -61,11 +61,11 @@ class Facility extends Model
      * @var array<string, string>
      */
     public const TYPE_FALLBACK_IMAGES = [
-        'ruang_kelas' => 'ruang-kelas.jpg',
-        'aula' => 'aula.jpg',
-        'laboratorium' => 'lab-komputer.jpg',
-        'alat' => 'proyektor.jpg',
-        'lapangan' => 'lapangan-futsal.jpg',
+        'ruang_kelas' => 'ruang-kelas.webp',
+        'aula' => 'aula.webp',
+        'laboratorium' => 'lab-komputer.webp',
+        'alat' => 'proyektor.webp',
+        'lapangan' => 'lapangan-futsal.webp',
     ];
 
     /**
@@ -174,6 +174,6 @@ class Facility extends Model
             return $this->photo_url;
         }
 
-        return asset('images/'.(self::TYPE_FALLBACK_IMAGES[$this->type] ?? 'aula.jpg'));
+        return asset('images/'.(self::TYPE_FALLBACK_IMAGES[$this->type] ?? self::TYPE_FALLBACK_IMAGES['aula']));
     }
 }
