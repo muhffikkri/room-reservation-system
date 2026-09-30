@@ -704,38 +704,71 @@ if (landingPage !== null) {
     }
 }
 
-// Animasi pop & bounce (spring) saat kartu landing masuk viewport. Nilai
-// gerakan ada di @keyframes landing-card-spring; di sini hanya observe.
-const springReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-let springObserver = null;
+// Animasi masuk card untuk seluruh halaman: satu pantulan (spring) untuk card
+// di dalam, dan fade untuk card/panel besar. Klasifikasi card memakai pemilik
+// kelas yang sudah ada; nilai gerakan ada di @keyframes clay-card-spring dan
+// clay-panel-fade. Setiap kali target masuk viewport kelas dipasang ulang, jadi
+// animasi diputar ulang setiap pengguna scroll, bukan hanya sekali.
+const motionReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+const motionTargets = {
+    // Card besar: panel halaman, container, navigasi, dan holder tabel. Elemen
+    // sticky dikecualikan karena tidak pernah keluar viewport, dan kartu di
+    // dalam juga dikecualikan karena beberapa kartu statistik memakai clay-inset
+    // sekaligus.
+    panel: {
+        selector: ':is(.auth-clay-card, .dashboard-clay-card, .landing-panel, .clay-nav, .clay-inset):not(.sticky):not(:is(.dashboard-clay-stat, .dashboard-clay-list, .landing-card, .landing-step-card, .clay-pressable))',
+        className: 'is-faded',
+    },
+    card: {
+        selector: ':is(.dashboard-clay-stat, .dashboard-clay-list, .landing-card, .landing-step-card, .clay-pressable)',
+        className: 'is-springed',
+    },
+};
+let motionObserver = null;
 
-const observeSpringCards = (root) => {
-    if (springObserver === null || root === null) {
+const motionClassFor = (element) => (
+    element.matches(motionTargets.panel.selector) ? motionTargets.panel.className : motionTargets.card.className
+);
+
+const observeMotionCards = (root) => {
+    if (motionObserver === null || root === null) {
         return;
     }
 
-    root.querySelectorAll('[data-spring-card]').forEach((card) => springObserver.observe(card));
+    Object.values(motionTargets).forEach((target) => {
+        root.querySelectorAll(target.selector).forEach((element) => {
+            const position = element.parentElement ? [...element.parentElement.children].indexOf(element) : 0;
+
+            element.classList.add('motion-pending');
+            element.style.setProperty('--motion-delay', `${Math.min(Math.max(position, 0), 2) * 70}ms`);
+            motionObserver.observe(element);
+        });
+    });
 };
 
-if (landingPage !== null && 'IntersectionObserver' in window && !springReducedMotion) {
-    landingPage.classList.add('landing-spring-ready');
+if (document.body !== null && 'IntersectionObserver' in window && !motionReducedMotion) {
+    document.body.classList.add('motion-ready');
 
-    springObserver = new IntersectionObserver((entries) => {
+    motionObserver = new IntersectionObserver((entries) => {
         entries.forEach((entry) => {
+            const element = entry.target;
+            const motionClass = motionClassFor(element);
+
+            element.classList.remove(motionClass, 'motion-pending');
+
             if (!entry.isIntersecting) {
+                element.classList.add('motion-pending');
                 return;
             }
 
-            const card = entry.target;
-            const position = card.parentElement ? [...card.parentElement.children].indexOf(card) : 0;
-
-            card.style.setProperty('--spring-delay', `${Math.min(Math.max(position, 0), 2) * 70}ms`);
-            card.classList.add('is-springed');
-            springObserver.unobserve(card);
+            // Paksa reflow supaya animasi diputar ulang dari frame awal setiap
+            // kali target masuk viewport lagi.
+            void element.offsetWidth;
+            element.classList.add(motionClass);
         });
-    }, { rootMargin: '0px 0px -6% 0px', threshold: 0.12 });
+    }, { rootMargin: '0px 0px -5% 0px', threshold: 0.12 });
 
-    observeSpringCards(landingPage);
+    observeMotionCards(document);
 }
 
 document.querySelectorAll('[data-facility-filters]').forEach((form) => {
@@ -842,9 +875,8 @@ if (landingFilterForm !== null) {
                                 </a>
                             </div>`;
                         landingGridContainer.appendChild(card);
-                        card.dataset.springCard = '';
-                        observeSpringCards(card);
                     });
+                    observeMotionCards(landingGridContainer);
                 } else if (landingGridContainer !== null) {
                     landingGridContainer.innerHTML = '<div class="col-span-full rounded-xl bg-white p-10 text-center shadow-sm"><p class="text-base font-medium text-[#0F172A]">Fasilitas tidak ditemukan</p><p class="mt-1 text-sm text-[#475569]">Coba ubah kata kunci atau filter pencarian Anda.</p><a href="/" class="mt-4 inline-block rounded-lg bg-[#00236f] px-4 py-2 text-sm font-medium text-white hover:bg-[#001a52]">Reset Filter</a></div>';
                 }

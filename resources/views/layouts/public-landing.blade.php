@@ -11,18 +11,18 @@
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
 <body class="landing-page min-h-screen py-5 font-sans text-slate-800 antialiased">
-<div class="mx-auto w-full max-w-7xl space-y-5 px-4 sm:px-6">
-    <header class="landing-panel sticky top-3 z-50 flex items-center justify-between gap-4 rounded-full px-4 py-3 shadow-[8px_8px_20px_rgba(166,195,235,0.35),-8px_-8px_20px_rgba(255,255,255,0.95)] sm:px-6">
-        <a href="{{ route('home') }}" class="flex items-center gap-3 rounded-lg" aria-label="Kembali ke beranda">
-            <img src="{{ asset('images/reksa-logo.webp') }}" alt="REKSA" class="h-11 w-11 rounded-xl object-contain">
-            <span class="flex flex-col"><span class="text-sm font-extrabold tracking-wide text-slate-900 sm:text-base">REKSA</span><span class="hidden text-[10px] text-slate-600 sm:inline">Reservasi dan Kerusakan Sarana Akademik</span></span>
+<div class="mx-auto w-full max-w-7xl space-y-5 px-4 sm:px-6 lg:px-8">
+    <header class="clay-nav sticky top-3 z-50 flex min-h-18 items-center justify-between gap-3 rounded-[2rem] px-4 sm:gap-4 sm:rounded-full sm:px-6">
+        <a href="{{ route('home') }}" class="flex shrink-0 items-center gap-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0051d5] focus:ring-offset-2" aria-label="REKSA, kembali ke halaman utama">
+            <img src="{{ asset('images/reksa-logo.webp') }}" alt="" class="h-10 w-10 rounded-xl object-contain">
+            <span class="flex flex-col"><span class="text-sm font-extrabold tracking-wide text-slate-900 sm:text-base">REKSA</span><span class="hidden text-[10px] text-slate-600 lg:inline">Reservasi dan Kerusakan Sarana Akademik</span></span>
         </a>
-        <div class="flex items-center gap-2">
-            <a href="{{ route('home') }}" class="clay-button-white rounded-full px-4 py-2.5 text-xs font-semibold text-blue-700 sm:text-sm">Beranda</a>
+        <div class="flex shrink-0 items-center gap-3">
+            <a href="{{ route('home') }}" class="clay-button-white clay-nav-action rounded-full px-3.5 text-sm font-semibold text-blue-700">Beranda</a>
             @auth
-                <a href="{{ route('dashboard') }}" class="landing-button rounded-full bg-gradient-to-r from-blue-600 to-blue-500 px-4 py-2.5 text-xs font-semibold text-white sm:text-sm">Dashboard</a>
+                <a href="{{ route('dashboard') }}" class="landing-button clay-nav-action rounded-full bg-gradient-to-r from-blue-600 to-blue-500 px-3.5 text-sm font-semibold text-white">Dashboard</a>
             @else
-                <a href="{{ route('login') }}" class="landing-button rounded-full bg-gradient-to-r from-blue-600 to-blue-500 px-4 py-2.5 text-xs font-semibold text-white sm:text-sm">Masuk</a>
+                <a href="{{ route('login') }}" class="landing-button clay-nav-action rounded-full bg-gradient-to-r from-blue-600 to-blue-500 px-3.5 text-sm font-semibold text-white">Masuk</a>
             @endauth
         </div>
     </header>

@@ -6,8 +6,8 @@
         'ruang_kelas' => asset('images/ruang-kelas.webp'),
         'alat' => asset('images/proyektor.webp'),
     ];
-    $navActiveClass = 'landing-button rounded-full bg-blue-600 px-5 py-2 text-sm font-semibold text-white shadow-md transition-all';
-    $navInactiveClass = 'landing-button landing-nav-muted rounded-full px-5 py-2 text-sm font-medium transition-colors';
+    $navActiveClass = 'landing-button clay-nav-item rounded-full bg-blue-600 text-sm font-semibold text-white shadow-md transition-all';
+    $navInactiveClass = 'landing-button landing-nav-muted clay-nav-item rounded-full text-sm font-medium transition-colors';
 @endphp
 
 <!DOCTYPE html>
@@ -28,31 +28,40 @@
     Lewati ke konten utama
 </a>
 
-<div class="mx-auto w-full max-w-7xl space-y-5 px-4 sm:px-6">
-<header class="landing-panel sticky top-3 z-50 flex items-center justify-between gap-4 rounded-full px-4 py-3 shadow-[8px_8px_20px_rgba(166,195,235,0.35),-8px_-8px_20px_rgba(255,255,255,0.95)] sm:px-6">
-    <div class="flex min-w-0 flex-1 items-center justify-between gap-3 sm:gap-6">
+<div class="mx-auto w-full max-w-7xl space-y-5 px-4 sm:px-6 lg:px-8">
+<header class="clay-nav sticky top-3 z-50 rounded-[2rem] px-4 sm:rounded-full sm:px-6">
+    <div class="flex min-h-18 items-center gap-3 sm:gap-4">
         <a href="#top" data-landing-nav="top" class="flex shrink-0 items-center gap-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0051d5] focus:ring-offset-2" aria-label="Kembali ke Beranda">
-            <img src="{{ asset('images/reksa-logo.webp') }}" alt="REKSA" class="h-11 w-11 shrink-0 rounded-xl object-contain" fetchpriority="high">
+            <img src="{{ asset('images/reksa-logo.webp') }}" alt="REKSA" class="h-10 w-10 shrink-0 rounded-xl object-contain" fetchpriority="high">
             <span class="flex min-w-0 flex-col">
                 <span class="text-sm font-extrabold tracking-wide text-slate-900 sm:text-base">REKSA</span>
-                <span class="hidden text-[10px] leading-tight text-slate-600 sm:inline">Reservasi dan Kerusakan Sarana Akademik</span>
+                <span class="hidden text-[10px] text-slate-600 lg:inline">Reservasi dan Kerusakan Sarana Akademik</span>
             </span>
         </a>
-        <nav class="hidden items-center rounded-full border border-blue-100/60 bg-slate-100/70 p-1.5 shadow-inner md:flex" aria-label="Navigasi halaman">
-            <a href="#top" data-landing-nav="top" data-nav-active="{{ $navActiveClass }}" data-nav-inactive="{{ $navInactiveClass }}" class="{{ $navActiveClass }}" aria-current="page">Beranda</a>
-            <a href="#panduan" data-landing-nav="panduan" data-nav-active="{{ $navActiveClass }}" data-nav-inactive="{{ $navInactiveClass }}" class="{{ $navInactiveClass }}">Panduan</a>
-            <a href="#fasilitas" data-landing-nav="fasilitas" data-nav-active="{{ $navActiveClass }}" data-nav-inactive="{{ $navInactiveClass }}" class="{{ $navInactiveClass }}">Fasilitas</a>
-        </nav>
-        <div class="flex shrink-0 items-center gap-1 sm:gap-2">
+        <div class="flex min-w-0 flex-1 justify-center">
+            <nav class="clay-nav-group hidden max-w-full items-center gap-1 rounded-full lg:flex" aria-label="Navigasi halaman">
+                <a href="#top" data-landing-nav="top" data-nav-active="{{ $navActiveClass }}" data-nav-inactive="{{ $navInactiveClass }}" class="{{ $navActiveClass }}" aria-current="page">Beranda</a>
+                <a href="#panduan" data-landing-nav="panduan" data-nav-active="{{ $navActiveClass }}" data-nav-inactive="{{ $navInactiveClass }}" class="{{ $navInactiveClass }}">Panduan</a>
+                <a href="#fasilitas" data-landing-nav="fasilitas" data-nav-active="{{ $navActiveClass }}" data-nav-inactive="{{ $navInactiveClass }}" class="{{ $navInactiveClass }}">Fasilitas</a>
+            </nav>
+        </div>
+        <div class="flex shrink-0 items-center gap-2 sm:gap-3">
             @auth
-                <a href="{{ route('dashboard') }}" class="landing-button rounded-full bg-gradient-to-r from-blue-600 to-blue-500 px-4 py-2.5 text-xs font-semibold text-white shadow-[0_4px_14px_rgba(37,99,235,0.25)] transition hover:from-blue-700 hover:to-blue-600 sm:text-sm">Dashboard</a>
+                <a href="{{ route('dashboard') }}" class="landing-button clay-nav-action rounded-full bg-gradient-to-r from-blue-600 to-blue-500 px-3.5 text-sm font-semibold text-white shadow-[0_4px_14px_rgba(37,99,235,0.25)] transition hover:from-blue-700 hover:to-blue-600">Dashboard</a>
             @else
-                <a href="{{ route('login') }}" class="landing-button rounded-full px-3 py-2 text-xs font-medium text-slate-700 transition hover:bg-white/60 hover:text-blue-600 sm:px-5 sm:text-sm">Masuk</a>
-                <a href="{{ route('register') }}" class="landing-button inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-blue-600 to-blue-500 px-3 py-2.5 text-xs font-semibold text-white shadow-[0_4px_14px_rgba(37,99,235,0.25)] transition hover:from-blue-700 hover:to-blue-600 sm:px-5 sm:text-sm">
+                <a href="{{ route('login') }}" class="clay-button-white clay-nav-action rounded-full px-3.5 text-sm font-semibold text-blue-700">Masuk</a>
+                <a href="{{ route('register') }}" class="landing-button clay-nav-action rounded-full bg-gradient-to-r from-blue-600 to-blue-500 px-3.5 text-sm font-semibold text-white shadow-[0_4px_14px_rgba(37,99,235,0.25)] transition hover:from-blue-700 hover:to-blue-600">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="hidden h-4 w-4 sm:block" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
                     Daftar Akun
                 </a>
             @endauth
+        </div>
+    </div>
+    <div class="border-t border-blue-100/80 py-3 lg:hidden">
+        <div class="app-mobile-nav-links text-sm font-medium">
+            <a href="#top" data-landing-nav="top" data-nav-active="{{ $navActiveClass }}" data-nav-inactive="{{ $navInactiveClass }}" class="{{ $navActiveClass }}" aria-current="page">Beranda</a>
+            <a href="#panduan" data-landing-nav="panduan" data-nav-active="{{ $navActiveClass }}" data-nav-inactive="{{ $navInactiveClass }}" class="{{ $navInactiveClass }}">Panduan</a>
+            <a href="#fasilitas" data-landing-nav="fasilitas" data-nav-active="{{ $navActiveClass }}" data-nav-inactive="{{ $navInactiveClass }}" class="{{ $navInactiveClass }}">Fasilitas</a>
         </div>
     </div>
 </header>
@@ -91,7 +100,7 @@
                 <p class="text-xs text-[#475569]">Ikuti panduan peminjaman fasilitas atau pelaporan kerusakan.</p>
             </div>
             <div class="grid grid-cols-1 items-center gap-3 md:grid-cols-3 sm:gap-5">
-                <div data-spring-card class="landing-step-card relative flex items-start gap-3 rounded-2xl border border-white bg-white/80 p-4 shadow-sm sm:gap-4 sm:p-5">
+                <div class="landing-step-card relative flex items-start gap-3 rounded-2xl border border-white bg-white/80 p-4 shadow-sm sm:gap-4 sm:p-5">
                     <div class="flex shrink-0 items-center gap-1.5">
                     <div class="flex h-8 w-8 items-center justify-center rounded-full bg-blue-600 text-sm font-bold text-white shadow-sm">1</div>
                     </div>
@@ -100,7 +109,7 @@
                     <p class="mt-1 text-xs leading-relaxed text-[#475569]">Cari fasilitas lalu cek slot waktu yang tersedia pada pratinjau jadwal.</p>
                     </div>
                 </div>
-                <div data-spring-card class="landing-step-card relative flex items-start gap-3 rounded-2xl border border-white bg-white/80 p-4 shadow-sm sm:gap-4 sm:p-5">
+                <div class="landing-step-card relative flex items-start gap-3 rounded-2xl border border-white bg-white/80 p-4 shadow-sm sm:gap-4 sm:p-5">
                     <div class="flex shrink-0 items-center gap-1.5">
                     <div class="flex h-8 w-8 items-center justify-center rounded-full bg-blue-600 text-sm font-bold text-white shadow-sm">2</div>
                     </div>
@@ -109,7 +118,7 @@
                     <p class="mt-1 text-xs leading-relaxed text-[#475569]">Login dan isi tujuan penggunaan; permohonan masuk antrian persetujuan.</p>
                     </div>
                 </div>
-                <div data-spring-card class="landing-step-card flex items-start gap-3 rounded-2xl border border-white bg-white/80 p-4 shadow-sm sm:gap-4 sm:p-5">
+                <div class="landing-step-card flex items-start gap-3 rounded-2xl border border-white bg-white/80 p-4 shadow-sm sm:gap-4 sm:p-5">
                     <div class="flex shrink-0 items-center gap-1.5">
                     <div class="flex h-8 w-8 items-center justify-center rounded-full bg-blue-600 text-sm font-bold text-white shadow-sm">3</div>
                     </div>
@@ -123,15 +132,15 @@
                 <h3 class="text-base font-bold text-slate-900">Alur Pelaporan Fasilitas Rusak</h3>
                 <p class="text-xs text-[#475569]">Bantu kampus menangani kerusakan fasilitas dengan cepat.</p>
                 <div class="mt-4 grid grid-cols-1 gap-3 md:grid-cols-3 sm:gap-5">
-                    <div data-spring-card class="landing-step-card flex items-start gap-3 rounded-2xl border border-white bg-white/80 p-4 shadow-sm sm:p-5">
+                    <div class="landing-step-card flex items-start gap-3 rounded-2xl border border-white bg-white/80 p-4 shadow-sm sm:p-5">
                         <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-blue-600 text-sm font-bold text-white shadow-sm">1</span>
                         <div><h4 class="text-sm font-semibold text-[#0F172A]">Pilih Fasilitas</h4><p class="mt-1 text-xs leading-relaxed text-[#475569]">Temukan fasilitas kampus yang mengalami kerusakan.</p></div>
                     </div>
-                    <div data-spring-card class="landing-step-card flex items-start gap-3 rounded-2xl border border-white bg-white/80 p-4 shadow-sm sm:p-5">
+                    <div class="landing-step-card flex items-start gap-3 rounded-2xl border border-white bg-white/80 p-4 shadow-sm sm:p-5">
                         <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-blue-600 text-sm font-bold text-white shadow-sm">2</span>
                         <div><h4 class="text-sm font-semibold text-[#0F172A]">Kirim Laporan</h4><p class="mt-1 text-xs leading-relaxed text-[#475569]">Login, jelaskan kerusakan, dan sertakan foto jika ada.</p></div>
                     </div>
-                    <div data-spring-card class="landing-step-card flex items-start gap-3 rounded-2xl border border-white bg-white/80 p-4 shadow-sm sm:p-5">
+                    <div class="landing-step-card flex items-start gap-3 rounded-2xl border border-white bg-white/80 p-4 shadow-sm sm:p-5">
                         <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-blue-600 text-sm font-bold text-white shadow-sm">3</span>
                         <div><h4 class="text-sm font-semibold text-[#0F172A]">Pantau Tindak Lanjut</h4><p class="mt-1 text-xs leading-relaxed text-[#475569]">Petugas akan memeriksa laporan dan memperbarui status penanganannya.</p></div>
                     </div>
@@ -225,7 +234,7 @@
 
             <div id="landing-grid-container" class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
                 @foreach ($facilities as $facility)
-                    <div class="landing-card group facility-card flex flex-col overflow-hidden rounded-3xl border border-white/80 bg-white shadow-[0_10px_30px_-5px_rgba(186,215,248,0.45),0_0_0_1px_rgba(255,255,255,0.8)_inset] transition-all hover:-translate-y-0.5 hover:shadow-lg" data-spring-card data-facility-id="{{ $facility->id }}">
+                    <div class="landing-card group facility-card flex flex-col overflow-hidden rounded-3xl border border-white/80 bg-white shadow-[0_10px_30px_-5px_rgba(186,215,248,0.45),0_0_0_1px_rgba(255,255,255,0.8)_inset] transition-all hover:-translate-y-0.5 hover:shadow-lg" data-facility-id="{{ $facility->id }}">
                         <div class="relative aspect-[16/9] w-full overflow-hidden bg-[#f2f3ff]">
                             @if ($facility->photo)
                                 <img src="{{ $facility->photo_url }}" alt="{{ $facility->name }}" loading="lazy"

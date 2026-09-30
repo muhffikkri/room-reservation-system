@@ -14,11 +14,11 @@
     <a href="#content" class="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-[100] focus:rounded-lg focus:bg-[#00236f] focus:px-4 focus:py-2 focus:text-sm focus:font-semibold focus:text-white">Lewati ke konten utama</a>
     <main id="content" class="landing-panel relative mx-auto min-h-[calc(100vh-2rem)] w-full max-w-7xl overflow-hidden rounded-[2rem] p-5 shadow-[0_24px_60px_-20px_rgba(54,111,194,0.24),0_0_0_1px_rgba(255,255,255,0.8)_inset] sm:p-7 lg:min-h-[calc(100vh-3rem)] lg:p-9 xl:p-11">
         <header class="relative z-10 flex flex-wrap items-center justify-between gap-4">
-            <a href="{{ route('home') }}" class="flex items-center gap-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2" aria-label="REKSA, kembali ke beranda">
-                <img src="{{ asset('images/reksa-logo.webp') }}" alt="" class="h-11 w-11 rounded-xl object-contain shadow-sm">
-                <span class="flex flex-col"><span class="text-base font-extrabold tracking-wide text-slate-900">REKSA</span><span class="text-[10px] leading-tight text-slate-600">Reservasi dan Kerusakan Sarana Akademik</span></span>
+            <a href="{{ route('home') }}" class="flex shrink-0 items-center gap-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2" aria-label="REKSA, kembali ke beranda">
+                <img src="{{ asset('images/reksa-logo.webp') }}" alt="" class="h-10 w-10 rounded-xl object-contain">
+                <span class="flex flex-col"><span class="text-sm font-extrabold tracking-wide text-slate-900 sm:text-base">REKSA</span><span class="hidden text-[10px] text-slate-600 lg:inline">Reservasi dan Kerusakan Sarana Akademik</span></span>
             </a>
-            <a href="{{ route('home') }}" class="clay-button-white inline-flex items-center gap-2 rounded-full px-4 py-2.5 text-xs font-semibold text-blue-700 sm:text-sm sm:text-sm">
+            <a href="{{ route('home') }}" class="clay-button-white clay-nav-action gap-2 rounded-full px-3.5 text-sm font-semibold text-blue-700">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="h-4 w-4" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="m10 19-7-7 7-7M3 12h18"/></svg>
                 Kembali ke Beranda
             </a>

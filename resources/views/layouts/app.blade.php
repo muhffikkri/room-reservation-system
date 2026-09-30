@@ -17,34 +17,36 @@
         Lewati ke konten utama
     </a>
     <nav class="sticky top-3 z-50 mx-auto max-w-7xl px-4 sm:px-6 lg:px-8" aria-label="Navigasi utama">
-        <div class="landing-panel mx-auto rounded-[2rem] px-4 shadow-[8px_8px_20px_rgba(166,195,235,0.35),-8px_-8px_20px_rgba(255,255,255,0.95)] sm:rounded-full sm:px-6">
-            <div class="flex min-h-18 items-center justify-between gap-4">
+        <div class="clay-nav mx-auto rounded-[2rem] px-4 sm:rounded-full sm:px-6">
+            <div class="flex min-h-18 items-center gap-3 sm:gap-4">
                 <a href="{{ url('/') }}" class="flex shrink-0 items-center gap-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0051d5] focus:ring-offset-2" aria-label="REKSA, kembali ke halaman utama">
                     <img src="{{ asset('images/reksa-logo.webp') }}" alt="" class="h-10 w-10 rounded-xl object-contain">
-                    <span class="flex flex-col"><span class="text-sm font-extrabold tracking-wide text-slate-900 sm:text-base">REKSA</span><span class="hidden text-[10px] text-slate-600 xl:inline">Reservasi dan Kerusakan Sarana Akademik</span></span>
+                    <span class="flex flex-col"><span class="text-sm font-extrabold tracking-wide text-slate-900 sm:text-base">REKSA</span><span class="hidden text-[10px] text-slate-600 lg:inline">Reservasi dan Kerusakan Sarana Akademik</span></span>
                 </a>
 
                 @auth
                     @php($role = auth()->user()->role)
-                    <div class="hidden items-center gap-1 rounded-full border border-blue-100/60 bg-slate-100/70 p-1.5 shadow-inner lg:flex">
+                    <div class="flex min-w-0 flex-1 justify-center">
+                        <nav class="clay-nav-group hidden max-w-full items-center gap-1 rounded-full lg:flex" aria-label="Menu {{ ['pengguna' => 'pengguna', 'petugas' => 'petugas', 'admin' => 'administrasi'][$role] ?? 'aplikasi' }}">
                         @if ($role === 'pengguna')
-                            <a href="{{ route('dashboard') }}" @class(['landing-button rounded-full px-5 py-2 text-sm transition-all', 'bg-blue-600 font-semibold text-white shadow-md' => request()->routeIs('dashboard'), 'landing-nav-muted font-medium' => ! request()->routeIs('dashboard')])>Ringkasan</a>
-                            <a href="{{ route('reservasi.index') }}" @class(['landing-button rounded-full px-5 py-2 text-sm transition-all', 'bg-blue-600 font-semibold text-white shadow-md' => request()->routeIs('reservasi.*'), 'landing-nav-muted font-medium' => ! request()->routeIs('reservasi.*')])>Reservasi Saya</a>
-                            <a href="{{ route('laporan.index') }}" @class(['landing-button rounded-full px-5 py-2 text-sm transition-all', 'bg-blue-600 font-semibold text-white shadow-md' => request()->routeIs('laporan.*'), 'landing-nav-muted font-medium' => ! request()->routeIs('laporan.*')])>Laporan Kerusakan</a>
+                            <a href="{{ route('dashboard') }}" @class(['landing-button clay-nav-item rounded-full text-sm transition-all', 'bg-blue-600 font-semibold text-white shadow-md' => request()->routeIs('dashboard'), 'landing-nav-muted font-medium' => ! request()->routeIs('dashboard')])>Ringkasan</a>
+                            <a href="{{ route('reservasi.index') }}" @class(['landing-button clay-nav-item rounded-full text-sm transition-all', 'bg-blue-600 font-semibold text-white shadow-md' => request()->routeIs('reservasi.*'), 'landing-nav-muted font-medium' => ! request()->routeIs('reservasi.*')])><span>Reservasi<br>Saya</span></a>
+                            <a href="{{ route('laporan.index') }}" @class(['landing-button clay-nav-item rounded-full text-sm transition-all', 'bg-blue-600 font-semibold text-white shadow-md' => request()->routeIs('laporan.*'), 'landing-nav-muted font-medium' => ! request()->routeIs('laporan.*')])><span>Laporan<br>Kerusakan</span></a>
                         @elseif ($role === 'petugas')
-                            <a href="{{ route('petugas.dashboard') }}" @class(['landing-button rounded-full px-5 py-2 text-sm transition-all', 'bg-blue-600 font-semibold text-white shadow-md' => request()->routeIs('petugas.dashboard'), 'landing-nav-muted font-medium' => ! request()->routeIs('petugas.dashboard')])>Operasional</a>
-                            <a href="{{ route('petugas.reservasi.index') }}" @class(['landing-button rounded-full px-5 py-2 text-sm transition-all', 'bg-blue-600 font-semibold text-white shadow-md' => request()->routeIs('petugas.reservasi.*'), 'landing-nav-muted font-medium' => ! request()->routeIs('petugas.reservasi.*')])>Antrian Reservasi</a>
-                            <a href="{{ route('petugas.laporan.index') }}" @class(['landing-button rounded-full px-5 py-2 text-sm transition-all', 'bg-blue-600 font-semibold text-white shadow-md' => request()->routeIs('petugas.laporan.*'), 'landing-nav-muted font-medium' => ! request()->routeIs('petugas.laporan.*')])>Laporan</a>
+                            <a href="{{ route('petugas.dashboard') }}" @class(['landing-button clay-nav-item rounded-full text-sm transition-all', 'bg-blue-600 font-semibold text-white shadow-md' => request()->routeIs('petugas.dashboard'), 'landing-nav-muted font-medium' => ! request()->routeIs('petugas.dashboard')])>Operasional</a>
+                            <a href="{{ route('petugas.reservasi.index') }}" @class(['landing-button clay-nav-item rounded-full text-sm transition-all', 'bg-blue-600 font-semibold text-white shadow-md' => request()->routeIs('petugas.reservasi.*'), 'landing-nav-muted font-medium' => ! request()->routeIs('petugas.reservasi.*')])><span>Antrian<br>Reservasi</span></a>
+                            <a href="{{ route('petugas.laporan.index') }}" @class(['landing-button clay-nav-item rounded-full text-sm transition-all', 'bg-blue-600 font-semibold text-white shadow-md' => request()->routeIs('petugas.laporan.*'), 'landing-nav-muted font-medium' => ! request()->routeIs('petugas.laporan.*')])>Laporan</a>
                         @else
-                            <a href="{{ route('admin.dashboard') }}" @class(['landing-button rounded-full px-5 py-2 text-sm transition-all', 'bg-blue-600 font-semibold text-white shadow-md' => request()->routeIs('admin.dashboard'), 'landing-nav-muted font-medium' => ! request()->routeIs('admin.dashboard')])>Administrasi</a>
-                            <a href="{{ route('admin.pengguna.verifikasi') }}" @class(['landing-button rounded-full px-5 py-2 text-sm transition-all', 'bg-blue-600 font-semibold text-white shadow-md' => request()->routeIs('admin.pengguna.verifikasi'), 'landing-nav-muted font-medium' => ! request()->routeIs('admin.pengguna.verifikasi')])>Verifikasi Akun</a>
-                            <a href="{{ route('admin.fasilitas.index') }}" @class(['landing-button rounded-full px-5 py-2 text-sm transition-all', 'bg-blue-600 font-semibold text-white shadow-md' => request()->routeIs('admin.fasilitas.*'), 'landing-nav-muted font-medium' => ! request()->routeIs('admin.fasilitas.*')])>Fasilitas</a>
-                            <a href="{{ route('admin.rekap.occupancy') }}" @class(['landing-button rounded-full px-5 py-2 text-sm transition-all', 'bg-blue-600 font-semibold text-white shadow-md' => request()->routeIs('admin.rekap.occupancy*'), 'landing-nav-muted font-medium' => ! request()->routeIs('admin.rekap.occupancy*')])>Rekap Okupansi</a>
-                            <a href="{{ route('admin.rekap.damage') }}" @class(['landing-button rounded-full px-5 py-2 text-sm transition-all', 'bg-blue-600 font-semibold text-white shadow-md' => request()->routeIs('admin.rekap.damage*'), 'landing-nav-muted font-medium' => ! request()->routeIs('admin.rekap.damage*')])>Rekap Kerusakan</a>
+                            <a href="{{ route('admin.dashboard') }}" @class(['landing-button clay-nav-item rounded-full text-sm transition-all', 'bg-blue-600 font-semibold text-white shadow-md' => request()->routeIs('admin.dashboard'), 'landing-nav-muted font-medium' => ! request()->routeIs('admin.dashboard')])>Administrasi</a>
+                            <a href="{{ route('admin.pengguna.verifikasi') }}" @class(['landing-button clay-nav-item rounded-full text-sm transition-all', 'bg-blue-600 font-semibold text-white shadow-md' => request()->routeIs('admin.pengguna.verifikasi'), 'landing-nav-muted font-medium' => ! request()->routeIs('admin.pengguna.verifikasi')])><span>Verifikasi<br>Akun</span></a>
+                            <a href="{{ route('admin.fasilitas.index') }}" @class(['landing-button clay-nav-item rounded-full text-sm transition-all', 'bg-blue-600 font-semibold text-white shadow-md' => request()->routeIs('admin.fasilitas.*'), 'landing-nav-muted font-medium' => ! request()->routeIs('admin.fasilitas.*')])>Fasilitas</a>
+                            <a href="{{ route('admin.rekap.occupancy') }}" @class(['landing-button clay-nav-item rounded-full text-sm transition-all', 'bg-blue-600 font-semibold text-white shadow-md' => request()->routeIs('admin.rekap.occupancy*'), 'landing-nav-muted font-medium' => ! request()->routeIs('admin.rekap.occupancy*')])><span>Rekap<br>Okupansi</span></a>
+                            <a href="{{ route('admin.rekap.damage') }}" @class(['landing-button clay-nav-item rounded-full text-sm transition-all', 'bg-blue-600 font-semibold text-white shadow-md' => request()->routeIs('admin.rekap.damage*'), 'landing-nav-muted font-medium' => ! request()->routeIs('admin.rekap.damage*')])><span>Rekap<br>Kerusakan</span></a>
                         @endif
+                        </nav>
                     </div>
 
-                    <div class="flex items-center gap-3 sm:gap-4">
+                    <div class="flex shrink-0 items-center gap-3 sm:gap-4">
                         @php($unreadNotifications = auth()->user()->unreadNotifications()->count())
                         <div class="relative">
                         <button type="button" data-notification-toggle aria-expanded="false" aria-controls="notification-panel"
@@ -86,12 +88,12 @@
                             </div>
                         </div>
                         <span class="flex min-w-0 items-center gap-2 sm:gap-2.5">
-                            <img src="{{ asset('images/reksa-mascot.webp') }}" alt="" class="hidden h-9 w-9 shrink-0 rounded-full border border-white bg-blue-50 object-contain shadow-[3px_3px_8px_rgba(135,166,207,0.2),-2px_-2px_6px_rgba(255,255,255,0.9)] sm:inline">
+                            <img src="{{ asset('images/avatar.webp') }}" alt="" class="hidden h-9 w-9 shrink-0 rounded-full border border-white bg-blue-50 object-cover shadow-[3px_3px_8px_rgba(135,166,207,0.2),-2px_-2px_6px_rgba(255,255,255,0.9)] sm:inline">
                             <span class="hidden max-w-36 truncate text-sm font-semibold text-slate-700 sm:block">{{ auth()->user()->name }}</span>
                         </span>
                         <form method="POST" action="{{ route('logout') }}" class="hidden sm:block sm:ml-1">
                             @csrf
-                            <button type="submit" class="clay-button-danger rounded-full px-4 py-2.5 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-rose-500 focus:ring-offset-2">Keluar</button>
+                            <button type="submit" class="clay-button-danger clay-nav-action rounded-full px-4 font-bold focus:outline-none focus:ring-2 focus:ring-rose-500 focus:ring-offset-2">Keluar</button>
                         </form>
                     </div>
                 @endauth
@@ -101,26 +103,26 @@
                 <div id="mobile-navigation" class="border-t border-blue-100/80 py-3 lg:hidden" data-mobile-menu>
                     <div class="app-mobile-nav-links text-sm font-medium">
                         @if ($role === 'pengguna')
-                            <a href="{{ route('dashboard') }}" @class(['landing-button rounded-full px-5 py-2.5 text-sm transition-all', 'bg-blue-600 font-semibold text-white shadow-md' => request()->routeIs('dashboard'), 'landing-nav-muted bg-white/50 font-medium' => ! request()->routeIs('dashboard')])>Ringkasan</a>
-                            <a href="{{ route('reservasi.index') }}" @class(['landing-button rounded-full px-5 py-2.5 text-sm transition-all', 'bg-blue-600 font-semibold text-white shadow-md' => request()->routeIs('reservasi.*'), 'landing-nav-muted bg-white/50 font-medium' => ! request()->routeIs('reservasi.*')])>Reservasi Saya</a>
-                            <a href="{{ route('laporan.index') }}" @class(['landing-button rounded-full px-5 py-2.5 text-sm transition-all', 'bg-blue-600 font-semibold text-white shadow-md' => request()->routeIs('laporan.*'), 'landing-nav-muted bg-white/50 font-medium' => ! request()->routeIs('laporan.*')])>Laporan Kerusakan</a>
+                            <a href="{{ route('dashboard') }}" @class(['landing-button clay-nav-item rounded-full text-sm transition-all', 'bg-blue-600 font-semibold text-white shadow-md' => request()->routeIs('dashboard'), 'landing-nav-muted font-medium' => ! request()->routeIs('dashboard')])>Ringkasan</a>
+                            <a href="{{ route('reservasi.index') }}" @class(['landing-button clay-nav-item rounded-full text-sm transition-all', 'bg-blue-600 font-semibold text-white shadow-md' => request()->routeIs('reservasi.*'), 'landing-nav-muted font-medium' => ! request()->routeIs('reservasi.*')])><span>Reservasi<br>Saya</span></a>
+                            <a href="{{ route('laporan.index') }}" @class(['landing-button clay-nav-item rounded-full text-sm transition-all', 'bg-blue-600 font-semibold text-white shadow-md' => request()->routeIs('laporan.*'), 'landing-nav-muted font-medium' => ! request()->routeIs('laporan.*')])><span>Laporan<br>Kerusakan</span></a>
                         @elseif ($role === 'petugas')
-                            <a href="{{ route('petugas.dashboard') }}" @class(['landing-button rounded-full px-5 py-2.5 text-sm transition-all', 'bg-blue-600 font-semibold text-white shadow-md' => request()->routeIs('petugas.dashboard'), 'landing-button-secondary font-medium' => ! request()->routeIs('petugas.dashboard')])>Operasional</a>
-                            <a href="{{ route('petugas.reservasi.index') }}" @class(['landing-button rounded-full px-5 py-2.5 text-sm transition-all', 'bg-blue-600 font-semibold text-white shadow-md' => request()->routeIs('petugas.reservasi.*'), 'landing-button-secondary font-medium' => ! request()->routeIs('petugas.reservasi.*')])>Antrian Reservasi</a>
-                            <a href="{{ route('petugas.laporan.index') }}" @class(['landing-button rounded-full px-5 py-2.5 text-sm transition-all', 'bg-blue-600 font-semibold text-white shadow-md' => request()->routeIs('petugas.laporan.*'), 'landing-button-secondary font-medium' => ! request()->routeIs('petugas.laporan.*')])>Laporan</a>
+                            <a href="{{ route('petugas.dashboard') }}" @class(['landing-button clay-nav-item rounded-full text-sm transition-all', 'bg-blue-600 font-semibold text-white shadow-md' => request()->routeIs('petugas.dashboard'), 'landing-nav-muted font-medium' => ! request()->routeIs('petugas.dashboard')])>Operasional</a>
+                            <a href="{{ route('petugas.reservasi.index') }}" @class(['landing-button clay-nav-item rounded-full text-sm transition-all', 'bg-blue-600 font-semibold text-white shadow-md' => request()->routeIs('petugas.reservasi.*'), 'landing-nav-muted font-medium' => ! request()->routeIs('petugas.reservasi.*')])><span>Antrian<br>Reservasi</span></a>
+                            <a href="{{ route('petugas.laporan.index') }}" @class(['landing-button clay-nav-item rounded-full text-sm transition-all', 'bg-blue-600 font-semibold text-white shadow-md' => request()->routeIs('petugas.laporan.*'), 'landing-nav-muted font-medium' => ! request()->routeIs('petugas.laporan.*')])>Laporan</a>
                         @else
-                            <a href="{{ route('admin.dashboard') }}" @class(['landing-button rounded-full px-5 py-2.5 text-sm transition-all', 'bg-blue-600 font-semibold text-white shadow-md' => request()->routeIs('admin.dashboard'), 'landing-button-secondary font-medium' => ! request()->routeIs('admin.dashboard')])>Administrasi</a>
-                            <a href="{{ route('admin.pengguna.verifikasi') }}" @class(['landing-button rounded-full px-5 py-2.5 text-sm transition-all', 'bg-blue-600 font-semibold text-white shadow-md' => request()->routeIs('admin.pengguna.verifikasi'), 'landing-button-secondary font-medium' => ! request()->routeIs('admin.pengguna.verifikasi')])>Verifikasi Akun</a>
-                            <a href="{{ route('admin.fasilitas.index') }}" @class(['landing-button rounded-full px-5 py-2.5 text-sm transition-all', 'bg-blue-600 font-semibold text-white shadow-md' => request()->routeIs('admin.fasilitas.*'), 'landing-button-secondary font-medium' => ! request()->routeIs('admin.fasilitas.*')])>Fasilitas</a>
-                            <a href="{{ route('admin.rekap.occupancy') }}" @class(['landing-button rounded-full px-5 py-2.5 text-sm transition-all', 'bg-blue-600 font-semibold text-white shadow-md' => request()->routeIs('admin.rekap.occupancy*'), 'landing-button-secondary font-medium' => ! request()->routeIs('admin.rekap.occupancy*')])>Rekap Okupansi</a>
-                            <a href="{{ route('admin.rekap.damage') }}" @class(['landing-button rounded-full px-5 py-2.5 text-sm transition-all', 'bg-blue-600 font-semibold text-white shadow-md' => request()->routeIs('admin.rekap.damage*'), 'landing-button-secondary font-medium' => ! request()->routeIs('admin.rekap.damage*')])>Rekap Kerusakan</a>
+                            <a href="{{ route('admin.dashboard') }}" @class(['landing-button clay-nav-item rounded-full text-sm transition-all', 'bg-blue-600 font-semibold text-white shadow-md' => request()->routeIs('admin.dashboard'), 'landing-nav-muted font-medium' => ! request()->routeIs('admin.dashboard')])>Administrasi</a>
+                            <a href="{{ route('admin.pengguna.verifikasi') }}" @class(['landing-button clay-nav-item rounded-full text-sm transition-all', 'bg-blue-600 font-semibold text-white shadow-md' => request()->routeIs('admin.pengguna.verifikasi'), 'landing-nav-muted font-medium' => ! request()->routeIs('admin.pengguna.verifikasi')])><span>Verifikasi<br>Akun</span></a>
+                            <a href="{{ route('admin.fasilitas.index') }}" @class(['landing-button clay-nav-item rounded-full text-sm transition-all', 'bg-blue-600 font-semibold text-white shadow-md' => request()->routeIs('admin.fasilitas.*'), 'landing-nav-muted font-medium' => ! request()->routeIs('admin.fasilitas.*')])>Fasilitas</a>
+                            <a href="{{ route('admin.rekap.occupancy') }}" @class(['landing-button clay-nav-item rounded-full text-sm transition-all', 'bg-blue-600 font-semibold text-white shadow-md' => request()->routeIs('admin.rekap.occupancy*'), 'landing-nav-muted font-medium' => ! request()->routeIs('admin.rekap.occupancy*')])><span>Rekap<br>Okupansi</span></a>
+                            <a href="{{ route('admin.rekap.damage') }}" @class(['landing-button clay-nav-item rounded-full text-sm transition-all', 'bg-blue-600 font-semibold text-white shadow-md' => request()->routeIs('admin.rekap.damage*'), 'landing-nav-muted font-medium' => ! request()->routeIs('admin.rekap.damage*')])><span>Rekap<br>Kerusakan</span></a>
                         @endif
                     </div>
                 <div class="mt-4 flex items-center justify-between gap-4 border-t border-blue-100/80 px-3 pt-4 text-sm sm:hidden">
-                        <span class="flex min-w-0 items-center gap-2.5 text-slate-700"><img src="{{ asset('images/reksa-mascot.webp') }}" alt="" class="h-9 w-9 shrink-0 rounded-full border border-white bg-blue-50 object-contain shadow-sm"><span class="max-w-52 truncate font-semibold">{{ auth()->user()->name }}</span></span>
+                        <span class="flex min-w-0 items-center gap-2.5 text-slate-700"><img src="{{ asset('images/avatar.webp') }}" alt="" class="h-9 w-9 shrink-0 rounded-full border border-white bg-blue-50 object-cover shadow-sm"><span class="max-w-52 truncate font-semibold">{{ auth()->user()->name }}</span></span>
                         <form method="POST" action="{{ route('logout') }}">
                             @csrf
-                            <button type="submit" class="clay-button-danger rounded-full px-4 py-2 text-xs font-bold focus:outline-none focus:ring-2 focus:ring-rose-500 focus:ring-offset-2">Keluar</button>
+                            <button type="submit" class="clay-button-danger clay-nav-action rounded-full px-4 text-xs font-bold focus:outline-none focus:ring-2 focus:ring-rose-500 focus:ring-offset-2">Keluar</button>
                         </form>
                     </div>
                 </div>
