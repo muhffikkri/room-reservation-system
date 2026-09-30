@@ -3,6 +3,7 @@
 use App\Models\Facility;
 use App\Models\Reservation;
 use App\Models\User;
+use Database\Seeders\ReservationSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
 
@@ -436,4 +437,22 @@ it('rejects a status filter outside the vocabulary', function () {
     $this->actingAs($officer)
         ->get(route('petugas.reservasi.index', ['tab' => 'made_up_tab']))
         ->assertSessionHasErrors('tab');
+});
+
+it('seeds reservations with officer attribution and tomorrow dates (§15)', function () {
+    $budi = User::factory()->create(['email' => 'budi@student.kampus.test', 'role' => 'pengguna', 'account_status' => 'aktif']);
+    $sari = User::factory()->create(['email' => 'sari@dosen.kampus.test', 'role' => 'pengguna', 'account_status' => 'aktif']);
+    $petugas = User::factory()->create(['email' => 'petugas@kampus.test', 'role' => 'petugas', 'account_status' => 'aktif']);
+
+    Facility::factory()->create(['name' => 'Aula Terpadu']);
+    Facility::factory()->create(['name' => 'Lapangan Futsal']);
+
+    (new ReservationSeeder)->run();
+
+    $approved = Reservation::where('user_id', $sari->id)->where('status', 'approved')->firstOrFail();
+    $rejected = Reservation::where('user_id', $budi->id)->where('status', 'rejected')->firstOrFail();
+
+    expect($approved->decided_by)->toBe($petugas->id)
+        ->and($rejected->decided_by)->toBe($petugas->id)
+        ->and($rejected->start_time->isTomorrow())->toBeTrue();
 });
