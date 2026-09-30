@@ -11,9 +11,9 @@
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
-<body class="landing-page min-h-screen p-3 font-sans text-slate-800 antialiased selection:bg-blue-600 selection:text-white sm:p-5 lg:p-6">
+<body class="landing-page min-h-screen p-3 font-sans text-slate-800 antialiased selection:bg-blue-600 selection:text-white sm:p-5 lg:flex lg:items-center lg:p-6">
     <a href="#content" class="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-[100] focus:rounded-lg focus:bg-[#00236f] focus:px-4 focus:py-2 focus:text-sm focus:font-semibold focus:text-white">Lewati ke konten utama</a>
-    <main id="content" class="landing-panel relative mx-auto min-h-[calc(100vh-2rem)] w-full max-w-7xl overflow-hidden rounded-[2rem] p-5 shadow-[0_24px_60px_-20px_rgba(54,111,194,0.24),0_0_0_1px_rgba(255,255,255,0.8)_inset] sm:p-7 lg:min-h-[calc(100vh-3rem)] lg:p-9 xl:p-11">
+    <main id="content" class="landing-panel relative mx-auto w-full max-w-7xl overflow-hidden rounded-[2rem] p-5 shadow-[0_24px_60px_-20px_rgba(54,111,194,0.24),0_0_0_1px_rgba(255,255,255,0.8)_inset] sm:p-7 lg:p-9 xl:p-11">
         <header class="relative z-10 flex flex-wrap items-center justify-between gap-4">
             <a href="{{ route('home') }}" class="flex shrink-0 items-center gap-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2" aria-label="REKSA, kembali ke beranda">
                 <img src="{{ asset('images/reksa-logo.webp') }}" alt="" class="h-10 w-10 rounded-xl object-contain">
@@ -25,15 +25,15 @@
             </a>
         </header>
 
-        <div class="relative z-10 mt-6 grid items-start gap-7 lg:mt-8 lg:grid-cols-12 lg:gap-8 xl:gap-10">
+        <div class="relative z-10 mt-6 grid items-start gap-7 lg:mt-8 lg:grid-cols-12 lg:items-center lg:gap-8 xl:gap-10">
             <section class="flex flex-col lg:col-span-6" aria-label="Tentang REKSA">
                 <div class="max-w-2xl">
                     <h1 class="text-3xl font-extrabold leading-tight tracking-tight text-[#10264a] sm:text-4xl xl:text-[44px]">Satu akses untuk fasilitas kampus.</h1>
                     <p class="mt-3 max-w-xl text-sm leading-relaxed text-slate-600 sm:text-base">Cek jadwal, ajukan reservasi, dan laporkan kerusakan dalam satu tempat yang mudah digunakan.</p>
                 </div>
 
-                <div class="landing-hero-art relative mx-auto flex min-h-64 w-full flex-1 items-center justify-center sm:min-h-80 lg:min-h-[min(58vh,580px)]">
-                    <img src="{{ asset('images/reksa-mascot.webp') }}" alt="Maskot REKSA menyambut pengguna" class="relative z-10 h-64 w-full object-contain drop-shadow-[0_20px_24px_rgba(37,99,235,0.18)] transition-transform duration-300 hover:-translate-y-1 sm:h-80 lg:h-[min(58vh,580px)]">
+                <div class="landing-hero-art relative mx-auto flex min-h-64 w-full flex-1 items-center justify-center sm:min-h-80 lg:min-h-[min(40vh,420px)]">
+                    <img src="{{ asset('images/reksa-mascot.webp') }}" alt="Maskot REKSA menyambut pengguna" class="relative z-10 h-64 w-full object-contain drop-shadow-[0_20px_24px_rgba(37,99,235,0.18)] sm:h-80 lg:h-[min(40vh,420px)]">
                 </div>
 
                 <div class="grid gap-3 sm:grid-cols-2">

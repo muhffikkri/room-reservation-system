@@ -1,6 +1,6 @@
 @php
-    $navActiveClass = 'landing-button clay-nav-item rounded-full bg-blue-600 text-sm font-semibold text-white shadow-md transition-all';
-    $navInactiveClass = 'landing-button landing-nav-muted clay-nav-item rounded-full text-sm font-medium transition-colors';
+    $navActiveClass = 'landing-button clay-nav-item rounded-full bg-blue-600 text-sm font-semibold text-white shadow-md';
+    $navInactiveClass = 'landing-button landing-nav-muted clay-nav-item rounded-full text-sm font-medium';
 @endphp
 
 <!DOCTYPE html>
@@ -23,16 +23,16 @@
 </a>
 
 <div class="mx-auto w-full max-w-public space-y-5 px-4 sm:px-6 lg:px-8">
-<header class="clay-nav sticky top-3 z-50 rounded-[2rem] px-4 sm:rounded-full sm:px-6">
-    <div class="flex min-h-18 items-center gap-3 sm:gap-4">
-        <a href="#top" data-landing-nav="top" class="flex shrink-0 items-center gap-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0051d5] focus:ring-offset-2" aria-label="Kembali ke Beranda">
-            <img src="{{ asset('images/reksa-logo.webp') }}" alt="REKSA" class="h-10 w-10 shrink-0 rounded-xl object-contain" fetchpriority="high">
+<header class="clay-nav sticky top-2 z-50 rounded-3xl px-3 sm:top-3 sm:rounded-full sm:px-6">
+    <div class="flex min-h-16 items-center justify-between gap-2 sm:min-h-18 sm:gap-4">
+        <a href="#top" data-landing-nav="top" class="flex shrink-0 items-center gap-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0051d5] focus:ring-offset-2 sm:gap-3" aria-label="Kembali ke Beranda">
+            <img src="{{ asset('images/reksa-logo.webp') }}" alt="REKSA" class="h-8 w-8 shrink-0 rounded-xl object-contain sm:h-10 sm:w-10" fetchpriority="high">
             <span class="flex min-w-0 flex-col">
                 <span class="text-sm font-extrabold tracking-wide text-slate-900 sm:text-base">REKSA</span>
                 <span class="hidden text-[10px] text-slate-600 lg:inline">Reservasi dan Kerusakan Sarana Akademik</span>
             </span>
         </a>
-        <div class="flex min-w-0 flex-1 justify-center">
+        <div class="hidden min-w-0 flex-1 justify-center lg:flex">
             <nav class="clay-nav-group hidden max-w-full items-center gap-1 rounded-full lg:flex" aria-label="Navigasi halaman">
                 <a href="#top" data-landing-nav="top" data-nav-active="{{ $navActiveClass }}" data-nav-inactive="{{ $navInactiveClass }}" class="{{ $navActiveClass }}" aria-current="page">Beranda</a>
                 <a href="#panduan" data-landing-nav="panduan" data-nav-active="{{ $navActiveClass }}" data-nav-inactive="{{ $navInactiveClass }}" class="{{ $navInactiveClass }}">Panduan</a>
@@ -43,20 +43,20 @@
             @auth
                 <a href="{{ auth()->user()->homeRoute() }}" class="landing-button clay-nav-action rounded-full bg-gradient-to-r from-blue-600 to-blue-500 px-3.5 text-sm font-semibold text-white shadow-[0_4px_14px_rgba(37,99,235,0.25)] transition hover:from-blue-700 hover:to-blue-600">Dashboard</a>
             @else
-                <a href="{{ route('login') }}" class="clay-button-white clay-nav-action rounded-full px-3.5 text-sm font-semibold text-blue-700">Masuk</a>
-                <a href="{{ route('register') }}" class="landing-button clay-nav-action rounded-full bg-gradient-to-r from-blue-600 to-blue-500 px-3.5 text-sm font-semibold text-white shadow-[0_4px_14px_rgba(37,99,235,0.25)] transition hover:from-blue-700 hover:to-blue-600">
+                <a href="{{ route('login') }}" class="clay-button-white clay-nav-action min-h-11 rounded-full px-2.5 text-xs font-semibold text-blue-700 sm:px-3.5 sm:text-sm">Masuk</a>
+                <a href="{{ route('register') }}" class="landing-button clay-nav-action min-h-11 rounded-full bg-gradient-to-r from-blue-600 to-blue-500 px-2.5 text-xs font-semibold text-white shadow-[0_4px_14px_rgba(37,99,235,0.25)] transition hover:from-blue-700 hover:to-blue-600 sm:px-3.5 sm:text-sm">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="hidden h-4 w-4 sm:block" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
                     Daftar Akun
                 </a>
             @endauth
         </div>
     </div>
-    <div class="border-t border-blue-100/80 py-3 lg:hidden">
-        <div class="app-mobile-nav-links text-sm font-medium">
+    <div class="border-t border-blue-100/80 lg:hidden">
+        <nav class="landing-mobile-nav font-medium" aria-label="Navigasi halaman mobile">
             <a href="#top" data-landing-nav="top" data-nav-active="{{ $navActiveClass }}" data-nav-inactive="{{ $navInactiveClass }}" class="{{ $navActiveClass }}" aria-current="page">Beranda</a>
             <a href="#panduan" data-landing-nav="panduan" data-nav-active="{{ $navActiveClass }}" data-nav-inactive="{{ $navInactiveClass }}" class="{{ $navInactiveClass }}">Panduan</a>
             <a href="#fasilitas" data-landing-nav="fasilitas" data-nav-active="{{ $navActiveClass }}" data-nav-inactive="{{ $navInactiveClass }}" class="{{ $navInactiveClass }}">Fasilitas</a>
-        </div>
+        </nav>
     </div>
 </header>
 
@@ -64,7 +64,7 @@
     <div class="space-y-5 py-1 sm:space-y-6">
 
         {{-- SECTION 1: Hero --}}
-        <section id="top" data-landing-section class="landing-panel relative grid scroll-mt-24 items-center gap-6 overflow-hidden rounded-3xl p-6 shadow-[0_10px_30px_-5px_rgba(186,215,248,0.45),0_0_0_1px_rgba(255,255,255,0.8)_inset] sm:p-8 lg:grid-cols-[1fr_0.9fr] lg:gap-10 lg:p-10">
+        <section id="top" data-landing-section class="landing-panel relative grid scroll-mt-4 items-center gap-6 overflow-hidden rounded-3xl p-6 shadow-[0_10px_30px_-5px_rgba(186,215,248,0.45),0_0_0_1px_rgba(255,255,255,0.8)_inset] sm:p-8 lg:grid-cols-[1fr_0.9fr] lg:gap-10 lg:p-10">
             <div class="relative z-10 max-w-2xl space-y-4 sm:space-y-5">
                 <h1 class="text-3xl font-extrabold leading-tight tracking-tight text-slate-900 sm:text-4xl lg:text-[42px] lg:leading-[1.2]">Kelola Penggunaan Fasilitas Kampus dengan Mudah</h1>
                 <p class="max-w-2xl text-sm leading-relaxed text-slate-600 sm:text-[15px]">
@@ -88,7 +88,7 @@
         </section>
 
                 {{-- SECTION 5: Panduan --}}
-        <section id="panduan" data-landing-section class="landing-panel scroll-mt-24 space-y-5 rounded-3xl p-5 shadow-[0_10px_30px_-5px_rgba(186,215,248,0.45),0_0_0_1px_rgba(255,255,255,0.8)_inset] sm:p-7">
+        <section id="panduan" data-landing-section class="landing-panel scroll-mt-4 space-y-5 rounded-3xl p-5 shadow-[0_10px_30px_-5px_rgba(186,215,248,0.45),0_0_0_1px_rgba(255,255,255,0.8)_inset] sm:p-7">
             <div>
                 <h2 class="text-lg font-bold text-slate-900 sm:text-xl">Alur Peminjaman</h2>
                 <p class="text-xs text-[#475569]">Ikuti panduan peminjaman fasilitas atau pelaporan kerusakan.</p>
@@ -143,7 +143,7 @@
         </section>
         
         {{-- SECTION 2: Pencarian --}}
-        <section id="fasilitas" data-landing-section class="landing-panel scroll-mt-24 space-y-5 rounded-3xl p-5 shadow-[0_10px_30px_-5px_rgba(186,215,248,0.45),0_0_0_1px_rgba(255,255,255,0.8)_inset] sm:p-7">
+        <section id="fasilitas" data-landing-section class="landing-panel scroll-mt-4 space-y-5 rounded-3xl p-5 shadow-[0_10px_30px_-5px_rgba(186,215,248,0.45),0_0_0_1px_rgba(255,255,255,0.8)_inset] sm:p-7">
             <div class="flex flex-wrap items-center justify-between gap-3">
                 <div>
                     <h2 class="text-lg font-bold text-slate-900 sm:text-xl">Fasilitas Kampus Unggulan</h2>

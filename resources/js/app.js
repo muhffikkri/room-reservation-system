@@ -198,7 +198,10 @@ document.addEventListener('mouseleave', () => {
     lastMoveTime = 0;
 });
 
-requestAnimationFrame(animateTrail);
+if (window.matchMedia('(hover: hover) and (pointer: fine)').matches
+    && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    requestAnimationFrame(animateTrail);
+}
 
 document.addEventListener('click', (event) => {
     const openTrigger = event.target.closest('[data-open-dialog]');
@@ -671,7 +674,10 @@ if (landingPage !== null) {
     const activateNav = (sectionId) => {
         navLinks.forEach((link) => {
             const isActive = link.dataset.landingNav === sectionId;
-            link.className = isActive ? link.dataset.navActive : link.dataset.navInactive;
+            const className = isActive ? link.dataset.navActive : link.dataset.navInactive;
+            if (link.className !== className) {
+                link.className = className;
+            }
 
             if (isActive) {
                 link.setAttribute('aria-current', 'page');
@@ -688,26 +694,33 @@ if (landingPage !== null) {
         link.addEventListener('click', () => activateNav(link.dataset.landingNav));
     });
 
-    if ('IntersectionObserver' in window) {
-        const navObserver = new IntersectionObserver((entries) => {
-            const visibleSections = entries
-                .filter((entry) => entry.isIntersecting)
-                .sort((first, second) => second.intersectionRatio - first.intersectionRatio);
+    const header = landingPage.querySelector('header');
+    let navFrame = null;
+    const updateNav = () => {
+        navFrame = null;
+        const boundary = header.getBoundingClientRect().bottom + 32;
+        const activeSection = sections.filter((section) => section.getBoundingClientRect().top <= boundary).at(-1);
+        activateNav(activeSection?.id ?? 'top');
+    };
+    const scheduleNavUpdate = () => {
+        if (navFrame === null) {
+            navFrame = requestAnimationFrame(updateNav);
+        }
+    };
+    const updateHeaderOffset = () => {
+        document.documentElement.style.setProperty('--landing-header-offset', `${header.getBoundingClientRect().height + 20}px`);
+        scheduleNavUpdate();
+    };
 
-            if (visibleSections[0] !== undefined) {
-                activateNav(visibleSections[0].target.id);
-            }
-        }, { rootMargin: '-20% 0px -60% 0px', threshold: [0, 0.25, 0.5, 0.75, 1] });
-
-        sections.forEach((section) => navObserver.observe(section));
-    }
+    window.addEventListener('scroll', scheduleNavUpdate, { passive: true });
+    window.addEventListener('resize', updateHeaderOffset);
+    updateHeaderOffset();
 }
 
 // Animasi masuk card untuk seluruh halaman: satu pantulan (spring) untuk card
 // di dalam, dan fade untuk card/panel besar. Klasifikasi card memakai pemilik
 // kelas yang sudah ada; nilai gerakan ada di @keyframes clay-card-spring dan
-// clay-panel-fade. Setiap kali target masuk viewport kelas dipasang ulang, jadi
-// animasi diputar ulang setiap pengguna scroll, bukan hanya sekali.
+// clay-panel-fade. Target hanya dianimasikan saat pertama kali masuk viewport.
 const motionReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 const motionTargets = {
     // Card besar: panel halaman, container, navigasi, dan holder tabel. Elemen
@@ -736,6 +749,9 @@ const observeMotionCards = (root) => {
 
     Object.values(motionTargets).forEach((target) => {
         root.querySelectorAll(target.selector).forEach((element) => {
+            if (element.classList.contains(target.className)) {
+                return;
+            }
             const position = element.parentElement ? [...element.parentElement.children].indexOf(element) : 0;
 
             element.classList.add('motion-pending');
@@ -751,21 +767,15 @@ if (document.body !== null && 'IntersectionObserver' in window && !motionReduced
     motionObserver = new IntersectionObserver((entries) => {
         entries.forEach((entry) => {
             const element = entry.target;
-            const motionClass = motionClassFor(element);
-
-            element.classList.remove(motionClass, 'motion-pending');
-
             if (!entry.isIntersecting) {
-                element.classList.add('motion-pending');
                 return;
             }
 
-            // Paksa reflow supaya animasi diputar ulang dari frame awal setiap
-            // kali target masuk viewport lagi.
-            void element.offsetWidth;
-            element.classList.add(motionClass);
+            element.classList.remove('motion-pending');
+            element.classList.add(motionClassFor(element));
+            motionObserver.unobserve(element);
         });
-    }, { rootMargin: '0px 0px -5% 0px', threshold: 0.12 });
+    }, { rootMargin: '0px 0px -5% 0px', threshold: 0 });
 
     observeMotionCards(document);
 }

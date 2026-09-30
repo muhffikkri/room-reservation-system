@@ -9,6 +9,30 @@
         'Segoe UI Symbol', 'Noto Color Emoji';
 }
 
+html:has([data-landing]) {
+    scroll-padding-top: var(--landing-header-offset, 9rem);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+    html:has([data-landing]) {
+        scroll-behavior: smooth;
+    }
+}
+
+.landing-mobile-nav {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.5rem;
+    padding: 0.5rem 0 0.75rem;
+}
+
+.landing-mobile-nav .clay-nav-item {
+    width: 100%;
+    min-width: 0;
+    height: 2.75rem;
+    font-size: 0.75rem;
+}
+
 html,
 body,
 *,
@@ -226,7 +250,7 @@ img.img-fade.is-loaded {
 @keyframes clay-card-spring {
     0% {
         opacity: 0;
-        transform: translate3d(0, 20px, 0) scale(0.92);
+        transform: translate3d(0, 12px, 0) scale(0.96);
     }
 
     100% {
@@ -238,7 +262,7 @@ img.img-fade.is-loaded {
 @keyframes clay-panel-fade {
     0% {
         opacity: 0;
-        transform: translate3d(0, 16px, 0);
+        transform: translate3d(0, 8px, 0);
     }
 
     100% {
@@ -255,13 +279,13 @@ img.img-fade.is-loaded {
 
 .motion-ready .is-faded {
     opacity: 1;
-    animation: clay-panel-fade 620ms backwards;
+    animation: clay-panel-fade 300ms backwards;
     animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .motion-ready .is-springed {
     opacity: 1;
-    animation: clay-card-spring 780ms backwards;
+    animation: clay-card-spring 420ms backwards;
     animation-delay: var(--motion-delay, 0ms);
     animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
     /* Kurva respons step-response spring teredam (zeta 0.68): puncak 1.054 di
