@@ -3,23 +3,7 @@
 @section('title', 'Ringkasan REKSA')
 
 @section('content')
-    @php
-        $reservationStatuses = [
-            'pending' => ['label' => 'Menunggu', 'class' => 'bg-amber-50 text-amber-700'],
-            'approved' => ['label' => 'Disetujui', 'class' => 'bg-emerald-50 text-emerald-700'],
-            'rejected' => ['label' => 'Ditolak', 'class' => 'bg-rose-50 text-rose-700'],
-            'rejected_by_system' => ['label' => 'Ditolak oleh Sistem', 'class' => 'bg-violet-50 text-violet-700'],
-            'cancelled_by_user' => ['label' => 'Dibatalkan Pengguna', 'class' => 'bg-slate-100 text-slate-600'],
-            'cancelled_by_officer' => ['label' => 'Dibatalkan Petugas', 'class' => 'bg-slate-100 text-slate-600'],
-            'cancelled_by_system' => ['label' => 'Gagal', 'class' => 'bg-rose-50 text-rose-700'],
-        ];
-        $reportStatuses = [
-            'baru' => ['label' => 'Baru', 'class' => 'bg-sky-50 text-sky-700'],
-            'diproses' => ['label' => 'Diproses', 'class' => 'bg-amber-50 text-amber-700'],
-            'selesai' => ['label' => 'Selesai', 'class' => 'bg-emerald-50 text-emerald-700'],
-            'ditolak' => ['label' => 'Ditolak', 'class' => 'bg-rose-50 text-rose-700'],
-        ];
-    @endphp
+
 
     <div class="dashboard-page space-y-7">
         <section class="dashboard-clay-card landing-panel relative grid min-h-64 overflow-hidden rounded-[2rem] px-6 py-7 sm:px-9 lg:grid-cols-[1fr_18rem] lg:items-center lg:px-11 lg:py-9" aria-labelledby="welcome-heading">
@@ -63,10 +47,10 @@
                 <div class="flex items-center justify-between gap-3"><div><p class="text-[11px] font-bold uppercase tracking-[0.14em] text-blue-600">Jadwal</p><h2 id="reservations-heading" class="mt-1 text-lg font-extrabold text-[#10264a]">Reservasi terbaru</h2></div><a href="{{ route('reservasi.index') }}" class="landing-button inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-blue-600 to-blue-500 px-5 py-2.5 text-sm font-semibold text-white shadow-[0_4px_14px_rgba(37,99,235,0.25)] transition hover:from-blue-700 hover:to-blue-600">Lihat semua <span aria-hidden="true">›</span></a></div>
                 <div class="mt-5 space-y-3">
                     @forelse ($recentReservations as $reservation)
-                        @php($status = $reservationStatuses[$reservation->status] ?? ['label' => ucfirst($reservation->status), 'class' => 'bg-slate-100 text-slate-600'])
+
                         <a href="{{ route('reservasi.show', $reservation) }}" class="dashboard-clay-list clay-pressable flex items-center justify-between gap-3 rounded-2xl p-4 focus:outline-none focus:ring-2 focus:ring-blue-500">
                             <span class="flex min-w-0 items-center gap-3"><span class="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-blue-100 bg-white p-1 shadow-sm"><img src="{{ $reservation->facility?->photo_url ?: $reservation->facility?->display_image_url }}" alt="" class="h-full w-full rounded-lg object-cover"></span><span class="min-w-0"><span class="block truncate text-sm font-bold text-slate-800">{{ $reservation->facility?->name ?? 'Fasilitas dihapus' }}</span><span class="mt-1 block text-xs text-slate-500">{{ $reservation->start_time->format('d M Y, H.i') }}–{{ $reservation->end_time->format('H.i') }}</span></span></span>
-                            <span class="shrink-0 rounded-full px-2.5 py-1 text-[10px] font-bold {{ $status['class'] }}">{{ $status['label'] }}</span>
+                            <x-reservation.status-pill :status="$reservation->status" user-facing class="max-w-32 shrink-0 text-center sm:max-w-none" />
                         </a>
                     @empty
                         <div class="rounded-2xl bg-white/65 px-4 py-5 text-sm leading-6 text-slate-600">Belum ada reservasi. Pilih fasilitas yang sesuai dan ajukan jadwal pertama Anda.</div>
@@ -78,10 +62,10 @@
                 <div class="flex items-center justify-between gap-3"><div><p class="text-[11px] font-bold uppercase tracking-[0.14em] text-blue-600">Pelaporan</p><h2 id="reports-heading" class="mt-1 text-lg font-extrabold text-[#10264a]">Laporan terbaru</h2></div><a href="{{ route('laporan.index') }}" class="landing-button inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-blue-600 to-blue-500 px-5 py-2.5 text-sm font-semibold text-white shadow-[0_4px_14px_rgba(37,99,235,0.25)] transition hover:from-blue-700 hover:to-blue-600">Lihat semua <span aria-hidden="true">›</span></a></div>
                 <div class="mt-5 space-y-3">
                     @forelse ($recentReports as $report)
-                        @php($status = $reportStatuses[$report->status] ?? ['label' => ucfirst($report->status), 'class' => 'bg-slate-100 text-slate-600'])
+
                         <a href="{{ route('laporan.show', $report) }}" class="dashboard-clay-list clay-pressable flex items-center justify-between gap-3 rounded-2xl p-4 focus:outline-none focus:ring-2 focus:ring-blue-500">
                             <span class="flex min-w-0 items-center gap-3"><span class="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-blue-100 bg-white p-1 shadow-sm"><img src="{{ $report->facility?->photo_url ?: $report->facility?->display_image_url }}" alt="" class="h-full w-full rounded-lg object-cover"></span><span class="min-w-0"><span class="block truncate text-sm font-bold text-slate-800">{{ $report->facility?->name ?? 'Fasilitas dihapus' }}</span><span class="mt-1 block truncate text-xs text-slate-500">{{ $report->categoryLabel() }} · {{ $report->created_at->format('d M Y') }}</span></span></span>
-                            <span class="shrink-0 rounded-full px-2.5 py-1 text-[10px] font-bold {{ $status['class'] }}">{{ $status['label'] }}</span>
+                            <x-ui.badge :status="$report->status" class="max-w-32 shrink-0 text-center sm:max-w-none" />
                         </a>
                     @empty
                         <div class="rounded-2xl bg-white/65 px-4 py-5 text-sm leading-6 text-slate-600">Belum ada laporan kerusakan. Bantu petugas menjaga fasilitas tetap siap digunakan.</div>

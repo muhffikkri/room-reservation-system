@@ -39,17 +39,10 @@
                     </div>
                 </div>
             @else
-                @php
-                    $reportStatuses = [
-                        'baru' => ['label' => 'Baru', 'class' => 'bg-sky-50 text-sky-700'],
-                        'diproses' => ['label' => 'Diproses', 'class' => 'bg-amber-50 text-amber-700'],
-                        'selesai' => ['label' => 'Selesai', 'class' => 'bg-emerald-50 text-emerald-700'],
-                        'ditolak' => ['label' => 'Ditolak', 'class' => 'bg-rose-50 text-rose-700'],
-                    ];
-                @endphp
+
                 <div class="space-y-3">
                     @foreach ($reports as $report)
-                        @php($status = $reportStatuses[$report->status] ?? ['label' => ucfirst($report->status), 'class' => 'bg-slate-100 text-slate-600'])
+
                         <a href="{{ route('laporan.show', $report) }}"
                             class="dashboard-clay-list clay-pressable flex items-center justify-between gap-4 rounded-2xl p-4.5 focus:outline-none focus:ring-2 focus:ring-blue-500">
                             <span class="flex min-w-0 items-center gap-3.5">
@@ -67,8 +60,7 @@
                                 </span>
                             </span>
                             <span class="shrink-0 flex items-center gap-3">
-                                <span
-                                    class="rounded-full px-3 py-1 text-xs font-bold {{ $status['class'] }}">{{ $status['label'] }}</span>
+                                <x-ui.badge :status="$report->status" />
                                 <span class="hidden text-xs font-bold text-blue-700 sm:inline">&rarr;</span>
                             </span>
                         </a>

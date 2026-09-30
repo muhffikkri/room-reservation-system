@@ -33,9 +33,7 @@
                     </p>
                 </div>
                 <div>
-                    <x-ui.badge :status="$reservation->status">
-                        {{ $reservation->status === 'cancelled_by_system' ? 'Gagal' : Reservation::statusLabel($reservation->status) }}
-                    </x-ui.badge>
+                    <x-reservation.status-pill :status="$reservation->status" user-facing />
                 </div>
             </div>
 

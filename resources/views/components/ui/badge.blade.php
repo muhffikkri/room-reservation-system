@@ -2,6 +2,7 @@
     'status' => null,
     'dot' => false,
     'plain' => false,
+    'colored' => false,
 ])
 
 @php
@@ -66,36 +67,24 @@
 
     $defaultLabel = match ($status) {
         'aktif' => 'Aktif',
-        'approved' => 'Disetujui',
         'selesai' => 'Selesai',
-        'pending' => 'Menunggu Persetujuan',
         'diproses' => 'Sedang Diproses',
         'baru' => 'Baru',
         'perbaikan' => 'Perbaikan',
-        'cancelled_by_officer' => 'Dibatalkan Petugas',
-        'rejected', 'ditolak' => 'Ditolak',
+        'ditolak' => 'Ditolak',
         'nonaktif' => 'Nonaktif',
-        'cancelled_by_user' => 'Dibatalkan Pengguna',
-        'cancelled_by_system' => 'Dibatalkan oleh Sistem',
-        'rejected_by_system' => 'Ditolak oleh Sistem',
-        default => ucfirst(str_replace('_', ' ', (string) $status)),
+        default => \App\Models\Reservation::LABELS[$status] ?? ucfirst(str_replace('_', ' ', (string) $status)),
     };
 
     $label = $slot->isEmpty() ? $defaultLabel : $slot;
 @endphp
 
-{{-- Varian plain hanya menampilkan label; warna, ukuran, dan bobot diwarisi
-     dari elemen induk, jadi label status tidak pernah ditulis ulang per view. --}}
+{{-- Plain mengikuti warna induk, kecuali pemanggil meminta warna status. --}}
 @if ($plain)
-    <span {{ $attributes }}>{{ $label }}</span>
+    <span {{ $attributes->class([$palette['text'] => $colored]) }}>{{ $label }}</span>
 @else
     <span
         {{ $attributes->merge([
             'class' => "inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ring-inset {$palette['bg']} {$palette['text']} {$palette['ring']}",
-        ]) }}>
-        @if ($dot)
-            <span class="h-1.5 w-1.5 rounded-full {{ $palette['dot'] }}"></span>
-        @endif
-        {{ $label }}
-    </span>
+        ]) }}>@if ($dot)<span aria-hidden="true" class="h-1.5 w-1.5 shrink-0 rounded-full {{ $palette['dot'] }}"></span>@endif{{ $label }}</span>
 @endif

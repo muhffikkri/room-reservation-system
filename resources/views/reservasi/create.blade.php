@@ -23,8 +23,8 @@
             <form method="POST" action="{{ route('reservasi.store') }}" id="reservationForm" data-reservation-form
                 data-create-url="{{ route('reservasi.create') }}"
                 data-slots="{{ json_encode($slots, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT) }}"
-                data-max-duration-slots="{{ $maxDurationSlots }}" data-old-start-time="{{ old('start_time') }}"
-                data-old-end-time="{{ old('end_time') }}" class="space-y-8">
+                data-max-duration-slots="{{ $maxDurationSlots }}" data-old-start-time="{{ old('start_time', $selectedStartTime) }}"
+                data-old-end-time="{{ old('end_time', $selectedEndTime) }}" class="space-y-8">
                 @csrf
 
                 {{-- Fasilitas & Tanggal (Grid 2 Kolom) --}}

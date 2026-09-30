@@ -390,13 +390,17 @@ const dialogShell =
     'w-full max-w-md rounded-[1.8rem] border border-white/90 bg-gradient-to-br from-white/98 to-blue-50/80 p-6 shadow-[0_24px_60px_rgba(16,38,74,0.24),inset_2px_2px_6px_rgba(255,255,255,0.9)] backdrop:bg-slate-950/40';
 
 if (reservationBody !== null) {
+    let queueRequest;
     const fetchReservations = (url) => {
         const params = new URLSearchParams(new URL(url, window.location.origin).search);
+        queueRequest?.abort();
+        queueRequest = new AbortController();
 
         if (loadingIndicator !== null) loadingIndicator.classList.remove('hidden');
 
         fetch(`/petugas/reservasi/data?${params.toString()}`, {
             headers: { 'X-Requested-With': 'XMLHttpRequest' },
+            signal: queueRequest.signal,
         })
             .then((response) => response.json())
             .then((data) => {
@@ -418,7 +422,7 @@ if (reservationBody !== null) {
                         const row = document.createElement('tr');
                         row.className = 'transition-colors hover:bg-white/70';
 
-                        const statusHtml = getStatusBadge(res.status);
+                        const statusHtml = res.status_html;
                         const actionsHtml = getActionsHtml(res);
 
                         row.innerHTML = `
@@ -500,7 +504,10 @@ if (reservationBody !== null) {
                     });
                 }
 
-                renderQueuePagination(data.pagination, params);
+                if (paginationContainer !== null) {
+                    paginationContainer.innerHTML = data.pagination_html;
+                    paginationContainer.classList.toggle('hidden', data.pagination.last_page <= 1);
+                }
                 history.pushState({}, '', url);
 
                 const activeTab = params.get('tab');
@@ -510,6 +517,7 @@ if (reservationBody !== null) {
                 }
             })
             .catch((error) => {
+                if (error.name === 'AbortError') return;
                 if (loadingIndicator !== null) loadingIndicator.classList.add('hidden');
                 console.error('Failed to fetch reservations:', error);
             });
@@ -518,7 +526,7 @@ if (reservationBody !== null) {
     // Tab dan pagination antrean dimuat lewat AJAX; klik dimodifikasi tetap
     // membuka tab browser sepertita biasanya.
     document.addEventListener('click', (event) => {
-        if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey) {
+        if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) {
             return;
         }
 
@@ -530,29 +538,13 @@ if (reservationBody !== null) {
 
         const url = link.getAttribute('href');
 
-        if (url === null || ! url.startsWith('/')) {
+        if (url === null || new URL(url, window.location.href).origin !== window.location.origin) {
             return;
         }
 
         event.preventDefault();
         fetchReservations(url);
     });
-}
-
-// Status queue memakai varian plain: teks bewarna status tanpa fill dan ring,
-// sama seperti <x-reservation.status-pill plain> di render Blade.
-function getStatusBadge(status) {
-    const labels = {
-        pending: '<span class="text-xs font-extrabold text-amber-700">Menunggu Persetujuan</span>',
-        approved: '<span class="text-xs font-extrabold text-green-700">Disetujui</span>',
-        rejected: '<span class="text-xs font-extrabold text-red-700">Ditolak</span>',
-        cancelled_by_user: '<span class="text-xs font-extrabold text-slate-600">Dibatalkan Pengguna</span>',
-        cancelled_by_officer: '<span class="text-xs font-extrabold text-orange-700">Dibatalkan Petugas</span>',
-        cancelled_by_system: '<span class="text-xs font-extrabold text-violet-700">Dibatalkan oleh Sistem</span>',
-        rejected_by_system: '<span class="text-xs font-extrabold text-violet-700">Ditolak oleh Sistem</span>',
-    };
-
-    return labels[status] || `<span class="text-xs font-extrabold text-slate-700">${escapeHtml(status)}</span>`;
 }
 
 function getActionsHtml(res) {
@@ -570,56 +562,6 @@ function getActionsHtml(res) {
     html += `<a href="/petugas/reservasi/${res.id}" class="${clayDetailChip}">Detail</a>`;
 
     return html + '</div>';
-}
-
-// Paginasi digambar ulang dari data JSON supaya tautannya selalu memakai query
-// tab yang sedang aktif.
-function renderQueuePagination(pagination, params) {
-    if (paginationContainer === null) {
-        return;
-    }
-
-    if (pagination.last_page <= 1) {
-        paginationContainer.innerHTML = '';
-        paginationContainer.classList.add('hidden');
-
-        return;
-    }
-
-    const pageUrl = (page) => {
-        const next = new URLSearchParams(params);
-
-        next.delete('page');
-
-        if (page > 1) {
-            next.set('page', String(page));
-        }
-
-        const query = next.toString();
-
-        return query === '' ? window.location.pathname : `${window.location.pathname}?${query}`;
-    };
-    const base = 'inline-flex h-9 min-w-9 items-center justify-center rounded-full px-3 text-xs font-bold';
-    const step = (label, page, disabled) =>
-        disabled
-            ? `<span class="${base} pointer-events-none bg-white/40 text-slate-400">${label}</span>`
-            : `<a href="${pageUrl(page)}" class="${base} clay-pressable text-slate-600">${label}</a>`;
-
-    let pages = '';
-
-    for (let page = 1; page <= pagination.last_page; page += 1) {
-        pages +=
-            page === pagination.current_page
-                ? `<span class="${base} landing-button bg-gradient-to-r from-blue-600 to-blue-500 text-white" aria-current="page">${page}</span>`
-                : `<a href="${pageUrl(page)}" class="${base} clay-pressable text-slate-600">${page}</a>`;
-    }
-
-    paginationContainer.innerHTML = `<nav class="flex flex-wrap items-center gap-2" aria-label="Navigasi antrean reservasi">${step(
-        'Sebelumnya',
-        pagination.current_page - 1,
-        pagination.current_page <= 1
-    )}${pages}${step('Berikutnya', pagination.current_page + 1, pagination.current_page >= pagination.last_page)}</nav>`;
-    paginationContainer.classList.remove('hidden');
 }
 
 function setActiveQueueTab(tabKey) {

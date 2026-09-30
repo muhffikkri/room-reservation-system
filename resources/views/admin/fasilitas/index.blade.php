@@ -132,11 +132,12 @@
                 </div>
             </div>
 
-            <p class="mt-5 text-xs text-slate-500">{{ $facilities->count() }} fasilitas ditampilkan
+            <p class="mt-5 text-xs text-slate-500">{{ $facilities->total() }} fasilitas ditemukan
                 @if ($keyword !== '')
                     untuk pencarian &ldquo;{{ $keyword }}&rdquo;
                 @endif
             </p>
+            <div class="mt-5">{{ $facilities->links() }}</div>
         </section>
     </div>
 @endsection

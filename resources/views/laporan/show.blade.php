@@ -21,19 +21,7 @@
                     </p>
                 </div>
                 <div class="flex flex-wrap items-center gap-3">
-                    @php
-                        $badgeClasses = match ($report->status) {
-                            'baru' => 'bg-sky-100/90 text-sky-800 border-sky-200',
-                            'diproses' => 'bg-amber-100/90 text-amber-800 border-amber-200',
-                            'selesai' => 'bg-emerald-100/90 text-emerald-800 border-emerald-200',
-                            'ditolak' => 'bg-rose-100/90 text-rose-800 border-rose-200',
-                            default => 'bg-slate-100 text-slate-700 border-slate-200',
-                        };
-                    @endphp
-                    <span
-                        class="inline-flex items-center rounded-full border px-3.5 py-1.5 text-xs font-bold capitalize tracking-wide shadow-2xs {{ $badgeClasses }}">
-                        Status: {{ $report->status }}
-                    </span>
+                    <x-ui.badge :status="$report->status" />
                     <a href="{{ route('laporan.create') }}"
                         class="landing-button inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-blue-600 to-blue-500 px-4 py-2 text-xs font-bold text-white shadow-sm">
                         <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

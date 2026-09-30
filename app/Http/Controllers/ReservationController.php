@@ -62,6 +62,8 @@ class ReservationController extends Controller
 
         $today = Carbon::now(config('app.timezone'))->startOfDay();
         $validated = $request->validate([
+            'start_time' => ['nullable', 'date_format:H:i'],
+            'end_time' => ['nullable', 'date_format:H:i'],
             'date' => [
                 'nullable',
                 'date_format:Y-m-d',
@@ -76,7 +78,15 @@ class ReservationController extends Controller
 
         $slots = $selectedFacility ? $this->bookingSlotsForDate($selectedFacility, $selectedDate) : [];
 
+        $selectedSlot = collect($slots)->first(fn (array $slot): bool => $slot['state'] === 'available'
+            && $selectedFacility?->id === $facilityId
+            && $slot['start'] === ($validated['start_time'] ?? null)
+            && $slot['end'] === ($validated['end_time'] ?? null)
+        );
+
         return view('reservasi.create', [
+            'selectedStartTime' => $selectedSlot['start'] ?? null,
+            'selectedEndTime' => $selectedSlot['end'] ?? null,
             'facilities' => $facilities,
             'selectedFacility' => $selectedFacility,
             'selectedDate' => $selectedDate,

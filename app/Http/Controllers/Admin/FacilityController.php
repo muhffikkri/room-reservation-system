@@ -33,7 +33,9 @@ class FacilityController extends Controller
             ->withCount(['reservations', 'reports'])
             ->when($keyword !== '', fn ($query) => $query->where('name', 'like', "%{$keyword}%"))
             ->orderBy('name')
-            ->get();
+            ->orderBy('id')
+            ->paginate(15)
+            ->withQueryString();
 
         return view('admin.fasilitas.index', [
             'facilities' => $facilities,
