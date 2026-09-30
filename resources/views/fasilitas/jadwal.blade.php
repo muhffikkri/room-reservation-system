@@ -103,15 +103,21 @@
                 @if ($slot['state'] === 'available' && $facility->status === 'aktif')
                     <a href="{{ route('login') }}" data-slot-state="available"
                         title="Tersedia · klik untuk login dan pesan"
-                        class="flex aspect-square flex-col items-center justify-center rounded-2xl border border-emerald-300 bg-emerald-50/90 p-1.5 text-center text-emerald-900 shadow-2xs transition hover:-translate-y-1 hover:bg-emerald-100 hover:shadow-md focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-600">
+                        class="clay-slot-item clay-slot-available flex aspect-square flex-col items-center justify-center rounded-2xl p-1.5 text-center focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-600">
                         <span class="text-xs font-bold leading-tight sm:text-sm">{{ $slot['start'] }}</span>
-                        <span class="text-[10px] text-emerald-700/80 sm:text-[11px]">{{ $slot['end'] }}</span>
+                        <span class="text-[10px] opacity-80 sm:text-[11px]">{{ $slot['end'] }}</span>
                         <span
                             class="mt-1 rounded-full bg-emerald-200/80 px-2 py-0.5 text-[9px] font-bold text-emerald-800">Tersedia</span>
                     </a>
                 @else
+                    @php
+                        $stateClass = match ($slot['state']) {
+                            'booked' => 'clay-slot-booked',
+                            default => 'clay-slot-inactive',
+                        };
+                    @endphp
                     <div data-slot-state="{{ $slot['state'] }}"
-                        class="flex aspect-square flex-col items-center justify-center rounded-2xl border p-1.5 text-center shadow-2xs {{ $slotClasses[$slot['state']] ?? $slotClasses['inactive'] }}">
+                        class="clay-slot-item flex aspect-square flex-col items-center justify-center rounded-2xl p-1.5 text-center {{ $stateClass }}">
                         <span class="text-xs font-bold leading-tight sm:text-sm">{{ $slot['start'] }}</span>
                         <span class="text-[10px] opacity-80 sm:text-[11px]">{{ $slot['end'] }}</span>
                         <span

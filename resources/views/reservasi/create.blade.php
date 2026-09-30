@@ -125,12 +125,12 @@
                                 <div data-slot-index="{{ $index }}" data-start="{{ $slot['start'] }}"
                                     data-end="{{ $slot['end'] }}" data-state="{{ $state }}"
                                     data-slot-state="{{ $state }}"
-                                    class="slot-item relative flex aspect-square flex-col items-center justify-center rounded-2xl border p-1.5 text-center transition-all duration-150
-                                    @if ($isAvailable) cursor-pointer border-emerald-300 bg-emerald-50/90 text-emerald-950 shadow-2xs hover:bg-emerald-100
+                                    class="slot-item clay-slot-item relative flex aspect-square flex-col items-center justify-center rounded-2xl p-1.5 text-center transition-all duration-150
+                                    @if ($isAvailable) cursor-pointer clay-slot-available
                                     @elseif($isBooked)
-                                        border-rose-300 bg-rose-50/90 text-rose-600 cursor-not-allowed opacity-80
+                                        clay-slot-booked cursor-not-allowed opacity-80
                                     @else
-                                        border-slate-200 bg-slate-100 text-slate-400 cursor-not-allowed opacity-60 @endif">
+                                        clay-slot-inactive cursor-not-allowed opacity-60 @endif">
                                     <span class="text-xs font-bold leading-tight sm:text-sm">{{ $slot['start'] }}</span>
                                     <span class="text-[10px] opacity-80 sm:text-[11px]">{{ $slot['end'] }}</span>
 

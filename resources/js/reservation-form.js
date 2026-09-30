@@ -112,53 +112,27 @@ export function initializeReservationForm(form) {
 
             if (selected) {
                 hasSelection = true;
-                element.classList.remove(
-                    'border-emerald-400',
-                    'bg-white',
-                    'text-emerald-950',
-                    'hover:bg-[#F2F3FF]',
-                );
-                element.classList.add(
-                    'border-[#00236f]',
-                    'bg-[#00236f]',
-                    'text-white',
-                    'font-bold',
-                    'ring-2',
-                    'ring-[#0051d5]',
-                    'shadow-md',
-                );
+                element.classList.remove('clay-slot-available');
+                element.classList.add('clay-slot-selected');
 
                 if (label !== null) {
                     label.textContent = 'Dipilih';
                     label.className =
-                        'slot-status-label mt-1 inline-block rounded px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider bg-white text-[#00236f]';
+                        'slot-status-label mt-1 inline-block rounded-full px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider bg-white/25 text-white backdrop-blur-xs';
                 }
 
                 return;
             }
 
-            element.classList.remove(
-                'border-[#00236f]',
-                'bg-[#00236f]',
-                'text-white',
-                'font-bold',
-                'ring-2',
-                'ring-[#0051d5]',
-                'shadow-md',
-            );
+            element.classList.remove('clay-slot-selected');
 
             if (state === 'available') {
-                element.classList.add(
-                    'border-emerald-400',
-                    'bg-white',
-                    'text-emerald-950',
-                    'hover:bg-[#F2F3FF]',
-                );
+                element.classList.add('clay-slot-available');
 
                 if (label !== null) {
                     label.textContent = 'Tersedia';
                     label.className =
-                        'slot-status-label mt-1 inline-block rounded px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wider bg-emerald-100 text-emerald-800';
+                        'slot-status-label mt-1 inline-block rounded-full px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider bg-emerald-200/80 text-emerald-800';
                 }
             }
         });
