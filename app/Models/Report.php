@@ -77,6 +77,14 @@ class Report extends Model
 
     public function categoryLabel(): string
     {
-        return self::CATEGORIES[$this->category] ?? ucfirst(str_replace('_', ' ', (string) $this->category));
+        return self::categoryLabelFor($this->category);
+    }
+
+    /**
+     * Label kategori dari nilai enum, untuk data rekap yang sudah berupa array.
+     */
+    public static function categoryLabelFor(?string $category): string
+    {
+        return self::CATEGORIES[$category ?? ''] ?? ucfirst(str_replace('_', ' ', (string) $category));
     }
 }

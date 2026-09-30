@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Models\Facility;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -32,7 +33,7 @@ class FacilityRequest extends FormRequest
     {
         return [
             'name' => ['required', 'string', 'max:120'],
-            'type' => ['required', Rule::in(['ruang_kelas', 'aula', 'laboratorium', 'alat', 'lapangan'])],
+            'type' => ['required', Rule::in(array_keys(Facility::TYPES))],
             'location' => ['required', 'string', 'max:120'],
             'capacity' => ['required', 'integer', 'min:1', 'max:100000'],
             'description' => ['nullable', 'string', 'max:2000'],

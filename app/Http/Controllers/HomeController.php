@@ -24,14 +24,6 @@ use Illuminate\View\View;
  */
 class HomeController extends Controller
 {
-    private const TYPE_LABELS = [
-        'ruang_kelas' => 'Ruang Kelas',
-        'aula' => 'Aula',
-        'laboratorium' => 'Laboratorium',
-        'alat' => 'Alat',
-        'lapangan' => 'Lapangan',
-    ];
-
     private const CAPACITY_RANGES = [
         'lt_40' => [1, 39],
         '40_100' => [40, 100],
@@ -71,7 +63,7 @@ class HomeController extends Controller
         return view('landing.index', [
             'facilities' => $facilities,
             'filters' => $filters,
-            'typeLabels' => self::TYPE_LABELS,
+            'typeLabels' => Facility::TYPES,
             'locationOptions' => Facility::query()->publicLocationOptions()->pluck('location'),
             'totalFacilities' => $totalFacilities,
         ]);
@@ -81,7 +73,7 @@ class HomeController extends Controller
     {
         $filters = $request->validate([
             'q' => ['nullable', 'string', 'max:120'],
-            'type' => ['nullable', 'string', Rule::in(array_keys(self::TYPE_LABELS))],
+            'type' => ['nullable', 'string', Rule::in(array_keys(Facility::TYPES))],
             'location' => ['nullable', 'string', 'max:120'],
             'capacity' => ['nullable', 'string', Rule::in(array_keys(self::CAPACITY_RANGES))],
             'facility_id' => ['nullable', 'integer'],

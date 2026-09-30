@@ -24,6 +24,23 @@ class Facility extends Model
     public const MAX_PUBLIC_FILTER_OPTIONS = 50;
 
     /**
+     * Tipe fasilitas yang sah beserta label yang ditampilkan ke pengguna.
+     *
+     * Satu-satunya pemilik nilai ini: enum di migrasi, validasi form admin,
+     * filter katalog publik, landing page, dan tabel rekap membaca dari sini
+     * sehingga daftar tipe tidak pernah berbeda antar halaman.
+     *
+     * @var array<string, string>
+     */
+    public const TYPES = [
+        'ruang_kelas' => 'Ruang Kelas',
+        'aula' => 'Aula',
+        'laboratorium' => 'Laboratorium',
+        'alat' => 'Alat',
+        'lapangan' => 'Lapangan',
+    ];
+
+    /**
      * Accessor legacy hanya ikut ter-serialize bila didaftarkan di sini.
      *
      * @var list<string>
@@ -100,5 +117,21 @@ class Facility extends Model
         return $this->photo === null || $this->photo === ''
             ? ''
             : Storage::disk('public')->url($this->photo);
+    }
+
+    /**
+     * Label tipe fasilitas yang aman dibaca dari blade dan export.
+     */
+    public function typeLabel(): string
+    {
+        return self::typeLabelFor($this->type);
+    }
+
+    /**
+     * Label tipe dari nilai enum, untuk data rekap yang sudah berupa array.
+     */
+    public static function typeLabelFor(?string $type): string
+    {
+        return self::TYPES[$type ?? ''] ?? ucfirst(str_replace('_', ' ', (string) $type));
     }
 }
