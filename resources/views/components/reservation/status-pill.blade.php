@@ -1,5 +1,6 @@
 @props([
     'status',
+    'plain' => false,
 ])
 
 @php
@@ -18,4 +19,10 @@
     };
 @endphp
 
-<span class="inline-flex items-center rounded-full {{ $palette[0] }} px-2.5 py-1 text-xs font-semibold {{ $palette[1] }} ring-1 ring-inset {{ $palette[2] }}">{{ \App\Models\Reservation::statusLabel($status) }}</span>
+{{-- Varian "plain" untuk kolom status tabel: hanya teks bewarna status tanpa
+     fill dan ring, sehingga label tetap satu pemilik dengan pill. --}}
+@if ($plain)
+    <span {{ $attributes->merge(['class' => "text-xs font-extrabold {$palette[1]}"]) }}>{{ \App\Models\Reservation::statusLabel($status) }}</span>
+@else
+    <span class="inline-flex items-center rounded-full {{ $palette[0] }} px-2.5 py-1 text-xs font-semibold {{ $palette[1] }} ring-1 ring-inset {{ $palette[2] }}">{{ \App\Models\Reservation::statusLabel($status) }}</span>
+@endif

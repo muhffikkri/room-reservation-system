@@ -79,17 +79,23 @@ class ReservationController extends Controller
 
     /**
      * Filter yang sah untuk antrean: status dari kosakata Reservation dan tab
-     * rekapitulasi.
+     * rekapitulasi. Tanpa status, antrean dibuka pada tab "menunggu".
      *
      * @return array<string, mixed>
      */
     private function filters(Request $request): array
     {
-        return $request->validate([
+        $filters = $request->validate([
             'status' => ['nullable', 'string', 'in:'.implode(',', Reservation::ORDERED_STATUSES)],
             'date' => ['nullable', 'date'],
             'tab' => ['nullable', 'string', 'in:'.implode(',', array_keys($this->tabs()))],
         ]);
+
+        if (($filters['status'] ?? null) === null) {
+            $filters['tab'] ??= 'menunggu';
+        }
+
+        return $filters;
     }
 
     /**

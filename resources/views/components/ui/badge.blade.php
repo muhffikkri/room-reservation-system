@@ -1,6 +1,7 @@
 @props([
     'status' => null,
     'dot' => false,
+    'plain' => false,
 ])
 
 @php
@@ -79,14 +80,22 @@
         'rejected_by_system' => 'Ditolak oleh Sistem',
         default => ucfirst(str_replace('_', ' ', (string) $status)),
     };
+
+    $label = $slot->isEmpty() ? $defaultLabel : $slot;
 @endphp
 
-<span
-    {{ $attributes->merge([
-        'class' => "inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ring-inset {$palette['bg']} {$palette['text']} {$palette['ring']}",
-    ]) }}>
-    @if ($dot)
-        <span class="h-1.5 w-1.5 rounded-full {{ $palette['dot'] }}"></span>
-    @endif
-    {{ $slot->isEmpty() ? $defaultLabel : $slot }}
-</span>
+{{-- Varian plain hanya menampilkan label; warna, ukuran, dan bobot diwarisi
+     dari elemen induk, jadi label status tidak pernah ditulis ulang per view. --}}
+@if ($plain)
+    <span {{ $attributes }}>{{ $label }}</span>
+@else
+    <span
+        {{ $attributes->merge([
+            'class' => "inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ring-inset {$palette['bg']} {$palette['text']} {$palette['ring']}",
+        ]) }}>
+        @if ($dot)
+            <span class="h-1.5 w-1.5 rounded-full {{ $palette['dot'] }}"></span>
+        @endif
+        {{ $label }}
+    </span>
+@endif

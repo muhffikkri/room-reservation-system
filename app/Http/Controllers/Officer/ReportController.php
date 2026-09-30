@@ -19,10 +19,10 @@ class ReportController extends Controller
     ) {}
 
     /**
-     * Menampilkan daftar antrian laporan kerusakan untuk petugas/admin.
+     * Menampilkan daftar antrean laporan kerusakan untuk petugas/admin.
      *
-     * Tab "menunggu" memuat laporan aktif (baru/diproses) dan tab "selesai"
-     * memuat laporan tertutup (selesai/ditolak); filter status menimpa tab.
+     * Antrean dibuka pada status "baru". Filter status menimpa tab, dan tab
+     * "menunggu"/"selesai" tetap tersedia sebagai pengelompokan URL lama.
      */
     public function index(Request $request): View
     {
@@ -43,6 +43,7 @@ class ReportController extends Controller
                 $query->whereIn('status', $tabs[$tab]);
             } else {
                 $tab = null;
+                $status = 'baru';
             }
         }
 
@@ -56,17 +57,12 @@ class ReportController extends Controller
             ->paginate(10)
             ->withQueryString();
 
-        $counts = [
-            'total' => Report::count(),
-            'baru' => Report::where('status', 'baru')->count(),
-            'diproses' => Report::where('status', 'diproses')->count(),
-            'selesai' => Report::where('status', 'selesai')->count(),
-            'ditolak' => Report::where('status', 'ditolak')->count(),
-            'menunggu' => Report::whereIn('status', ['baru', 'diproses'])->count(),
-            'selesai_count' => Report::whereIn('status', ['selesai', 'ditolak'])->count(),
-        ];
-
-        return view('petugas.laporan.index', compact('reports', 'status', 'counts', 'tab'));
+        return view('petugas.laporan.index', [
+            'reports' => $reports,
+            'status' => $status,
+            'tab' => $tab,
+            'statusFilters' => $validStatuses,
+        ]);
     }
 
     /**

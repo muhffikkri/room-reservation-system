@@ -367,27 +367,28 @@ document.querySelectorAll('[data-notification-toggle]').forEach((toggle) => {
         panel.classList.add('hidden');
     });
 });
-
-const petugasFilterForm = document.getElementById('petugasFilterForm');
-const resetFilterBtn = document.getElementById('reset-filter');
 const loadingIndicator = document.getElementById('loading-indicator');
 const reservationBody = document.getElementById('reservation-body');
 const paginationContainer = document.getElementById('pagination-container');
 
-if (petugasFilterForm !== null) {
-    const statusSelect = document.getElementById('status');
-    const dateInput = document.getElementById('date');
-    let debounceTimer = null;
+// Class yang sama dengan view petugas/reservasi/index: baris hasil AJAX harus
+// memakai token clay yang sama dengan render Blade, kalau tidak tampilan
+// berubah begitu tab diganti.
+const clayTableCell = 'px-5 py-4 align-middle';
+// Aksi baris: Tolak (merah seperti tombol Keluar), Setujui (biru), Batalkan
+// (merah), dan Detail (putih) paling kanan.
+const clayDetailChip =
+    'clay-pressable inline-flex h-9 items-center justify-center whitespace-nowrap rounded-full px-4 text-xs font-bold text-slate-600';
+const clayApproveChip =
+    'landing-button inline-flex h-9 items-center justify-center whitespace-nowrap rounded-full bg-gradient-to-r from-blue-600 to-blue-500 px-4 text-xs font-bold text-white';
+const clayRejectChip =
+    'clay-button-danger inline-flex h-9 items-center justify-center whitespace-nowrap rounded-full px-4 text-xs font-bold';
+const dialogShell =
+    'w-full max-w-md rounded-[1.8rem] border border-white/90 bg-gradient-to-br from-white/98 to-blue-50/80 p-6 shadow-[0_24px_60px_rgba(16,38,74,0.24),inset_2px_2px_6px_rgba(255,255,255,0.9)] backdrop:bg-slate-950/40';
 
-    const fetchReservations = () => {
-        const params = new URLSearchParams();
-        const status = statusSelect.value;
-        const date = dateInput.value;
-        const tab = new URLSearchParams(window.location.search).get('tab');
-
-        if (status) params.set('status', status);
-        if (date) params.set('date', date);
-        if (tab) params.set('tab', tab);
+if (reservationBody !== null) {
+    const fetchReservations = (url) => {
+        const params = new URLSearchParams(new URL(url, window.location.origin).search);
 
         if (loadingIndicator !== null) loadingIndicator.classList.remove('hidden');
 
@@ -400,93 +401,109 @@ if (petugasFilterForm !== null) {
 
                 document.querySelectorAll('[data-ajax-dialog]').forEach((dialog) => dialog.remove());
 
-                if (reservationBody !== null) {
-                    reservationBody.innerHTML = '';
-                    if (data.reservations.length === 0) {
-                        reservationBody.innerHTML = `
+                reservationBody.innerHTML = '';
+                if (data.reservations.length === 0) {
+                    reservationBody.innerHTML = `
                             <tr>
-                                <td colspan="6" class="px-6 py-10 text-center">
-                                    <p class="text-sm font-medium text-[#00236f]">Tidak ada reservasi</p>
-                                    <p class="mt-1 text-sm text-slate-500">Reservasi yang diajukan pengguna akan tampil di sini sesuai filter.</p>
+                                <td colspan="6" class="px-5 py-14 text-center">
+                                    <p class="text-base font-bold text-slate-800">Tidak ada reservasi</p>
+                                    <p class="mt-1 text-sm text-slate-500">Belum ada reservasi pada tab ini.</p>
                                 </td>
                             </tr>`;
-                    } else {
-                        data.reservations.forEach((res) => {
-                            const row = document.createElement('tr');
-                            row.className = 'transition-colors hover:bg-[#F8FAFC]';
+                } else {
+                    data.reservations.forEach((res) => {
+                        const row = document.createElement('tr');
+                        row.className = 'transition-colors hover:bg-white/70';
 
-                            const statusHtml = getStatusBadge(res.status);
-                            const actionsHtml = getActionsHtml(res);
+                        const statusHtml = getStatusBadge(res.status);
+                        const actionsHtml = getActionsHtml(res);
 
-                            row.innerHTML = `
-                                <td class="px-6 py-3">
-                                    <p class="font-semibold text-[#00236f]">${escapeHtml(res.user.name)}</p>
-                                    <p class="text-xs text-slate-600">${escapeHtml(res.user.email)}</p>
+                        row.innerHTML = `
+                                <td class="${clayTableCell}">
+                                    <p class="font-bold text-[#10264a]">${escapeHtml(res.user.name)}</p>
+                                    <p class="text-xs text-slate-500">${escapeHtml(res.user.email)}</p>
                                 </td>
-                                <td class="px-6 py-3">
-                                    <p class="font-medium text-[#00236f]">${escapeHtml(res.facility.name)}</p>
-                                    <p class="text-xs text-slate-600">${escapeHtml(res.facility.location)}</p>
+                                <td class="${clayTableCell}">
+                                    <p class="font-bold text-[#10264a]">${escapeHtml(res.facility.name)}</p>
+                                    <p class="text-xs text-slate-500">${escapeHtml(res.facility.location)}</p>
                                 </td>
-                                <td class="whitespace-nowrap px-6 py-3 text-slate-700">
+                                <td class="${clayTableCell} whitespace-nowrap text-slate-700">
                                     ${formatDate(res.start_time)}
-                                    <br>
-                                    <span class="text-xs text-slate-600">${formatTime(res.start_time)} – ${formatTime(res.end_time)}</span>
+                                    <span class="mt-0.5 block text-xs text-slate-500">${formatTime(res.start_time)} – ${formatTime(res.end_time)} WIB</span>
                                 </td>
-                                <td class="px-6 py-3">${statusHtml}</td>
-                                <td class="px-6 py-3 text-slate-600 text-xs whitespace-nowrap">${formatDate(res.created_at)}</td>
-                                <td class="px-6 py-3">${actionsHtml}</td>
+                                <td class="${clayTableCell}">${statusHtml}</td>
+                                <td class="${clayTableCell} whitespace-nowrap text-xs text-slate-500">${formatDate(res.created_at)} WIB</td>
+                                <td class="${clayTableCell}">
+                                    ${actionsHtml}
+                                </td>
                             `;
-                            reservationBody.appendChild(row);
+                        reservationBody.appendChild(row);
 
-                            const dialogHtml = `
-                                <dialog data-ajax-dialog id="approve-${res.id}" class="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl backdrop:bg-slate-950/40">
-                                    <h3 class="text-lg font-semibold text-[#00236f]">Setujui reservasi?</h3>
-                                    <p class="mt-1 text-sm text-slate-600">${escapeHtml(res.facility.name)} · ${formatDate(res.start_time)} ${formatTime(res.start_time)} – ${formatTime(res.end_time)}</p>
-                                    <form method="POST" action="/petugas/reservasi/${res.id}/approve" class="mt-4">
-                                        <input type="hidden" name="_token" value="${document.querySelector('meta[name="csrf-token"]')?.content ?? ''}">
+                        const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content ?? '';
+                        const schedule = `${escapeHtml(res.facility.name)} · ${formatDate(res.start_time)}, ${formatTime(res.start_time)} – ${formatTime(res.end_time)} WIB`;
+                        const dialogs = [];
+
+                        if (res.status === 'pending') {
+                            dialogs.push(`
+                                <dialog data-ajax-dialog id="approve-${res.id}" class="${dialogShell}" aria-labelledby="approve-${res.id}-title">
+                                    <h3 id="approve-${res.id}-title" class="text-lg font-extrabold tracking-tight text-[#10264a]">Setujui reservasi?</h3>
+                                    <p class="mt-1 text-sm leading-relaxed text-slate-600">${schedule}</p>
+                                    <form method="POST" action="/petugas/reservasi/${res.id}/approve" class="mt-5">
+                                        <input type="hidden" name="_token" value="${csrfToken}">
+                                        <p class="clay-inset rounded-2xl p-3 text-xs leading-relaxed text-slate-600">Menyetujui mengunci slot dan menolak reservasi lain yang bertabrakan.</p>
                                         <div class="mt-4 flex items-center justify-end gap-2">
-                                            <button type="button" data-close-dialog="approve-${res.id}" class="inline-flex h-10 items-center justify-center rounded-lg border border-[#D6DDF8] bg-white px-4 text-sm font-semibold text-[#00236f] transition-colors hover:bg-[#F2F3FF]">Kembali</button>
-                                            <button type="submit" class="inline-flex h-10 items-center justify-center rounded-lg bg-[#0051d5] px-4 text-sm font-semibold text-white transition-colors hover:bg-[#00236f]">Konfirmasi Setujui</button>
+                                            <button type="button" data-close-dialog="approve-${res.id}" class="clay-pressable inline-flex h-10 items-center justify-center rounded-full px-5 text-sm font-semibold text-blue-700">Kembali</button>
+                                            <button type="submit" class="landing-button inline-flex h-10 items-center justify-center rounded-full bg-gradient-to-r from-blue-600 to-blue-500 px-5 text-sm font-bold text-white">Konfirmasi Setujui</button>
                                         </div>
                                     </form>
                                 </dialog>
-                                <dialog data-ajax-dialog id="reject-${res.id}" class="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl backdrop:bg-slate-950/40">
-                                    <h3 class="text-lg font-semibold text-[#00236f]">Tolak reservasi?</h3>
-                                    <p class="mt-1 text-sm text-slate-600">${escapeHtml(res.facility.name)} · ${formatDate(res.start_time)} ${formatTime(res.start_time)} – ${formatTime(res.end_time)}</p>
-                                    <form method="POST" action="/petugas/reservasi/${res.id}/reject" class="mt-4">
-                                        <input type="hidden" name="_token" value="${document.querySelector('meta[name="csrf-token"]')?.content ?? ''}">
-                                        <div class="mb-3">
-                                            <label class="mb-1 block text-sm font-medium text-slate-700">Alasan penolakan</label>
-                                            <textarea name="reason" rows="3" required minlength="10" maxlength="255" class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 transition focus:border-[#0051d5] focus:outline-none focus:ring-4 focus:ring-[#E2E7FF]" placeholder="Jelaskan alasan penolakan (min. 10 karakter)"></textarea>
+                                <dialog data-ajax-dialog id="reject-${res.id}" class="${dialogShell}" aria-labelledby="reject-${res.id}-title">
+                                    <h3 id="reject-${res.id}-title" class="text-lg font-extrabold tracking-tight text-[#10264a]">Tolak reservasi?</h3>
+                                    <p class="mt-1 text-sm leading-relaxed text-slate-600">${schedule}</p>
+                                    <form method="POST" action="/petugas/reservasi/${res.id}/reject" class="mt-5">
+                                        <input type="hidden" name="_token" value="${csrfToken}">
+                                        <div>
+                                            <label for="reject-reason-${res.id}" class="block text-sm font-semibold text-slate-700">Alasan penolakan</label>
+                                            <textarea id="reject-reason-${res.id}" name="reason" rows="3" required minlength="10" maxlength="255" placeholder="Jelaskan alasan penolakan (min. 10 karakter)" class="landing-input mt-1.5 block w-full rounded-2xl px-4 py-3 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-4 focus:ring-rose-500/15"></textarea>
                                         </div>
                                         <div class="mt-4 flex items-center justify-end gap-2">
-                                            <button type="button" data-close-dialog="reject-${res.id}" class="inline-flex h-10 items-center justify-center rounded-lg border border-[#D6DDF8] bg-white px-4 text-sm font-semibold text-[#00236f] transition-colors hover:bg-[#F2F3FF]">Kembali</button>
-                                            <button type="submit" class="inline-flex h-10 items-center justify-center rounded-lg bg-red-600 px-4 text-sm font-semibold text-white transition-colors hover:bg-red-700">Tolak Reservasi</button>
+                                            <button type="button" data-close-dialog="reject-${res.id}" class="clay-pressable inline-flex h-10 items-center justify-center rounded-full px-5 text-sm font-semibold text-blue-700">Kembali</button>
+                                            <button type="submit" class="clay-button-danger inline-flex h-10 items-center justify-center rounded-full px-5 text-sm font-bold">Tolak Reservasi</button>
                                         </div>
                                     </form>
-                                </dialog>
-                                <dialog data-ajax-dialog id="cancel-${res.id}" class="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl backdrop:bg-slate-950/40">
-                                    <h3 class="text-lg font-semibold text-[#00236f]">Batalkan reservasi?</h3>
-                                    <p class="mt-1 text-sm text-slate-600">${escapeHtml(res.facility.name)} · ${formatDate(res.start_time)} ${formatTime(res.start_time)} – ${formatTime(res.end_time)}</p>
-                                    <form method="POST" action="/petugas/reservasi/${res.id}/cancel" class="mt-4">
-                                        <input type="hidden" name="_token" value="${document.querySelector('meta[name="csrf-token"]')?.content ?? ''}">
-                                        <div class="mb-3">
-                                            <label class="mb-1 block text-sm font-medium text-slate-700">Alasan pembatalan</label>
-                                            <textarea name="cancel_reason" rows="3" required minlength="10" maxlength="255" class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 transition focus:border-[#0051d5] focus:outline-none focus:ring-4 focus:ring-[#E2E7FF]" placeholder="Jelaskan alasan pembatalan (min. 10 karakter)"></textarea>
+                                </dialog>`);
+                        }
+
+                        if (res.status === 'approved') {
+                            dialogs.push(`
+                                <dialog data-ajax-dialog id="cancel-${res.id}" class="${dialogShell}" aria-labelledby="cancel-${res.id}-title">
+                                    <h3 id="cancel-${res.id}-title" class="text-lg font-extrabold tracking-tight text-[#10264a]">Batalkan reservasi?</h3>
+                                    <p class="mt-1 text-sm leading-relaxed text-slate-600">${schedule}</p>
+                                    <form method="POST" action="/petugas/reservasi/${res.id}/cancel" class="mt-5">
+                                        <input type="hidden" name="_token" value="${csrfToken}">
+                                        <div>
+                                            <label for="cancel-reason-${res.id}" class="block text-sm font-semibold text-slate-700">Alasan pembatalan</label>
+                                            <textarea id="cancel-reason-${res.id}" name="cancel_reason" rows="3" required minlength="10" maxlength="255" placeholder="Jelaskan alasan pembatalan (min. 10 karakter)" class="landing-input mt-1.5 block w-full rounded-2xl px-4 py-3 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-4 focus:ring-rose-500/15"></textarea>
                                         </div>
                                         <div class="mt-4 flex items-center justify-end gap-2">
-                                            <button type="button" data-close-dialog="cancel-${res.id}" class="inline-flex h-10 items-center justify-center rounded-lg border border-[#D6DDF8] bg-white px-4 text-sm font-semibold text-[#00236f] transition-colors hover:bg-[#F2F3FF]">Kembali</button>
-                                            <button type="submit" class="inline-flex h-10 items-center justify-center rounded-lg bg-red-600 px-4 text-sm font-semibold text-white transition-colors hover:bg-red-700">Batalkan Reservasi</button>
+                                            <button type="button" data-close-dialog="cancel-${res.id}" class="clay-pressable inline-flex h-10 items-center justify-center rounded-full px-5 text-sm font-semibold text-blue-700">Kembali</button>
+                                            <button type="submit" class="clay-button-danger inline-flex h-10 items-center justify-center rounded-full px-5 text-sm font-bold">Batalkan Reservasi</button>
                                         </div>
                                     </form>
-                                </dialog>`;
-                            document.body.insertAdjacentHTML('beforeend', dialogHtml);
-                        });
-                    }
+                                </dialog>`);
+                        }
+
+                        document.body.insertAdjacentHTML('beforeend', dialogs.join(''));
+                    });
                 }
 
-                if (paginationContainer !== null) {
-                    paginationContainer.style.display = data.pagination.total > 0 ? 'block' : 'none';
+                renderQueuePagination(data.pagination, params);
+                history.pushState({}, '', url);
+
+                const activeTab = params.get('tab');
+
+                if (activeTab !== null) {
+                    setActiveQueueTab(activeTab);
                 }
             })
             .catch((error) => {
@@ -495,49 +512,130 @@ if (petugasFilterForm !== null) {
             });
     };
 
-    const scheduleDebounce = (fn, delay) => {
-        return () => {
-            clearTimeout(debounceTimer);
-            debounceTimer = setTimeout(fn, delay);
-        };
-    };
+    // Tab dan pagination antrean dimuat lewat AJAX; klik dimodifikasi tetap
+    // membuka tab browser sepertita biasanya.
+    document.addEventListener('click', (event) => {
+        if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey) {
+            return;
+        }
 
-    statusSelect.addEventListener('change', scheduleDebounce(fetchReservations, 300));
-    dateInput.addEventListener('change', scheduleDebounce(fetchReservations, 300));
+        const link = event.target.closest('a[data-queue-tab], #pagination-container a[href]');
 
-    if (resetFilterBtn !== null) {
-        resetFilterBtn.addEventListener('click', () => {
-            statusSelect.value = '';
-            dateInput.value = '';
-            fetchReservations();
-        });
-    }
+        if (link === null) {
+            return;
+        }
+
+        const url = link.getAttribute('href');
+
+        if (url === null || ! url.startsWith('/')) {
+            return;
+        }
+
+        event.preventDefault();
+        fetchReservations(url);
+    });
 }
 
+// Status queue memakai varian plain: teks bewarna status tanpa fill dan ring,
+// sama seperti <x-reservation.status-pill plain> di render Blade.
 function getStatusBadge(status) {
-    const badges = {
-        pending: '<span class="inline-flex items-center rounded-full bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-700 ring-1 ring-inset ring-amber-200">Menunggu Persetujuan</span>',
-        approved: '<span class="inline-flex items-center rounded-full bg-green-50 px-2.5 py-1 text-xs font-semibold text-green-700 ring-1 ring-inset ring-green-200">Disetujui</span>',
-        rejected: '<span class="inline-flex items-center rounded-full bg-red-50 px-2.5 py-1 text-xs font-semibold text-red-700 ring-1 ring-inset ring-red-200">Ditolak</span>',
-        cancelled_by_user: '<span class="inline-flex items-center rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-600 ring-1 ring-inset ring-slate-200">Dibatalkan Pengguna</span>',
-        cancelled_by_officer: '<span class="inline-flex items-center rounded-full bg-orange-50 px-2.5 py-1 text-xs font-semibold text-orange-700 ring-1 ring-inset ring-orange-200">Dibatalkan Petugas</span>',
-        cancelled_by_system: '<span class="inline-flex items-center rounded-full bg-violet-50 px-2.5 py-1 text-xs font-semibold text-violet-700 ring-1 ring-inset ring-violet-200">Dibatalkan oleh Sistem</span>',
-        rejected_by_system: '<span class="inline-flex items-center rounded-full bg-violet-50 px-2.5 py-1 text-xs font-semibold text-violet-700 ring-1 ring-inset ring-violet-200">Ditolak oleh Sistem</span>',
+    const labels = {
+        pending: '<span class="text-xs font-extrabold text-amber-700">Menunggu Persetujuan</span>',
+        approved: '<span class="text-xs font-extrabold text-green-700">Disetujui</span>',
+        rejected: '<span class="text-xs font-extrabold text-red-700">Ditolak</span>',
+        cancelled_by_user: '<span class="text-xs font-extrabold text-slate-600">Dibatalkan Pengguna</span>',
+        cancelled_by_officer: '<span class="text-xs font-extrabold text-orange-700">Dibatalkan Petugas</span>',
+        cancelled_by_system: '<span class="text-xs font-extrabold text-violet-700">Dibatalkan oleh Sistem</span>',
+        rejected_by_system: '<span class="text-xs font-extrabold text-violet-700">Ditolak oleh Sistem</span>',
     };
-    return badges[status] || status;
+
+    return labels[status] || `<span class="text-xs font-extrabold text-slate-700">${escapeHtml(status)}</span>`;
 }
 
 function getActionsHtml(res) {
-    let html = '<div class="flex flex-wrap gap-2">';
-    html += `<a href="/petugas/reservasi/${res.id}" class="inline-flex h-8 items-center rounded-lg border border-[#D6DDF8] bg-white px-3 text-xs font-semibold text-[#00236f] transition-colors hover:bg-[#F2F3FF]">Detail</a>`;
+    let html = '<div class="flex flex-wrap items-center justify-end gap-2">';
+
     if (res.status === 'pending') {
-        html += `<button type="button" data-open-dialog="approve-${res.id}" class="inline-flex h-8 items-center rounded-lg bg-[#0051d5] px-3 text-xs font-semibold text-white transition-colors hover:bg-[#00236f]">Setujui</button>`;
-        html += `<button type="button" data-open-dialog="reject-${res.id}" class="inline-flex h-8 items-center rounded-lg border border-red-300 bg-white px-3 text-xs font-semibold text-red-600 transition-colors hover:bg-red-50">Tolak</button>`;
+        html += `<button type="button" data-open-dialog="reject-${res.id}" class="${clayRejectChip}">Tolak</button>`;
+        html += `<button type="button" data-open-dialog="approve-${res.id}" class="${clayApproveChip}">Setujui</button>`;
     }
-    if (['pending', 'approved'].includes(res.status)) {
-        html += `<button type="button" data-open-dialog="cancel-${res.id}" class="inline-flex h-8 items-center rounded-lg bg-red-600 px-3 text-xs font-semibold text-white transition-colors hover:bg-red-700">Batalkan</button>`;
+
+    if (res.status === 'approved') {
+        html += `<button type="button" data-open-dialog="cancel-${res.id}" class="${clayRejectChip}">Batalkan</button>`;
     }
+
+    html += `<a href="/petugas/reservasi/${res.id}" class="${clayDetailChip}">Detail</a>`;
+
     return html + '</div>';
+}
+
+// Paginasi digambar ulang dari data JSON supaya tautannya selalu memakai query
+// tab yang sedang aktif.
+function renderQueuePagination(pagination, params) {
+    if (paginationContainer === null) {
+        return;
+    }
+
+    if (pagination.last_page <= 1) {
+        paginationContainer.innerHTML = '';
+        paginationContainer.classList.add('hidden');
+
+        return;
+    }
+
+    const pageUrl = (page) => {
+        const next = new URLSearchParams(params);
+
+        next.delete('page');
+
+        if (page > 1) {
+            next.set('page', String(page));
+        }
+
+        const query = next.toString();
+
+        return query === '' ? window.location.pathname : `${window.location.pathname}?${query}`;
+    };
+    const base = 'inline-flex h-9 min-w-9 items-center justify-center rounded-full px-3 text-xs font-bold';
+    const step = (label, page, disabled) =>
+        disabled
+            ? `<span class="${base} pointer-events-none bg-white/40 text-slate-400">${label}</span>`
+            : `<a href="${pageUrl(page)}" class="${base} clay-pressable text-slate-600">${label}</a>`;
+
+    let pages = '';
+
+    for (let page = 1; page <= pagination.last_page; page += 1) {
+        pages +=
+            page === pagination.current_page
+                ? `<span class="${base} landing-button bg-gradient-to-r from-blue-600 to-blue-500 text-white" aria-current="page">${page}</span>`
+                : `<a href="${pageUrl(page)}" class="${base} clay-pressable text-slate-600">${page}</a>`;
+    }
+
+    paginationContainer.innerHTML = `<nav class="flex flex-wrap items-center gap-2" aria-label="Navigasi antrean reservasi">${step(
+        'Sebelumnya',
+        pagination.current_page - 1,
+        pagination.current_page <= 1
+    )}${pages}${step('Berikutnya', pagination.current_page + 1, pagination.current_page >= pagination.last_page)}</nav>`;
+    paginationContainer.classList.remove('hidden');
+}
+
+function setActiveQueueTab(tabKey) {
+    document.querySelectorAll('a[data-queue-tab]').forEach((link) => {
+        const active = link.dataset.tabActive.split(' ');
+        const inactive = link.dataset.tabInactive.split(' ');
+        const isActive = link.dataset.queueTab === tabKey;
+
+        // Kedua set kelas dilepas dulu supaya tab yang baru tidak aktif tidak
+        // menyisakan gaya gradient dari tab sebelumnya.
+        link.classList.remove(...active, ...inactive);
+        link.classList.add(...(isActive ? active : inactive));
+
+        if (link.dataset.queueTab === tabKey) {
+            link.setAttribute('aria-current', 'page');
+        } else {
+            link.removeAttribute('aria-current');
+        }
+    });
 }
 
 function escapeHtml(str) {

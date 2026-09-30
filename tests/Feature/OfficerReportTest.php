@@ -81,7 +81,7 @@ it('prevents regular pengguna from accessing officer report queue', function () 
     $response->assertStatus(403);
 });
 
-it('shows all reports by default and filters the queue by the menunggu approval tab', function () {
+it('opens the report queue on the baru status and keeps the menunggu approval tab filterable', function () {
     $officer = User::factory()->create(['role' => 'petugas', 'account_status' => 'aktif']);
     $user = User::factory()->create(['role' => 'pengguna', 'account_status' => 'aktif']);
     $activeFacility = Facility::factory()->create(['name' => 'Fasilitas Masih Aktif', 'status' => 'aktif']);
@@ -93,9 +93,8 @@ it('shows all reports by default and filters the queue by the menunggu approval 
     $this->actingAs($officer)
         ->get(route('petugas.laporan.index'))
         ->assertOk()
-        ->assertSee('Menunggu Approval')
         ->assertSee('Fasilitas Masih Aktif')
-        ->assertSee('Fasilitas Sudah Tutup');
+        ->assertDontSee('Fasilitas Sudah Tutup');
 
     $this->actingAs($officer)
         ->get(route('petugas.laporan.index', ['tab' => 'menunggu']))
@@ -123,7 +122,7 @@ it('filters the report queue by the selesai tab', function () {
         ->assertDontSee('Fasilitas Masih Aktif');
 });
 
-it('orders active reports above finished reports', function () {
+it('surfaces unfinished reports first and finished reports behind the selesai filter', function () {
     $officer = User::factory()->create(['role' => 'petugas', 'account_status' => 'aktif']);
     $user = User::factory()->create(['role' => 'pengguna', 'account_status' => 'aktif']);
     $activeFacility = Facility::factory()->create(['name' => 'Fasilitas Masih Aktif', 'status' => 'aktif']);
@@ -143,10 +142,19 @@ it('orders active reports above finished reports', function () {
         'created_at' => now()->subDay(),
     ]);
 
+    // Antrean terbuka pada laporan "baru"; laporan yang sudah selesai hanya
+    // muncul lewat filter statusnya.
     $this->actingAs($officer)
         ->get(route('petugas.laporan.index'))
         ->assertOk()
-        ->assertSeeInOrder(['Fasilitas Masih Aktif', 'Fasilitas Sudah Tutup']);
+        ->assertSee('Fasilitas Masih Aktif')
+        ->assertDontSee('Fasilitas Sudah Tutup');
+
+    $this->actingAs($officer)
+        ->get(route('petugas.laporan.index', ['status' => 'selesai']))
+        ->assertOk()
+        ->assertDontSee('Fasilitas Masih Aktif')
+        ->assertSee('Fasilitas Sudah Tutup');
 });
 
 it('shows the submitted at column on the report queue', function () {

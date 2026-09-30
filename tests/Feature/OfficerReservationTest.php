@@ -275,15 +275,23 @@ it('sorts the queue by created_at desc, then start time asc, then status priorit
     ]);
 
     $this->actingAs($officer)
-        ->get(route('petugas.reservasi.index'))
+        ->get(route('petugas.reservasi.index', ['tab' => 'menunggu']))
         ->assertOk()
         ->assertSeeInOrder([
-            'Urutan Baru Approved',
             'Urutan Start Pagi',
             'Urutan Start Siang',
             'Urutan Pending Dulu',
-            'Urutan Rejected Sesudah',
             'Urutan Paling Lama',
+        ])
+        ->assertDontSee('Urutan Baru Approved')
+        ->assertDontSee('Urutan Rejected Sesudah');
+
+    $this->actingAs($officer)
+        ->get(route('petugas.reservasi.index', ['tab' => 'selesai']))
+        ->assertOk()
+        ->assertSeeInOrder([
+            'Urutan Baru Approved',
+            'Urutan Rejected Sesudah',
         ]);
 });
 
@@ -373,12 +381,22 @@ it('orders the queue by the status vocabulary', function () {
         ]);
     }
 
-    $response = $this->actingAs($officer)->get(route('petugas.reservasi.ajax', [
+    $menunggu = $this->actingAs($officer)->get(route('petugas.reservasi.ajax', [
         'date' => '2030-02-04',
+        'tab' => 'menunggu',
     ]));
-    $response->assertOk();
+    $menunggu->assertOk();
 
-    $statuses = collect($response->json('reservations'))->pluck('status')->all();
+    $selesai = $this->actingAs($officer)->get(route('petugas.reservasi.ajax', [
+        'date' => '2030-02-04',
+        'tab' => 'selesai',
+    ]));
+    $selesai->assertOk();
+
+    $statuses = collect($menunggu->json('reservations'))
+        ->concat($selesai->json('reservations'))
+        ->pluck('status')
+        ->all();
 
     expect($statuses)->toBe(Reservation::ORDERED_STATUSES);
 });
