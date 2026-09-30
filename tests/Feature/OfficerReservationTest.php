@@ -456,3 +456,29 @@ it('seeds reservations with officer attribution and tomorrow dates (§15)', func
         ->and($rejected->decided_by)->toBe($petugas->id)
         ->and($rejected->start_time->isTomorrow())->toBeTrue();
 });
+
+it('filters the queue by facility_id', function () {
+    [, , $officer] = makeOfficerReservationActors();
+
+    $facilityA = Facility::factory()->create(['name' => 'Fasilitas Alpha', 'status' => 'aktif']);
+    $facilityB = Facility::factory()->create(['name' => 'Fasilitas Beta', 'status' => 'aktif']);
+    $user = User::factory()->create(['role' => 'pengguna', 'account_status' => 'aktif']);
+
+    Reservation::factory()->create([
+        'user_id' => $user->id,
+        'facility_id' => $facilityA->id,
+        'status' => 'approved',
+    ]);
+    Reservation::factory()->create([
+        'user_id' => $user->id,
+        'facility_id' => $facilityB->id,
+        'status' => 'approved',
+    ]);
+
+    $response = $this->actingAs($officer)
+        ->get(route('petugas.reservasi.index', ['facility_id' => $facilityA->id, 'status' => 'approved']));
+
+    $response->assertOk()
+        ->assertSee('Fasilitas Alpha')
+        ->assertDontSee('Fasilitas Beta');
+});

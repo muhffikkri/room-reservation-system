@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Officer;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\UpdateReportStatusRequest;
 use App\Models\Report;
+use App\Models\Reservation;
 use App\Services\ReportService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -70,7 +71,7 @@ class ReportController extends Controller
     /**
      * Menampilkan detail laporan kerusakan dan form tindakan petugas.
      */
-    public function show(Report $report): View
+    public function show(Request $request, Report $report): View
     {
         Gate::authorize('view', $report);
 
@@ -78,7 +79,24 @@ class ReportController extends Controller
 
         $allowedTransitions = ReportService::allowedTransitions($report->status);
 
-        return view('petugas.laporan.show', compact('report', 'allowedTransitions'));
+        $affectedReservations = collect();
+        if ($request->session()->has('affectedReservationIds')) {
+            $affectedReservations = Reservation::whereIn('id', (array) $request->session()->get('affectedReservationIds'))
+                ->where('status', 'approved')
+                ->where('end_time', '>', now())
+                ->with('user:id,name,email')
+                ->orderBy('start_time')
+                ->get();
+        } elseif ($report->facility->status === 'perbaikan' && (int) $report->facility->repair_report_id === (int) $report->id) {
+            $affectedReservations = Reservation::where('facility_id', $report->facility_id)
+                ->where('status', 'approved')
+                ->where('end_time', '>', now())
+                ->with('user:id,name,email')
+                ->orderBy('start_time')
+                ->get();
+        }
+
+        return view('petugas.laporan.show', compact('report', 'allowedTransitions', 'affectedReservations'));
     }
 
     /**
@@ -100,7 +118,7 @@ class ReportController extends Controller
     }
 
     /**
-     * Menandai atau mengembalikan status fasilitas perbaikan (BR-11).
+     * Menandai atau mengembalikan status fasilitas perbaikan (BR-11, BR-16).
      */
     public function toggleFacilityStatus(Request $request, Report $report): RedirectResponse
     {
@@ -108,8 +126,17 @@ class ReportController extends Controller
 
         try {
             if ($action === 'perbaikan') {
-                $this->reportService->markFacilityForRepair($report, $request->user());
-                $message = 'Fasilitas berhasil ditandai sedang dalam perbaikan.';
+                $result = $this->reportService->markFacilityForRepair($report, $request->user());
+                $affected = $result['affectedReservations'];
+                $count = $affected->count();
+                $message = $count > 0
+                    ? "Fasilitas berhasil ditandai perbaikan. {$count} reservasi disetujui perlu ditinjau."
+                    : 'Fasilitas berhasil ditandai sedang dalam perbaikan.';
+
+                return redirect()
+                    ->route('petugas.laporan.show', $report)
+                    ->with('success', $message)
+                    ->with('affectedReservationIds', $affected->pluck('id')->all());
             } elseif ($action === 'aktif') {
                 $this->reportService->restoreFacilityToActive($report, $request->user());
                 $message = 'Fasilitas berhasil dikembalikan ke status aktif.';

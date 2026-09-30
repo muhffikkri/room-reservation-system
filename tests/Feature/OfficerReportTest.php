@@ -3,6 +3,7 @@
 use App\Models\Facility;
 use App\Models\Report;
 use App\Models\ReportUpdate;
+use App\Models\Reservation;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
@@ -168,4 +169,53 @@ it('shows the submitted at column on the report queue', function () {
         ->get(route('petugas.laporan.index'))
         ->assertOk()
         ->assertSee('Waktu Diajukan');
+});
+
+it('surfaces approved reservations after marking facility for repair (BR-16)', function () {
+    $officer = User::factory()->create(['role' => 'petugas', 'account_status' => 'aktif']);
+    $user = User::factory()->create(['name' => 'Budi Pemohon', 'role' => 'pengguna', 'account_status' => 'aktif']);
+    $facility = Facility::factory()->create(['status' => 'aktif']);
+    $report = Report::factory()->create(['user_id' => $user->id, 'facility_id' => $facility->id, 'status' => 'diproses']);
+
+    $reservation = Reservation::factory()->create([
+        'user_id' => $user->id,
+        'facility_id' => $facility->id,
+        'status' => 'approved',
+        'start_time' => now()->tomorrow()->setTime(9, 0),
+        'end_time' => now()->tomorrow()->setTime(11, 0),
+    ]);
+
+    $response = $this->actingAs($officer)
+        ->from(route('petugas.laporan.show', $report))
+        ->patch(route('petugas.laporan.fasilitas-status', $report), [
+            'action' => 'perbaikan',
+        ]);
+
+    $response->assertRedirect(route('petugas.laporan.show', $report));
+    $response->assertSessionHas('affectedReservationIds', [$reservation->id]);
+
+    $showResponse = $this->actingAs($officer)->get(route('petugas.laporan.show', $report));
+    $showResponse->assertOk()
+        ->assertSee('Reservasi yang Perlu Ditinjau')
+        ->assertSee('Budi Pemohon')
+        ->assertSee(route('petugas.reservasi.show', $reservation))
+        ->assertSee(route('petugas.reservasi.index', ['facility_id' => $facility->id, 'status' => 'approved']));
+});
+
+it('shows no affected panel when there are no approved reservations on repair', function () {
+    $officer = User::factory()->create(['role' => 'petugas', 'account_status' => 'aktif']);
+    User::factory()->create(['role' => 'pengguna', 'account_status' => 'aktif']);
+    $facility = Facility::factory()->create(['status' => 'aktif']);
+    $report = Report::factory()->create(['facility_id' => $facility->id, 'status' => 'diproses']);
+
+    $response = $this->actingAs($officer)->patch(route('petugas.laporan.fasilitas-status', $report), [
+        'action' => 'perbaikan',
+    ]);
+
+    $response->assertRedirect(route('petugas.laporan.show', $report));
+    $response->assertSessionHas('affectedReservationIds', []);
+
+    $showResponse = $this->actingAs($officer)->get(route('petugas.laporan.show', $report));
+    $showResponse->assertOk()
+        ->assertDontSee('Reservasi yang Perlu Ditinjau');
 });

@@ -246,6 +246,48 @@
                         </p>
                     @endif
                 </section>
+
+                @if (isset($affectedReservations) && $affectedReservations->isNotEmpty())
+                    <section class="auth-clay-card rounded-[2rem] p-5 sm:p-6"
+                        aria-labelledby="affected-reservations-heading">
+                        <h2 id="affected-reservations-heading"
+                            class="text-base font-extrabold tracking-tight text-[#10264a]">
+                            Reservasi yang Perlu Ditinjau
+                        </h2>
+                        <p class="mt-1 text-[11px] leading-relaxed text-slate-500">
+                            Reservasi berikut masih berstatus disetujui pada fasilitas yang sedang perbaikan. Batalkan jika jadwalnya bertabrakan (BR-16).
+                        </p>
+
+                        <ul class="mt-4 space-y-2">
+                            @foreach ($affectedReservations as $res)
+                                <li class="clay-inset flex items-center justify-between gap-4 rounded-2xl p-3 text-xs">
+                                    <div>
+                                        <p class="font-semibold text-slate-900">{{ $res->user->name }}</p>
+                                        <p class="text-slate-500">
+                                            {{ \Carbon\Carbon::parse($res->start_time)->isoFormat('D MMM YYYY, HH:mm') }}
+                                            &ndash;
+                                            {{ \Carbon\Carbon::parse($res->end_time)->format('H:i') }}
+                                        </p>
+                                    </div>
+                                    <a href="{{ route('petugas.reservasi.show', $res) }}"
+                                        class="clay-button-white shrink-0 rounded-full px-3 py-1.5 text-[11px] font-bold text-slate-700">
+                                        Tinjau &amp; Batalkan
+                                    </a>
+                                </li>
+                            @endforeach
+                        </ul>
+
+                        <div class="mt-4 border-t border-blue-100/70 pt-3 text-right">
+                            <a href="{{ route('petugas.reservasi.index', ['facility_id' => $report->facility_id, 'status' => 'approved']) }}"
+                                class="inline-flex items-center gap-1.5 text-xs font-bold text-blue-600 hover:text-blue-800 transition">
+                                <span>Buka seluruh antrean fasilitas ini</span>
+                                <svg class="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor">
+                                    <path fill-rule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z" clip-rule="evenodd" />
+                                </svg>
+                            </a>
+                        </div>
+                    </section>
+                @endif
             </aside>
         </div>
     </div>
