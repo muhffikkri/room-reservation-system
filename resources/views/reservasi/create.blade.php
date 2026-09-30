@@ -3,30 +3,28 @@
 @section('title', 'Ajukan Reservasi Fasilitas')
 
 @section('content')
-    <div class="mx-auto max-w-6xl space-y-5">
-        <div class="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-            <a href="{{ route('reservasi.index') }}"
-                class="clay-pressable mb-4 inline-flex items-center gap-2 rounded-full px-4 py-2 text-xs font-semibold text-blue-700">
-                &larr; Kembali ke riwayat reservasi
-            </a>
-            <p class="text-[11px] font-bold uppercase tracking-[0.16em] text-blue-600">Pemesanan fasilitas · REKSA</p>
-            <h1 class="mt-1.5 text-2xl font-extrabold tracking-tight text-[#10264a] sm:text-3xl">Ajukan Reservasi Fasilitas</h1>
-            <p class="mt-2 text-sm leading-6 text-slate-600">Pilih fasilitas, tanggal, dan slot waktu yang tersedia untuk mengajukan
-                peminjaman.</p>
+    <div class="mx-auto max-w-7xl space-y-6">
+        <div class="auth-clay-card rounded-[2rem] p-5 sm:p-7 lg:p-9">
+            <div
+                class="mb-7 flex flex-col gap-4 border-b border-blue-100/80 pb-6 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                    <a href="{{ route('reservasi.index') }}"
+                        class="clay-pressable mb-3 inline-flex items-center gap-2 rounded-full px-4 py-2 text-xs font-semibold text-blue-700">
+                        &larr; Kembali ke riwayat reservasi
+                    </a>
+                    <p class="text-[11px] font-bold uppercase tracking-[0.16em] text-blue-600">Pemesanan fasilitas · REKSA
+                    </p>
+                    <h1 class="mt-1 text-2xl font-extrabold tracking-tight text-[#10264a] sm:text-3xl">Ajukan Reservasi
+                        Fasilitas</h1>
+                    <p class="mt-1 text-sm leading-relaxed text-slate-600">Pilih fasilitas, tanggal, dan slot waktu yang
+                        tersedia untuk mengajukan peminjaman.</p>
+                </div>
             </div>
-            <img src="{{ asset('images/reksa-mascot.webp') }}" alt="Maskot REKSA" class="hidden h-36 w-40 object-contain drop-shadow-[0_12px_16px_rgba(37,99,235,0.16)] sm:block">
-        </div>
-
-        <div class="landing-panel rounded-[2rem] p-5 shadow-[0_16px_44px_rgba(53,103,175,0.12)] sm:p-7 lg:p-8">
-            <form method="POST" action="{{ route('reservasi.store') }}" id="reservationForm"
-                data-reservation-form
+            <form method="POST" action="{{ route('reservasi.store') }}" id="reservationForm" data-reservation-form
                 data-create-url="{{ route('reservasi.create') }}"
                 data-slots="{{ json_encode($slots, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT) }}"
-                data-max-duration-slots="{{ $maxDurationSlots }}"
-                data-old-start-time="{{ old('start_time') }}"
-                data-old-end-time="{{ old('end_time') }}"
-                class="space-y-8">
+                data-max-duration-slots="{{ $maxDurationSlots }}" data-old-start-time="{{ old('start_time') }}"
+                data-old-end-time="{{ old('end_time') }}" class="space-y-8">
                 @csrf
 
                 {{-- Fasilitas & Tanggal (Grid 2 Kolom) --}}
@@ -66,50 +64,56 @@
 
                 {{-- Grid Ketersediaan Slot Waktu Interaktif --}}
                 @if ($selectedFacility)
-                    <div class="rounded-2xl border border-blue-100/80 bg-blue-50/45 p-4 shadow-sm sm:p-5">
-                        <div class="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                    <div class="space-y-4 rounded-3xl border border-blue-100/80 bg-blue-50/40 p-5 shadow-2xs sm:p-6">
+                        <div class="flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
                             <div>
-                                <h2 class="text-sm font-semibold text-[#00236f]">
-                                    Jadwal Ketersediaan Slot: {{ $selectedDate->translatedFormat('d F Y') }}
-                                </h2>
-                                <p class="text-xs text-slate-500">
-                                    Jam Operasional: 07:00 – 20:00 WIB &bull; Klik atau seret (drag) untuk memilih rentang
-                                    waktu.
-                                </p>
+                                <h2 class="text-lg font-bold text-slate-900">Jadwal Ketersediaan</h2>
+                                <p class="text-xs text-slate-600">Jam operasional 07.00–20.00 WIB · interval 30 menit</p>
                             </div>
                             <button type="button" id="resetSelectionBtn"
-                                class="clay-button-danger hidden rounded-full px-3 py-2 text-xs font-bold">
+                                class="clay-button-danger hidden self-start rounded-full px-4 py-1.5 text-xs font-bold shadow-sm sm:self-auto">
                                 Batalkan Pilihan Slot
                             </button>
                         </div>
 
-                        {{-- Legend / Keterangan Warna yang Menonjol --}}
-                        <div class="mb-4 flex flex-wrap items-center gap-3 text-xs">
-                            <div
-                                class="flex items-center gap-1.5 rounded-lg border border-emerald-300 bg-white px-2.5 py-1 text-emerald-800 font-medium shadow-2xs">
-                                <span class="h-2.5 w-2.5 rounded-full bg-emerald-500"></span>
-                                Tersedia (Bisa Dipilih)
-                            </div>
-                            <div
-                                class="flex items-center gap-1.5 rounded-lg border border-[#00236f] bg-[#00236f] px-2.5 py-1 font-medium text-white shadow-2xs">
-                                <span class="h-2.5 w-2.5 rounded-full bg-white"></span>
-                                Terpilih
-                            </div>
-                            <div
-                                class="flex items-center gap-1.5 rounded-lg border border-rose-300 bg-rose-50 px-2.5 py-1 text-rose-700 font-medium shadow-2xs">
-                                <span class="h-2.5 w-2.5 rounded-full bg-rose-500"></span>
-                                Terisi (Approved)
-                            </div>
-<div
-                                class="flex items-center gap-1.5 rounded-lg border border-slate-200 bg-slate-200 px-2.5 py-1 text-slate-600 font-medium shadow-2xs">
-                                <span class="h-2.5 w-2.5 rounded-full bg-slate-400"></span>
-                                Tidak Aktif (< 1 Jam / Lewat)
+                        <div
+                            class="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-blue-100 bg-blue-50/80 p-3.5">
+                            <p class="text-sm font-semibold text-slate-800">
+                                {{ $selectedDate->translatedFormat('l, d F Y') }}</p>
+                            <div class="inline-flex items-center gap-3 text-xs font-medium text-slate-700">
+                                <span>Tampilkan jadwal yang bisa dipilih saja</span>
+                                <button type="button" role="switch" aria-checked="true"
+                                    aria-label="Tampilkan jadwal yang bisa dipilih saja" data-available-filter
+                                    class="availability-toggle">
+                                    <span class="availability-toggle-thumb"></span>
+                                </button>
                             </div>
                         </div>
 
-                        {{-- Grid 26 Slot --}}
-                        <div id="slotGridContainer"
-                            class="grid grid-cols-2 gap-2 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-7 select-none">
+                        {{-- Legend Keterangan Warna --}}
+                        <div class="flex flex-wrap items-center gap-4 text-xs text-slate-600"
+                            aria-label="Keterangan status jadwal">
+                            <span class="inline-flex items-center gap-2">
+                                <span class="h-3 w-3 rounded bg-emerald-200 ring-1 ring-emerald-400"></span>
+                                Dapat direservasi
+                            </span>
+                            <span class="inline-flex items-center gap-2">
+                                <span class="h-3 w-3 rounded bg-blue-600 ring-1 ring-blue-700"></span>
+                                Terpilih
+                            </span>
+                            <span class="inline-flex items-center gap-2">
+                                <span class="h-3 w-3 rounded bg-rose-200 ring-1 ring-rose-400"></span>
+                                Sudah direservasi
+                            </span>
+                            <span class="inline-flex items-center gap-2">
+                                <span class="h-3 w-3 rounded bg-slate-200 ring-1 ring-slate-400"></span>
+                                Tidak dapat dipilih
+                            </span>
+                        </div>
+
+                        {{-- Grid 26 Slot 1:1 Aspect Ratio --}}
+                        <div id="slotGridContainer" data-schedule-slots
+                            class="grid grid-cols-3 gap-2.5 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-9 select-none">
                             @foreach ($slots as $index => $slot)
                                 @php
                                     $state = $slot['state'];
@@ -120,22 +124,23 @@
 
                                 <div data-slot-index="{{ $index }}" data-start="{{ $slot['start'] }}"
                                     data-end="{{ $slot['end'] }}" data-state="{{ $state }}"
-                                    class="slot-item relative flex min-h-20 flex-col items-center justify-center rounded-xl border p-2.5 text-center transition-all duration-150
-                                    @if ($isAvailable) cursor-pointer border-emerald-400 bg-white text-emerald-950 shadow-2xs hover:border-[#0051d5] hover:bg-[#F2F3FF]
+                                    data-slot-state="{{ $state }}"
+                                    class="slot-item relative flex aspect-square flex-col items-center justify-center rounded-2xl border p-1.5 text-center transition-all duration-150
+                                    @if ($isAvailable) cursor-pointer border-emerald-300 bg-emerald-50/90 text-emerald-950 shadow-2xs hover:bg-emerald-100
                                     @elseif($isBooked)
                                         border-rose-300 bg-rose-50/90 text-rose-600 cursor-not-allowed opacity-80
                                     @else
                                         border-slate-200 bg-slate-100 text-slate-400 cursor-not-allowed opacity-60 @endif">
-                                    <span class="text-sm font-bold tracking-tight">{{ $slot['start'] }}</span>
-                                    <span class="text-[10px] font-medium opacity-80">s/d {{ $slot['end'] }}</span>
+                                    <span class="text-xs font-bold leading-tight sm:text-sm">{{ $slot['start'] }}</span>
+                                    <span class="text-[10px] opacity-80 sm:text-[11px]">{{ $slot['end'] }}</span>
 
                                     <span
-                                        class="slot-status-label mt-1 inline-block rounded px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wider
-                                    @if ($isAvailable) bg-emerald-100 text-emerald-800
+                                        class="slot-status-label mt-1 inline-block rounded-full px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider
+                                    @if ($isAvailable) bg-emerald-200/80 text-emerald-800
                                     @elseif($isBooked)
                                         bg-rose-200/80 text-rose-800 line-through
                                     @else
-                                        bg-slate-200 text-slate-500 @endif">
+                                        bg-black/5 text-slate-500 @endif">
                                         @if ($isAvailable)
                                             Tersedia
                                         @elseif($isBooked)
@@ -148,6 +153,10 @@
                             @endforeach
                         </div>
 
+                        <p data-empty-slots
+                            class="hidden rounded-xl border border-blue-100 bg-blue-50/70 p-5 text-center text-sm text-slate-600">
+                            Tidak ada jadwal tersedia yang bisa dipilih pada tanggal ini.</p>
+
                         @if ($errors->has('slot'))
                             <p class="mt-2 text-xs font-medium text-rose-600">{{ $errors->first('slot') }}</p>
                         @endif
@@ -155,35 +164,36 @@
                 @endif
 
                 {{-- Pemilihan Waktu Mulai & Selesai (Sinkronisasi dengan Grid) --}}
-                <div class="grid grid-cols-1 gap-6 sm:grid-cols-2">
+                <div class="grid grid-cols-1 gap-5 sm:grid-cols-2">
                     <div>
-                        <label for="start_time" class="block text-sm font-medium text-slate-700">Waktu Mulai <span
+                        <label for="start_time" class="block text-sm font-semibold text-slate-700">Waktu Mulai <span
                                 class="text-rose-500">*</span></label>
                         <select id="start_time" name="start_time" required
-                            class="landing-input mt-1 block w-full rounded-xl px-3 py-3 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-400">
+                            class="landing-input mt-1.5 block w-full rounded-2xl px-4 py-3 text-sm text-slate-900 focus:outline-none focus:ring-4 focus:ring-blue-500/15">
                             <option value="" disabled {{ old('start_time') ? '' : 'selected' }}>-- Pilih Waktu Mulai
                                 --</option>
                         </select>
                         @error('start_time')
-                            <p class="mt-1 text-xs text-rose-600">{{ $message }}</p>
+                            <p class="mt-1.5 text-xs text-rose-600">{{ $message }}</p>
                         @enderror
                     </div>
 
                     <div>
-                        <label for="end_time" class="block text-sm font-medium text-slate-700">Waktu Selesai <span
+                        <label for="end_time" class="block text-sm font-semibold text-slate-700">Waktu Selesai <span
                                 class="text-rose-500">*</span></label>
                         <select id="end_time" name="end_time" required
-                            class="landing-input mt-1 block w-full rounded-xl px-3 py-3 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-400">
+                            class="landing-input mt-1.5 block w-full rounded-2xl px-4 py-3 text-sm text-slate-900 focus:outline-none focus:ring-4 focus:ring-blue-500/15">
                             <option value="" disabled {{ old('end_time') ? '' : 'selected' }}>-- Pilih Jam Mulai Dulu
                                 --</option>
                         </select>
                         @error('end_time')
-                            <p class="mt-1 text-xs text-rose-600">{{ $message }}</p>
+                            <p class="mt-1.5 text-xs text-rose-600">{{ $message }}</p>
                         @enderror
                     </div>
                 </div>
 
-                <div class="grid gap-2 rounded-2xl border border-blue-100 bg-blue-50/70 p-4 text-xs leading-relaxed text-slate-600 sm:grid-cols-3">
+                <div
+                    class="grid gap-2 rounded-2xl border border-blue-100 bg-blue-50/70 p-4 text-xs leading-relaxed text-slate-600 sm:grid-cols-3">
                     <p><span class="font-bold text-blue-600">•</span> Durasi minimal: 1 slot (30 menit).</p>
                     <p><span class="font-bold text-blue-600">•</span> Durasi maksimal: 8 slot (4 jam) per reservasi.</p>
                     <p><span class="font-bold text-blue-600">•</span> Waktu mulai minimal: 1 jam dari waktu saat ini.</p>
@@ -191,26 +201,27 @@
 
                 {{-- Tujuan Peminjaman --}}
                 <div>
-                    <label for="purpose" class="block text-sm font-medium text-slate-700">Tujuan Penggunaan <span
+                    <label for="purpose" class="block text-sm font-semibold text-slate-700">Tujuan Penggunaan <span
                             class="text-rose-500">*</span></label>
                     <p class="mb-1 text-xs text-slate-500">Jelaskan kegiatan atau keperluan peminjaman (minimal 10
                         karakter).</p>
                     <textarea id="purpose" name="purpose" rows="3" minlength="10" maxlength="255" required
                         placeholder="Contoh: Rapat koordinasi panitia seminar nasional BEM kampus."
-                        class="landing-input block w-full rounded-xl px-3 py-3 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-400">{{ old('purpose') }}</textarea>
+                        class="landing-input block w-full rounded-2xl px-4 py-3 text-sm text-slate-900 focus:outline-none focus:ring-4 focus:ring-blue-500/15">{{ old('purpose') }}</textarea>
                     @error('purpose')
-                        <p class="mt-1 text-xs text-rose-600">{{ $message }}</p>
+                        <p class="mt-1.5 text-xs text-rose-600">{{ $message }}</p>
                     @enderror
                 </div>
 
                 {{-- Tombol Aksi --}}
-                <div class="flex flex-col-reverse items-stretch justify-end gap-3 border-t border-blue-100/80 pt-5 sm:flex-row sm:items-center">
+                <div
+                    class="flex flex-col-reverse items-stretch justify-end gap-3 border-t border-blue-100/80 pt-5 sm:flex-row sm:items-center">
                     <a href="{{ route('reservasi.index') }}"
-                        class="clay-pressable rounded-full px-5 py-3 text-sm font-semibold text-blue-700 focus:outline-none focus:ring-2 focus:ring-[#0051d5] focus:ring-offset-2">
+                        class="clay-pressable inline-flex justify-center rounded-full px-6 py-3 text-sm font-semibold text-blue-700">
                         Batal
                     </a>
                     <button type="submit" id="submitBtn"
-                        class="landing-button rounded-full bg-gradient-to-r from-blue-600 to-blue-500 px-6 py-3 text-sm font-bold text-white focus:outline-none focus:ring-2 focus:ring-[#0051d5] focus:ring-offset-2">
+                        class="landing-button rounded-full bg-gradient-to-r from-blue-600 to-blue-500 px-7 py-3 text-sm font-bold text-white shadow-[0_4px_14px_rgba(37,99,235,0.25)]">
                         Ajukan Reservasi
                     </button>
                 </div>
