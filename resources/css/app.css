@@ -156,6 +156,53 @@ img.img-fade.is-loaded {
     box-shadow: inset 4px 4px 9px rgba(125, 158, 202, 0.18), inset -4px -4px 9px rgba(255, 255, 255, 0.95);
 }
 
+/* Animasi masuk kartu landing: pop & bounce (spring/elastic). Kartu mulai
+   kecil dan transparan, membesar melewati skala 1.0, lalu settle ke 1.0.
+   app.js hanya menambahkan kelas is-springed; keyframe di sini satu-satunya
+   pemilik nilai geraknya. */
+@keyframes landing-card-spring {
+    0% {
+        opacity: 0;
+        transform: translate3d(0, 22px, 0) scale(0.9);
+    }
+
+    38% {
+        opacity: 1;
+        transform: translate3d(0, -9px, 0) scale(1.055);
+        animation-timing-function: cubic-bezier(0.4, 0, 0.6, 1);
+    }
+
+    58% {
+        transform: translate3d(0, 5px, 0) scale(0.972);
+    }
+
+    76% {
+        transform: translate3d(0, -2px, 0) scale(1.021);
+    }
+
+    89% {
+        transform: translate3d(0, 1px, 0) scale(0.993);
+    }
+
+    100% {
+        opacity: 1;
+        transform: translate3d(0, 0, 0) scale(1);
+    }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+    .landing-spring-ready [data-spring-card] {
+        opacity: 0;
+    }
+}
+
+.landing-spring-ready [data-spring-card].is-springed {
+    opacity: 1;
+    animation: landing-card-spring 780ms backwards;
+    animation-delay: var(--spring-delay, 0ms);
+    animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
 /* Tombol putih: pemilik tunggal untuk setiap tombol aksi berlatar putih
    (kembali, reset, batal, chip baris, ekspor CSV, tombol sekunder di semua
    halaman). Bentuk 3D claymorphism memakai pola yang sama dengan tombol biru

@@ -704,6 +704,40 @@ if (landingPage !== null) {
     }
 }
 
+// Animasi pop & bounce (spring) saat kartu landing masuk viewport. Nilai
+// gerakan ada di @keyframes landing-card-spring; di sini hanya observe.
+const springReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+let springObserver = null;
+
+const observeSpringCards = (root) => {
+    if (springObserver === null || root === null) {
+        return;
+    }
+
+    root.querySelectorAll('[data-spring-card]').forEach((card) => springObserver.observe(card));
+};
+
+if (landingPage !== null && 'IntersectionObserver' in window && !springReducedMotion) {
+    landingPage.classList.add('landing-spring-ready');
+
+    springObserver = new IntersectionObserver((entries) => {
+        entries.forEach((entry) => {
+            if (!entry.isIntersecting) {
+                return;
+            }
+
+            const card = entry.target;
+            const position = card.parentElement ? [...card.parentElement.children].indexOf(card) : 0;
+
+            card.style.setProperty('--spring-delay', `${Math.min(Math.max(position, 0), 2) * 70}ms`);
+            card.classList.add('is-springed');
+            springObserver.unobserve(card);
+        });
+    }, { rootMargin: '0px 0px -6% 0px', threshold: 0.12 });
+
+    observeSpringCards(landingPage);
+}
+
 document.querySelectorAll('[data-facility-filters]').forEach((form) => {
     let searchTimer = null;
     const searchInput = form.querySelector('[data-search-filter]');
@@ -808,6 +842,8 @@ if (landingFilterForm !== null) {
                                 </a>
                             </div>`;
                         landingGridContainer.appendChild(card);
+                        card.dataset.springCard = '';
+                        observeSpringCards(card);
                     });
                 } else if (landingGridContainer !== null) {
                     landingGridContainer.innerHTML = '<div class="col-span-full rounded-xl bg-white p-10 text-center shadow-sm"><p class="text-base font-medium text-[#0F172A]">Fasilitas tidak ditemukan</p><p class="mt-1 text-sm text-[#475569]">Coba ubah kata kunci atau filter pencarian Anda.</p><a href="/" class="mt-4 inline-block rounded-lg bg-[#00236f] px-4 py-2 text-sm font-medium text-white hover:bg-[#001a52]">Reset Filter</a></div>';

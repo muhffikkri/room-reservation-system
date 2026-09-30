@@ -91,7 +91,7 @@
                 <p class="text-xs text-[#475569]">Ikuti panduan peminjaman fasilitas atau pelaporan kerusakan.</p>
             </div>
             <div class="grid grid-cols-1 items-center gap-3 md:grid-cols-3 sm:gap-5">
-                <div class="landing-step-card relative flex items-start gap-3 rounded-2xl border border-white bg-white/80 p-4 shadow-sm sm:gap-4 sm:p-5">
+                <div data-spring-card class="landing-step-card relative flex items-start gap-3 rounded-2xl border border-white bg-white/80 p-4 shadow-sm sm:gap-4 sm:p-5">
                     <div class="flex shrink-0 items-center gap-1.5">
                     <div class="flex h-8 w-8 items-center justify-center rounded-full bg-blue-600 text-sm font-bold text-white shadow-sm">1</div>
                     </div>
@@ -100,7 +100,7 @@
                     <p class="mt-1 text-xs leading-relaxed text-[#475569]">Cari fasilitas lalu cek slot waktu yang tersedia pada pratinjau jadwal.</p>
                     </div>
                 </div>
-                <div class="landing-step-card relative flex items-start gap-3 rounded-2xl border border-white bg-white/80 p-4 shadow-sm sm:gap-4 sm:p-5">
+                <div data-spring-card class="landing-step-card relative flex items-start gap-3 rounded-2xl border border-white bg-white/80 p-4 shadow-sm sm:gap-4 sm:p-5">
                     <div class="flex shrink-0 items-center gap-1.5">
                     <div class="flex h-8 w-8 items-center justify-center rounded-full bg-blue-600 text-sm font-bold text-white shadow-sm">2</div>
                     </div>
@@ -109,7 +109,7 @@
                     <p class="mt-1 text-xs leading-relaxed text-[#475569]">Login dan isi tujuan penggunaan; permohonan masuk antrian persetujuan.</p>
                     </div>
                 </div>
-                <div class="landing-step-card flex items-start gap-3 rounded-2xl border border-white bg-white/80 p-4 shadow-sm sm:gap-4 sm:p-5">
+                <div data-spring-card class="landing-step-card flex items-start gap-3 rounded-2xl border border-white bg-white/80 p-4 shadow-sm sm:gap-4 sm:p-5">
                     <div class="flex shrink-0 items-center gap-1.5">
                     <div class="flex h-8 w-8 items-center justify-center rounded-full bg-blue-600 text-sm font-bold text-white shadow-sm">3</div>
                     </div>
@@ -123,15 +123,15 @@
                 <h3 class="text-base font-bold text-slate-900">Alur Pelaporan Fasilitas Rusak</h3>
                 <p class="text-xs text-[#475569]">Bantu kampus menangani kerusakan fasilitas dengan cepat.</p>
                 <div class="mt-4 grid grid-cols-1 gap-3 md:grid-cols-3 sm:gap-5">
-                    <div class="landing-step-card flex items-start gap-3 rounded-2xl border border-white bg-white/80 p-4 shadow-sm sm:p-5">
+                    <div data-spring-card class="landing-step-card flex items-start gap-3 rounded-2xl border border-white bg-white/80 p-4 shadow-sm sm:p-5">
                         <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-blue-600 text-sm font-bold text-white shadow-sm">1</span>
                         <div><h4 class="text-sm font-semibold text-[#0F172A]">Pilih Fasilitas</h4><p class="mt-1 text-xs leading-relaxed text-[#475569]">Temukan fasilitas kampus yang mengalami kerusakan.</p></div>
                     </div>
-                    <div class="landing-step-card flex items-start gap-3 rounded-2xl border border-white bg-white/80 p-4 shadow-sm sm:p-5">
+                    <div data-spring-card class="landing-step-card flex items-start gap-3 rounded-2xl border border-white bg-white/80 p-4 shadow-sm sm:p-5">
                         <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-blue-600 text-sm font-bold text-white shadow-sm">2</span>
                         <div><h4 class="text-sm font-semibold text-[#0F172A]">Kirim Laporan</h4><p class="mt-1 text-xs leading-relaxed text-[#475569]">Login, jelaskan kerusakan, dan sertakan foto jika ada.</p></div>
                     </div>
-                    <div class="landing-step-card flex items-start gap-3 rounded-2xl border border-white bg-white/80 p-4 shadow-sm sm:p-5">
+                    <div data-spring-card class="landing-step-card flex items-start gap-3 rounded-2xl border border-white bg-white/80 p-4 shadow-sm sm:p-5">
                         <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-blue-600 text-sm font-bold text-white shadow-sm">3</span>
                         <div><h4 class="text-sm font-semibold text-[#0F172A]">Pantau Tindak Lanjut</h4><p class="mt-1 text-xs leading-relaxed text-[#475569]">Petugas akan memeriksa laporan dan memperbarui status penanganannya.</p></div>
                     </div>
@@ -225,7 +225,7 @@
 
             <div id="landing-grid-container" class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
                 @foreach ($facilities as $facility)
-                    <div class="landing-card group facility-card flex flex-col overflow-hidden rounded-3xl border border-white/80 bg-white shadow-[0_10px_30px_-5px_rgba(186,215,248,0.45),0_0_0_1px_rgba(255,255,255,0.8)_inset] transition-all hover:-translate-y-0.5 hover:shadow-lg" data-facility-id="{{ $facility->id }}">
+                    <div class="landing-card group facility-card flex flex-col overflow-hidden rounded-3xl border border-white/80 bg-white shadow-[0_10px_30px_-5px_rgba(186,215,248,0.45),0_0_0_1px_rgba(255,255,255,0.8)_inset] transition-all hover:-translate-y-0.5 hover:shadow-lg" data-spring-card data-facility-id="{{ $facility->id }}">
                         <div class="relative aspect-[16/9] w-full overflow-hidden bg-[#f2f3ff]">
                             @if ($facility->photo)
                                 <img src="{{ $facility->photo_url }}" alt="{{ $facility->name }}" loading="lazy"
