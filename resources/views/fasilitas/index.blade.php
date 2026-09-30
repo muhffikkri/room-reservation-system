@@ -28,6 +28,8 @@
         <div class="landing-panel rounded-3xl p-10 text-center"><h2 class="font-bold text-slate-900">Fasilitas tidak ditemukan</h2><p class="mt-1 text-sm text-slate-600">Ubah filter pencarian untuk melihat fasilitas lainnya.</p></div>
     @else
         <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">@foreach ($facilities as $facility)@include('landing._facility-card', ['facility' => $facility, 'types' => $types, 'from' => 'all'])@endforeach</div>
-        <div class="landing-panel rounded-2xl p-4">{{ $facilities->links() }}</div>
+        @if ($facilities->hasPages())
+            <div class="landing-panel rounded-2xl p-4">{{ $facilities->links() }}</div>
+        @endif
     @endif
 @endsection
