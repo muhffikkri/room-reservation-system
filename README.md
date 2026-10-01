@@ -35,7 +35,11 @@ SEED_ADMIN_PASSWORD=
 SEED_OFFICER_PASSWORD=
 SEED_USER_PASSWORD=
 SEED_PENDING_PASSWORD=
+SEED_VOLUME_PASSWORD=
 ```
+
+`SEED_VOLUME_PASSWORD` hanya dipakai volume seeder dan boleh dikosongkan; bila
+kosong, seeder memakai kembali `SEED_USER_PASSWORD`.
 
 Siapkan database dan aplikasi:
 
@@ -75,6 +79,33 @@ Seeder membuat akun berikut. Password dibaca dari environment lokal dan tidak di
 | Pengguna | `budi@student.kampus.test` | `SEED_USER_PASSWORD` | aktif |
 | Pengguna | `sari@dosen.kampus.test` | `SEED_USER_PASSWORD` | aktif |
 | Pengguna | `pending@kampus.test` | `SEED_PENDING_PASSWORD` | pending |
+
+## Volume seeder
+
+Besides the four demo accounts above, `php artisan migrate:fresh --seed` also
+runs a set of volume seeders. They exist to exercise pagination, all statuses,
+validation boundaries, and layout shifts; they are not fixtures you should read.
+
+| Table | Rows | Coverage |
+|---|---|---|
+| `users` | 70 | pending, ditolak, restored; all three roles |
+| `account_verification_actions` | 42 | verified, rejected, restored across 3 actors |
+| `facilities` | 68 | all 5 types, all 3 statuses, shared and unique locations |
+| `reports` | 72 | all 5 categories, all 4 statuses |
+| `report_updates` | 100 | legacy rows plus full lifecycle transitions |
+| `reservations` | 631 | all 7 statuses across past and future |
+| `notifications` | 120 | generated only by `ReservationService::approve()` |
+
+Notes:
+
+- Volume seeders are **not idempotent**. They are meant to fill an empty
+  database after `migrate:fresh`; running `db:seed` twice will fail on
+  duplicate rows.
+- `rejected_by_system` and `cancelled_by_system` are never written by hand.
+  They come from real `ReservationService::approve()` and `expireStale()`
+  calls, so system-owned reason text stays owned by the service.
+- Every account in the volume set shares one password, read from
+  `SEED_VOLUME_PASSWORD`. It is hashed once and reused for speed.
 
 ## Upgrade dari versi lama
 

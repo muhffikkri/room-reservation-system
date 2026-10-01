@@ -4,29 +4,26 @@ namespace Database\Seeders;
 
 use App\Models\User;
 use Illuminate\Database\Seeder;
-use LogicException;
 
 /**
- * Akun demo untuk presentasi (§5.3).
+ * Akun demo untuk presentasi (spec §5.3).
  *
  * Lima akun ini mencakup semua peran: admin, petugas, Budi (mahasiswa),
  * Sari (dosen), dan satu akun pending sebagai bahan demo verifikasi
- * admin (§14.2 kasus 1). Password dibaca dari environment agar tidak
- * menjadi credential bersama yang tertanam di repository.
+ * admin (§14.2 kasus 1). Aturan kredensialnya dimiliki SeedPassword agar
+ * seeder volume tidak menulis ulang aturan yang sama.
  */
 class UserSeeder extends Seeder
 {
     public function run(): void
     {
-        if (app()->environment(['production', 'staging'])) {
-            throw new LogicException('UserSeeder tidak boleh dijalankan di production atau staging.');
-        }
+        SeedPassword::guardAgainstSharedEnvironments();
 
         $passwords = [
-            'admin' => $this->requiredPassword('SEED_ADMIN_PASSWORD'),
-            'officer' => $this->requiredPassword('SEED_OFFICER_PASSWORD'),
-            'user' => $this->requiredPassword('SEED_USER_PASSWORD'),
-            'pending' => $this->requiredPassword('SEED_PENDING_PASSWORD'),
+            'admin' => SeedPassword::required('SEED_ADMIN_PASSWORD'),
+            'officer' => SeedPassword::required('SEED_OFFICER_PASSWORD'),
+            'user' => SeedPassword::required('SEED_USER_PASSWORD'),
+            'pending' => SeedPassword::required('SEED_PENDING_PASSWORD'),
         ];
 
         User::updateOrCreate(
@@ -53,16 +50,5 @@ class UserSeeder extends Seeder
             ['email' => 'pending@kampus.test'],
             ['name' => 'Akun Pending', 'password' => $passwords['pending'], 'role' => 'pengguna', 'account_status' => 'pending', 'identity' => '2110512099', 'phone' => '+628120000099'],
         );
-    }
-
-    private function requiredPassword(string $environmentKey): string
-    {
-        $password = env($environmentKey);
-
-        if (! is_string($password) || mb_strlen($password) < 12) {
-            throw new LogicException("Environment {$environmentKey} wajib diisi minimal 12 karakter untuk menjalankan seeder.");
-        }
-
-        return $password;
     }
 }

@@ -71,6 +71,8 @@ SESSION_LIFETIME=120
 # SEED_OFFICER_PASSWORD=
 # SEED_USER_PASSWORD=
 # SEED_PENDING_PASSWORD=
+# Volume seeder saja; boleh kosong dan memakai SEED_USER_PASSWORD sebagai cadangan.
+# SEED_VOLUME_PASSWORD=
 ```
 
 ### 2.2 Setup
@@ -566,6 +568,37 @@ Test memanggil interface `ReservationAvailability` (`isValidSlot`, `hasBlockingO
 **Akun demo** — lihat §5.3. Password di-hash bcrypt oleh seeder dan dibaca dari environment, bukan dari source code.
 
 **Data uji:** 2–3 reservasi (pending, approved, rejected) tanggal besok; 2 laporan (baru, diproses), minimal satu dengan foto dan satu tanpa foto.
+
+### 15.1 Volume seeder
+
+Selain lima fasilitas dan lima akun demo di atas, `php artisan migrate:fresh --seed`
+juga menjalankan volume seeder. Tujuannya menguji pagination, seluruh status,
+batas validasi, dan pergeseran layout, bukan menyediakan fixture yang dibaca
+manusia.
+
+| Tabel | Baris | Cakupan |
+|---|---|---|
+| `users` | 70 | pending, ditolak, restored; tiga role |
+| `account_verification_actions` | 42 | verified, rejected, restored lewat 3 aktor |
+| `facilities` | 68 | 5 tipe, 3 status, lokasi bersama dan unik |
+| `reports` | 72 | 5 kategori, 4 status |
+| `report_updates` | 100 | baris legacy plus transisi siklus penuh |
+| `reservations` | 631 | 7 status, riwayat dan masa depan |
+| `notifications` | 120 | seluruhnya lahir dari `ReservationService::approve()` |
+
+Aturan yang harus tetap berlaku bila volume seeder ini diubah:
+
+- Volume seeder tidak idempoten. Tujuannya mengisi database kosong setelah
+  `migrate:fresh`; menjalankan `db:seed` dua kali akan bentrok pada baris kembar.
+- `rejected_by_system` dan `cancelled_by_system` tidak boleh ditulis manual.
+  Keduanya lahir dari pemanggilan nyata `ReservationService::approve()` dan
+  `expireStale()`, sehingga teks alasan milik sistem tetap milik service.
+- Notifikasi tidak boleh dibuat langsung. Aplikasi hanya punya satu kelas
+  notifikasi, `ReservationOverlapRejected`, yang dibuat `approve()`. Volume
+  seeder hanya mengubah `read_at` pada baris yang memang sudah lahir.
+- Akun volume berbagi satu password dari `SEED_VOLUME_PASSWORD`, di-hash sekali
+  lalu dipakai ulang. Nilainya di-hash bcrypt dan dibaca dari environment,
+  sama seperti akun demo (§5.3, §12.1).
 
 
 ## 16. Checklist Deliverables (sesuai ketentuan tugas)
