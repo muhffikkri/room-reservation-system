@@ -46,6 +46,9 @@ class FacilityLifecycle
         });
     }
 
+    /**
+     * Tandai fasilitas sebagai perbaikan (BR-11).
+     */
     public function markForRepair(Report $report): Facility
     {
         return DB::transaction(function () use ($report): Facility {

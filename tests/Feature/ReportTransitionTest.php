@@ -8,6 +8,7 @@ use App\Services\FacilityLifecycle;
 use App\Services\ReportService;
 use Database\Seeders\ReportSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
 
 uses(RefreshDatabase::class);
@@ -147,7 +148,8 @@ it('rejects facility actions outside their allowed states', function () {
         ->toThrow(ValidationException::class);
 });
 
-it('seeds the diproses report with an audit row', function () {
+it('seeds the diproses report with an audit row and demo photo (§15)', function () {
+    Storage::fake('local');
     User::factory()->create(['email' => 'budi@student.kampus.test', 'role' => 'pengguna', 'account_status' => 'aktif']);
     User::factory()->create(['email' => 'petugas@kampus.test', 'role' => 'petugas', 'account_status' => 'aktif']);
     Facility::factory()->create(['name' => 'Lab Komputer 1']);
@@ -160,4 +162,6 @@ it('seeds the diproses report with an audit row', function () {
 
     expect($trail)->toHaveCount(1);
     expect([$trail->first()->old_status, $trail->first()->new_status])->toBe(['baru', 'diproses']);
+    expect($processing->photo)->not->toBeNull();
+    Storage::disk('local')->assertExists($processing->photo);
 });

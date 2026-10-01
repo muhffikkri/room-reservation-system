@@ -51,8 +51,14 @@
 
                     <div>
                         <label for="phone" class="mb-1.5 block text-sm font-semibold text-slate-700">No. HP</label>
-                        <input id="phone" name="phone" type="tel" maxlength="20" required autocomplete="tel" value="{{ old('phone') }}" placeholder="Masukkan nomor HP"
+                        <input id="phone" name="phone" type="tel" maxlength="20" required autocomplete="tel"
+                            pattern="{{ \App\Support\AccountAttributes::PHONE_INPUT_PATTERN }}"
+                            title="Format: 08xx, 62xx, atau +62xx (contoh: 081234567890)"
+                            value="{{ old('phone') }}" placeholder="Contoh: 081234567890"
                             class="landing-input h-11 w-full rounded-2xl px-4 text-sm text-slate-800 outline-none transition focus:ring-4 focus:ring-blue-500/15">
+                        <p class="mt-1 text-[11px] leading-relaxed text-slate-500">
+                            Format yang diterima: <code class="font-mono">08xx</code>, <code class="font-mono">62xx</code>, atau <code class="font-mono">+62xx</code>
+                        </p>
                         @error('phone')
                             <p class="mt-1.5 text-xs leading-relaxed text-[#B42318]">{{ $message }}</p>
                         @enderror

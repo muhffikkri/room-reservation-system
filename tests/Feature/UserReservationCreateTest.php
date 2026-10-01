@@ -3,6 +3,7 @@
 use App\Models\Facility;
 use App\Models\Reservation;
 use App\Models\User;
+use App\Services\ReservationAvailability;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
 
@@ -138,4 +139,18 @@ it('accepts a reservation on the last day of the 365 day booking window', functi
 
     $response->assertSessionHasNoErrors();
     expect(Reservation::count())->toBe(1);
+});
+
+it('renders the date input with min today and max booking date', function () {
+    $user = User::factory()->create(['role' => 'pengguna', 'account_status' => 'aktif']);
+    Facility::factory()->create(['status' => 'aktif']);
+
+    $response = $this->actingAs($user)->get(route('reservasi.create'));
+
+    $minDate = Carbon::now(config('app.timezone'))->toDateString();
+    $maxBookingDate = app(ReservationAvailability::class)->maxBookingDate()->toDateString();
+
+    $response->assertStatus(200)
+        ->assertSee('min="'.$minDate.'"', false)
+        ->assertSee('max="'.$maxBookingDate.'"', false);
 });

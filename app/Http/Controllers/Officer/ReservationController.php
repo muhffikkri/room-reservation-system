@@ -96,6 +96,7 @@ class ReservationController extends Controller
             'status' => ['nullable', 'string', 'in:'.implode(',', Reservation::ORDERED_STATUSES)],
             'date' => ['nullable', 'date'],
             'tab' => ['nullable', 'string', 'in:'.implode(',', array_keys($this->tabs()))],
+            'facility_id' => ['nullable', 'integer', 'exists:facilities,id'],
         ]);
 
         if (($filters['status'] ?? null) === null) {
@@ -147,7 +148,8 @@ class ReservationController extends Controller
             ->with(['user', 'facility', 'decidedBy'])
             ->when($filters['status'] ?? null, fn ($query, string $status) => $query->where('status', $status))
             ->when($tab !== null, fn ($query) => $query->whereIn('status', $tabs[$tab]))
-            ->when($filters['date'] ?? null, fn ($query, string $date) => $query->whereDate('start_time', $date));
+            ->when($filters['date'] ?? null, fn ($query, string $date) => $query->whereDate('start_time', $date))
+            ->when($filters['facility_id'] ?? null, fn ($query, int $facilityId) => $query->where('facility_id', $facilityId));
     }
 
     public function show(Request $request, Reservation $reservation): View

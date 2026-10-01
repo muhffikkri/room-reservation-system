@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Officer;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\UpdateReportStatusRequest;
 use App\Models\Report;
+use App\Models\Reservation;
 use App\Services\ReportService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -78,7 +79,19 @@ class ReportController extends Controller
 
         $allowedTransitions = ReportService::allowedTransitions($report->status);
 
-        return view('petugas.laporan.show', compact('report', 'allowedTransitions'));
+        $affectedReservations = collect();
+        if ($report->facility->status === 'perbaikan' && (int) $report->facility->repair_report_id === (int) $report->id) {
+            $affectedReservations = Reservation::where('facility_id', $report->facility_id)
+                ->where('status', 'approved')
+                ->where('end_time', '>', now())
+                ->with('user:id,name')
+                ->orderBy('start_time')
+                ->orderBy('id')
+                ->limit(10)
+                ->get();
+        }
+
+        return view('petugas.laporan.show', compact('report', 'allowedTransitions', 'affectedReservations'));
     }
 
     /**
@@ -100,7 +113,7 @@ class ReportController extends Controller
     }
 
     /**
-     * Menandai atau mengembalikan status fasilitas perbaikan (BR-11).
+     * Menandai atau mengembalikan status fasilitas perbaikan (BR-11, BR-16).
      */
     public function toggleFacilityStatus(Request $request, Report $report): RedirectResponse
     {
@@ -109,7 +122,7 @@ class ReportController extends Controller
         try {
             if ($action === 'perbaikan') {
                 $this->reportService->markFacilityForRepair($report, $request->user());
-                $message = 'Fasilitas berhasil ditandai sedang dalam perbaikan.';
+                $message = 'Fasilitas berhasil ditandai sedang dalam perbaikan. Tinjau reservasi yang masih disetujui pada fasilitas ini.';
             } elseif ($action === 'aktif') {
                 $this->reportService->restoreFacilityToActive($report, $request->user());
                 $message = 'Fasilitas berhasil dikembalikan ke status aktif.';
