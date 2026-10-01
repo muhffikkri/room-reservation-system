@@ -2,7 +2,7 @@
 
 All notable release changes are recorded here. Commit and pull request details are available in the GitHub history.
 
-## v1.3.0 — Pending release
+## v1.3.0 — 2026-10-01
 
 ### Added
 
