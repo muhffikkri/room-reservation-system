@@ -429,7 +429,7 @@ Menutup laporan `ditolak` yang tertaut di `facilities.repair_report_id` memulihk
 | Buat akun admin/petugas/pengguna | ✖ | ✖ | ✖ | ✔ |
 | Verifikasi/tolak akun registrasi mandiri | ✖ | ✖ | ✖ | ✔ |
 | CRUD data master fasilitas | ✖ | ✖ | ✖ | ✔ |
-| Rekap + ekspor CSV/XLSX/PDF | ✖ | ✖ | ✖ | ✔ |
+| Rekap + ekspor CSV/PDF (XLSX opsional) | ✖ | ✖ | ✖ | ✔ |
 
 Role `admin` dan `petugas` tidak saling mencakup. Ringkasan operasional admin bersifat agregat/read-only dan tidak memberikan akses ke route, detail, atau aksi operasional petugas.
 
@@ -497,12 +497,12 @@ Periode rekap menggunakan parameter `start_date` dan `end_date`; keduanya opsion
 
 Untuk rekap reservasi, status `rejected` dan `rejected_by_system` termasuk kelompok ditolak; `cancelled_by_user`, `cancelled_by_officer`, dan `cancelled_by_system` termasuk kelompok dibatalkan.
 
-Ketiga format ekspor harus merepresentasikan data rekap yang sama; perbedaannya hanya format file dan tata letak.
+CSV dan PDF wajib merepresentasikan data rekap yang sama; perbedaannya hanya format file dan tata letak. XLSX bersifat opsional dan, bila diimplementasikan, harus memakai data rekap yang sama.
 
 - **CSV**: streamed response dengan delimiter `;` agar Excel Indonesia langsung membaca kolom, nama file `rekap-{jenis}-{start_date}-sd-{end_date}.csv`.
-- **XLSX**: file workbook Excel dengan isi rekap yang setara dengan CSV dan PDF, nama file `rekap-{jenis}-{start_date}-sd-{end_date}.xlsx`.
+- **XLSX (opsional)**: file workbook Excel dengan isi rekap yang setara dengan CSV dan PDF, nama file `rekap-{jenis}-{start_date}-sd-{end_date}.xlsx`.
 - **PDF**: paket `barryvdh/laravel-dompdf`, orientasi landscape.
-- ketentuan tugas mewajibkan tiga format: CSV, XLSX, dan PDF. Pemilihan package XLSX menjadi bagian milestone implementasi berikutnya.
+- Ketentuan ekspor mewajibkan CSV dan PDF. XLSX opsional dan bukan penghalang kelulusan skenario bisnis atau rilis.
 - `{jenis}` adalah `okupansi` atau `kerusakan`. Segmen ini tidak ada pada rumusan nama file semula; tanpanya, ekspor okupansi dan kerusakan untuk rentang yang sama menghasilkan nama file yang identik sehingga unduhan kedua menimpa yang pertama. Rumusan nama file dikoreksi karena mengoreksi kode akan menimbulkan kehilangan data.
 
 Implementasi saat ini menyediakan halaman dan ekspor CSV/PDF terpisah untuk okupansi dan kerusakan (§6). XLSX belum tersedia dan tidak boleh ditampilkan sebagai route yang sudah berjalan.
@@ -533,7 +533,7 @@ Test memanggil interface `ReservationAvailability` (`isValidSlot`, `hasBlockingO
 6. Cancel oleh petugas tanpa alasan → error validasi; dengan alasan → status `cancelled_by_officer`, alasan terlihat di detail.
 7. Laporan: buat laporan dengan atau tanpa foto → `baru` → petugas ubah `diproses` → tandai fasilitas `perbaikan` → tutup `selesai` wajib catatan → riwayat tercatat di `report_updates` → petugas memulihkan fasilitas yang ditautkan ke `aktif`.
 8. Pengunjung tanpa login melihat fasilitas + grid slot TANPA nama pemesan/tujuan.
-9. Rekap admin: angka okupansi & frekuensi kerusakan sesuai data uji; rata-rata okupansi hanya memakai fasilitas aktif dan status reservasi otomatis masuk kelompok ditolak/dibatalkan yang benar. CSV memakai delimiter titik koma dan ekspor memakai rentang tanggal terpilih. CSV/PDF berhasil diunduh; XLSX menjadi kriteria saat milestone ekspor XLSX diimplementasikan.
+9. Rekap admin: angka okupansi & frekuensi kerusakan sesuai data uji; rata-rata okupansi hanya memakai fasilitas aktif dan status reservasi otomatis masuk kelompok ditolak/dibatalkan yang benar. CSV memakai delimiter titik koma dan ekspor memakai rentang tanggal terpilih. CSV/PDF berhasil diunduh; XLSX opsional dan hanya diuji bila diimplementasikan.
 10. Isolasi role: setelah login, `pengguna` masuk ke alur pengguna, `petugas` ke dashboard petugas, dan `admin` ke dashboard admin; akses admin ke `/petugas/*` dan akses petugas ke `/admin/*` menghasilkan 403. Dashboard admin tetap hanya menampilkan ringkasan read-only.
 11. Edge cases: laporan `ditolak` yang sama dengan `repair_report_id` mengaktifkan kembali fasilitas dan membersihkan tautan; menolak laporan berbeda tidak mengubahnya. Reservasi pending yang melewati cutoff menjadi `cancelled_by_system`; persetujuan satu reservasi otomatis menolak pending lain yang overlap dan membuat notifikasi; laporan ke-21 pada hari yang sama ditolak; aksi verifikasi, penolakan, dan pemulihan akun masing-masing meninggalkan baris audit.
 
@@ -584,7 +584,7 @@ Test memanggil interface `ReservationAvailability` (`isValidSlot`, `hasBlockingO
 - [ ] Transisi status laporan + catatan resolusi + riwayat
 - [ ] Status fasilitas `perbaikan` ↔ `aktif` dari alur laporan
 - [ ] CRUD fasilitas (tambah/edit/nonaktifkan)
-- [ ] Rekap okupansi & frekuensi kerusakan + ekspor CSV, XLSX, dan PDF
+- [ ] Rekap okupansi & frekuensi kerusakan + ekspor CSV dan PDF (XLSX opsional)
 - [ ] Validasi server & client pada semua form penting
 - [ ] Seeder akun demo berjalan: `php artisan migrate:fresh --seed`
 - [ ] README berisi setup + informasi login

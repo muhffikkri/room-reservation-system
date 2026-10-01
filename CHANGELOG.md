@@ -1,31 +1,44 @@
 # Changelog
 
-Perubahan penting pada setiap rilis dicatat di sini. Detail commit dan pull request tersedia di riwayat GitHub.
+All notable release changes are recorded here. Commit and pull request details are available in the GitHub history.
 
-## Unreleased
+## v1.3.0 — Pending release
 
 ### Added
 
-- Kedaluwarsa otomatis reservasi pending yang melewati batas persetujuan.
-- Penolakan otomatis dan notifikasi untuk reservasi pending yang overlap setelah reservasi lain disetujui.
-- Filter dan pengurutan antrian reservasi petugas.
-- Pencarian fasilitas dan pratinjau jadwal pada landing page.
-- Favicon logo REKSA pada seluruh halaman, diturunkan dari `public/images/reksa-logo.png` dengan latar transparan dan ukuran 16, 32, 48, serta 180 piksel.
+- Automatically expire pending reservations that pass the approval cutoff.
+- Automatically reject overlapping pending reservations after approval and notify their owners in-app.
+- Add officer queue filters, sorting, and AJAX actions.
+- Add live facility search and public schedule previews to the landing page.
+- Show the nearest ten approved reservations requiring review when a facility enters repair, with access to the paginated queue.
+- Add REKSA favicons across public, authentication, and authenticated pages.
+
+### Changed
+
+- Redesign public, authentication, user, officer, and admin pages with consistent REKSA clay cards, buttons, status badges, and pagination.
+- Improve mobile navigation proportions, section tracking, responsive content widths, and scroll transitions.
+- Use WebP illustrations and resolve background images through Vite for production builds.
+- Preserve reservation form selections after validation errors and use the shared booking date window.
+- Consolidate account management, role access checks, facility labels, and recap export columns.
+- Bound dashboard and repair previews in SQL, remove unused recap caching, and batch notification read updates.
+- Keep CSV and PDF exports required; XLSX is optional and is not included in this release.
 
 ### Fixed
 
-- Samakan batas pembatalan BR-8 pada tepat 60 menit sebelum waktu mulai.
-- Tolak field akun berbentuk array melalui validasi tanpa menghasilkan HTTP 500.
-- Pertahankan foto fasilitas lama ketika penyimpanan pengganti gagal.
-- Izinkan reservasi bersebelahan tanpa dianggap overlap.
-- Hitung status penolakan dan pembatalan sistem dengan benar pada rekap.
-- Pulihkan fasilitas terkait ketika laporan kerusakan ditolak.
-- Batasi lagi opsi lokasi pada filter publik dan endpoint AJAX ke 50 nilai unik.
-- Sediakan `Facility::photo_url` sebagai URL absolut agar kartu hasil pencarian langsung dan halaman publik tidak lagi memakai path relatif yang rusak.
-- Arahkan tombol Dashboard pada halaman publik ke beranda milik role masing-masing lewat `User::homeRoute()` supaya admin dan petugas tidak lagi mendarat di 403.
-- Batasi deskripsi fasilitas maksimal 30 kata dan tolak input admin yang lebih panjang lewat `Facility::MAX_DESCRIPTION_WORDS`.
-- Beri tinggi tetap pada blok deskripsi card dan container grid landing supaya hasil pencarian kosong tidak menggeser komponen di bawahnya, dan card hasil pencarian kini dirender oleh server lewat partial yang sama dengan render awal.
-- Satukan label tipe fasilitas dan gambar cadangan pada `Facility::TYPE_LABELS` serta `Facility::TYPE_FALLBACK_IMAGES` supaya label tipe tidak lagi disalin di lima tempat.
+- Align user cancellation checks at the inclusive one-hour cutoff, validate reasons inside services, and record the decision time.
+- Allow adjacent reservation intervals, enforce the 365-day booking limit, and recheck the approval cutoff after locking.
+- Scope expired reservation cleanup to the current user on user-facing pages.
+- Restore facilities only when the rejected repair report owns the repair link.
+- Scope the repair reservation panel to its facility and report, cap its preview, and keep reservation reads outside the status transaction.
+- Reject malformed account fields and invalid phone numbers without HTTP 500 responses; share a valid HTML phone pattern across account forms.
+- Sanitize text before validating its length and enforce the twenty-report daily quota atomically.
+- Preserve the existing facility photo when replacement storage fails.
+- Correct recap status grouping, active-facility occupancy averages, date ranges, category labels, and export filenames.
+- Use semicolon-separated CSV, neutralize spreadsheet formulas, escape exported HTML, and disable PDF remote resources and JavaScript.
+- Bound public location filters to fifty options, use absolute facility photo URLs, and limit descriptions to thirty words.
+- Keep facility card heights stable, reuse server-rendered search cards, and hide empty pagination panels.
+- Route public dashboard links to the current role's home page and require active accounts for notification actions.
+- Align demo reservation dates and officer attribution, include a private report photo, and isolate photo storage in tests.
 
 ## v1.2.3 — 2026-09-23
 
