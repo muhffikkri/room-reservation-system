@@ -36,7 +36,7 @@ php artisan migrate:fresh --seed --no-interaction --force
 
 - Harus sukses dari nol. Lalu buktikan isi data (jumlah baris per tabel, distribusi role/status).
 
-## Gerbang 4 — Bukti logika bisnis (jika menyentuh business rules BR-1..BR-16)
+## Gerbang 4 — Bukti logika bisnis (jika menyentuh business rules BR-1..BR-20)
 
 Tulis skrip verifikasi sementara di `scripts/` (bootstrap Laravel, jalankan query/fungsi,
 print hasil), jalankan, **tempel output**, lalu **hapus skripnya** — jangan di-commit.

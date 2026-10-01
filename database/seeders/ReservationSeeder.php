@@ -21,7 +21,7 @@ class ReservationSeeder extends Seeder
     {
         $budi = User::where('email', 'budi@student.kampus.test')->firstOrFail();
         $sari = User::where('email', 'sari@dosen.kampus.test')->firstOrFail();
-        $admin = User::where('email', 'admin@kampus.test')->firstOrFail();
+        $petugas = User::where('email', 'petugas@kampus.test')->firstOrFail();
 
         $aula = Facility::where('name', 'Aula Terpadu')->firstOrFail();
         $futsal = Facility::where('name', 'Lapangan Futsal')->firstOrFail();
@@ -32,7 +32,7 @@ class ReservationSeeder extends Seeder
                 'purpose' => 'Seminar hasil penelitian prodi',
                 'end_time' => now()->tomorrow()->setTime(10, 0),
                 'status' => 'approved',
-                'decided_by' => $admin->id,
+                'decided_by' => $petugas->id,
                 'decided_at' => now(),
             ],
         );
@@ -47,13 +47,13 @@ class ReservationSeeder extends Seeder
         );
 
         Reservation::firstOrCreate(
-            ['user_id' => $budi->id, 'facility_id' => $aula->id, 'start_time' => now()->addDays(2)->setTime(8, 0)],
+            ['user_id' => $budi->id, 'facility_id' => $aula->id, 'start_time' => now()->tomorrow()->setTime(8, 0)],
             [
                 'purpose' => 'Rapat panitia wisuda',
-                'end_time' => now()->addDays(2)->setTime(9, 30),
+                'end_time' => now()->tomorrow()->setTime(9, 30),
                 'status' => 'rejected',
                 'reject_reason' => 'Fasilitas sudah terpakai untuk kegiatan institusi.',
-                'decided_by' => $admin->id,
+                'decided_by' => $petugas->id,
                 'decided_at' => now(),
             ],
         );

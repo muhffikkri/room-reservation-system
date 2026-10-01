@@ -18,8 +18,6 @@ use Symfony\Component\HttpKernel\Exception\ConflictHttpException;
 
 class ReservationController extends Controller
 {
-    private const MAX_BOOKING_LOOKAHEAD_DAYS = 365;
-
     public function __construct(
         protected ReservationService $reservationService,
         protected ReservationAvailability $availability,
@@ -31,6 +29,15 @@ class ReservationController extends Controller
     public function index(Request $request): View
     {
         $status = $request->string('status')->trim()->toString();
+
+        $expired = $this->reservationService->expireStale($request->user());
+
+        if ($expired > 0) {
+            $request->session()->flash(
+                'info',
+                "{$expired} reservasi Anda otomatis dibatalkan sistem karena melewati batas persetujuan."
+            );
+        }
 
         $reservations = Reservation::with(['facility'])
             ->where('user_id', auth()->id())
@@ -55,11 +62,13 @@ class ReservationController extends Controller
 
         $today = Carbon::now(config('app.timezone'))->startOfDay();
         $validated = $request->validate([
+            'start_time' => ['nullable', 'date_format:H:i'],
+            'end_time' => ['nullable', 'date_format:H:i'],
             'date' => [
                 'nullable',
                 'date_format:Y-m-d',
                 'after_or_equal:'.$today->toDateString(),
-                'before_or_equal:'.$today->copy()->addDays(self::MAX_BOOKING_LOOKAHEAD_DAYS)->toDateString(),
+                'before_or_equal:'.$this->availability->maxBookingDate()->toDateString(),
             ],
         ]);
 
@@ -69,13 +78,22 @@ class ReservationController extends Controller
 
         $slots = $selectedFacility ? $this->bookingSlotsForDate($selectedFacility, $selectedDate) : [];
 
+        $selectedSlot = collect($slots)->first(fn (array $slot): bool => $slot['state'] === 'available'
+            && $selectedFacility?->id === $facilityId
+            && $slot['start'] === ($validated['start_time'] ?? null)
+            && $slot['end'] === ($validated['end_time'] ?? null)
+        );
+
         return view('reservasi.create', [
+            'selectedStartTime' => $selectedSlot['start'] ?? null,
+            'selectedEndTime' => $selectedSlot['end'] ?? null,
             'facilities' => $facilities,
             'selectedFacility' => $selectedFacility,
             'selectedDate' => $selectedDate,
             'slots' => $slots,
             'timeOptions' => $this->availability->timeOptions(),
             'maxDurationSlots' => $this->availability->maxDurationSlots(),
+            'maxBookingDate' => $this->availability->maxBookingDate()->toDateString(),
         ]);
     }
 
@@ -111,11 +129,24 @@ class ReservationController extends Controller
 
     /**
      * Menampilkan detail informasi reservasi milik pengguna.
+     *
+     * Reservasi pending yang melewati batas persetujuan dikonversi lebih dulu
+     * oleh sistem agar detail menampilkan status terkini ("Gagal").
      */
-    public function show(Reservation $reservation): View
+    public function show(Request $request, Reservation $reservation): View
     {
         Gate::authorize('view', $reservation);
 
+        $expired = $this->reservationService->expireStale($request->user());
+
+        if ($expired > 0) {
+            $request->session()->flash(
+                'info',
+                "{$expired} reservasi Anda otomatis dibatalkan sistem karena melewati batas persetujuan."
+            );
+        }
+
+        $reservation->refresh();
         $reservation->load(['facility', 'decidedBy']);
 
         return view('reservasi.show', compact('reservation'));
@@ -130,6 +161,14 @@ class ReservationController extends Controller
             abort(403, 'Anda tidak memiliki akses untuk membatalkan reservasi ini.');
         }
 
+        // Bersihkan sebelum validasi: min:5 dihitung atas masukan mentah,
+        // sehingga '<b></b><i></i>' (14 karakter) lolos lalu menjadi kosong
+        // setelah strip_tags dan tersimpan sebagai pembatalan tanpa alasan.
+        $rawReason = $request->input('cancel_reason');
+        $request->merge([
+            'cancel_reason' => is_string($rawReason) ? strip_tags($rawReason) : $rawReason,
+        ]);
+
         $validated = $request->validate([
             'cancel_reason' => ['required', 'string', 'min:5', 'max:255'],
         ], [
@@ -137,8 +176,10 @@ class ReservationController extends Controller
             'cancel_reason.min' => 'Alasan pembatalan minimal 5 karakter.',
         ]);
 
+        $cancelReason = $validated['cancel_reason'];
+
         try {
-            $this->reservationService->cancelByUser($reservation, auth()->user(), $validated['cancel_reason']);
+            $this->reservationService->cancelByUser($reservation, auth()->user(), $cancelReason);
 
             return redirect()->route('reservasi.show', $reservation)
                 ->with('success', 'Reservasi berhasil dibatalkan.');

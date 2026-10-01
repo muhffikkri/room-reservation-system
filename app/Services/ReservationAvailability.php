@@ -22,60 +22,46 @@ use Illuminate\Support\Collection;
  */
 class ReservationAvailability
 {
-    public const OPEN_HOUR = 7;
+    private const OPEN_HOUR = 7;
 
-    public const CLOSE_HOUR = 20;
+    private const SLOT_MINUTES = 30;
 
-    public const SLOT_MINUTES = 30;
+    private const SLOT_COUNT = 26;
 
-    public const SLOT_COUNT = 26;
+    private const MAX_DURATION_SLOTS = 8;
 
-    public const MAX_DURATION_SLOTS = 8;
+    private const LEAD_TIME_MINUTES = 60;
 
-    public const MAX_DURATION_MINUTES = 240;
+    private const MAX_LOOKAHEAD_DAYS = 365;
 
-    public const LEAD_TIME_MINUTES = 60;
-
-    public const TIME_FORMAT = 'H:i';
-
-    public function openHour(): int
-    {
-        return self::OPEN_HOUR;
-    }
-
-    public function closeHour(): int
-    {
-        return self::CLOSE_HOUR;
-    }
-
-    public function slotMinutes(): int
-    {
-        return self::SLOT_MINUTES;
-    }
-
-    public function slotCount(): int
-    {
-        return self::SLOT_COUNT;
-    }
+    private const TIME_FORMAT = 'H:i';
 
     public function maxDurationSlots(): int
     {
         return self::MAX_DURATION_SLOTS;
     }
 
-    public function maxDurationMinutes(): int
+    /**
+     * Jam operasional per hari, turunan dari slot yang sama dengan yang
+     * dipakai membangun jadwal (26 slot x 30 menit = 13 jam, yaitu
+     * 07.00-20.00).
+     *
+     * Dipakai rekap okupansi untuk menghitung jam maksimum yang mungkin,
+     * supaya angka itu tidak bisa menyimpang dari jadwal yang benar-benar
+     * dibukakan.
+     */
+    public function operationalHoursPerDay(): int
     {
-        return self::MAX_DURATION_MINUTES;
+        return intdiv(self::SLOT_COUNT * self::SLOT_MINUTES, 60);
     }
 
-    public function leadTimeMinutes(): int
+    /**
+     * Rentang hari ke depan yang boleh dipesan/dipilih. Dipakai juga oleh
+     * halaman publik agar keduanya menerima rentang tanggal yang sama.
+     */
+    public function maxLookaheadDays(): int
     {
-        return self::LEAD_TIME_MINUTES;
-    }
-
-    public function timeFormat(): string
-    {
-        return self::TIME_FORMAT;
+        return self::MAX_LOOKAHEAD_DAYS;
     }
 
     public function dayStart(Carbon $date): Carbon
@@ -91,7 +77,7 @@ class ReservationAvailability
     /**
      * @return array<int, array{start: Carbon, end: Carbon}>
      */
-    public function slotsForDay(Carbon $date): array
+    private function slotsForDay(Carbon $date): array
     {
         $dayStart = $this->dayStart($date);
         $slots = [];
@@ -107,7 +93,7 @@ class ReservationAvailability
         return $slots;
     }
 
-    public function formatTime(Carbon $time): string
+    private function formatTime(Carbon $time): string
     {
         return $time->format(self::TIME_FORMAT);
     }
@@ -130,7 +116,7 @@ class ReservationAvailability
         return $options;
     }
 
-    public function isFacilityBookable(Facility $facility): bool
+    private function isFacilityBookable(Facility $facility): bool
     {
         return $facility->status === 'aktif';
     }
@@ -163,7 +149,32 @@ class ReservationAvailability
         return $this->isWithinLeadTime($start) ? 'Waktu mulai minimal 1 jam dari sekarang.' : null;
     }
 
-    public function isInPast(Carbon $start): bool
+    /**
+     * Hari terakhir yang boleh dipilih di form pemesanan.
+     *
+     * Batas bawah dan atas keduanya dihitung per hari kalender, sehingga
+     * hari ke-365 masih dapat dipilih utuh — bentuk yang sama dipakai
+     * validasi form dan penjaga di service.
+     */
+    public function maxBookingDate(): Carbon
+    {
+        return Carbon::now(config('app.timezone'))->startOfDay()->addDays(self::MAX_LOOKAHEAD_DAYS);
+    }
+
+    /**
+     * Menolak pemesanan yang terlalu jauh ke depan (BR-3).
+     *
+     * Jumlah hari tetap, bukan relatif terhadap waktu pemesanan, supaya
+     * form dan service tidak bisa berbeda pendapat.
+     */
+    public function lookaheadError(Carbon $start): ?string
+    {
+        return $start->gt($this->maxBookingDate()->copy()->endOfDay())
+            ? 'Reservasi hanya dapat dibuat maksimal '.self::MAX_LOOKAHEAD_DAYS.' hari ke depan.'
+            : null;
+    }
+
+    private function isInPast(Carbon $start): bool
     {
         return $start->lt(Carbon::now(config('app.timezone')));
     }
@@ -228,11 +239,12 @@ class ReservationAvailability
 
     /**
      * Definisi overlap tunggal (BR-6): slot dianggap terisi bila ada reservasi
-     * approved pada fasilitas sama dengan start_time < end_baru AND end_time > start_baru.
+     * approved pada fasilitas sama dengan start_time < end_baru AND
+     * end_time > start_baru. Interval yang hanya bersinggungan boleh berurutan.
      *
      * @param  iterable<int, Reservation>  $approved
      */
-    public function hasApprovedOverlap(iterable $approved, Carbon $start, Carbon $end): bool
+    private function hasApprovedOverlap(iterable $approved, Carbon $start, Carbon $end): bool
     {
         foreach ($approved as $reservation) {
             if ($reservation->start_time->lt($end) && $reservation->end_time->gt($start)) {
@@ -269,11 +281,6 @@ class ReservationAvailability
         return [];
     }
 
-    public function isValidSlot(Carbon $start, Carbon $end): bool
-    {
-        return $this->slotTimeErrors($start, $end) === [];
-    }
-
     /**
      * @return Collection<int, Reservation>
      */
@@ -292,11 +299,11 @@ class ReservationAvailability
     public function overlapError(int $facilityId, Carbon $start, Carbon $end, ?int $ignoreId = null): ?string
     {
         return $this->hasBlockingOverlap($facilityId, $start, $end, $ignoreId)
-            ? 'Slot waktu tersebut sudah dipesan (bentrok dengan reservasi yang disetujui).'
+            ? 'Maaf, fasilitas ini sudah dipesan pada jam yang sama (atau overlap). Permohonan Anda ditolak.'
             : null;
     }
 
-    public function pendingCountOnDay(int $userId, Carbon $start): int
+    private function pendingCountOnDay(int $userId, Carbon $start): int
     {
         return Reservation::where('user_id', $userId)
             ->pending()

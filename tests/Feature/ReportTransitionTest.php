@@ -4,9 +4,11 @@ use App\Models\Facility;
 use App\Models\Report;
 use App\Models\ReportUpdate;
 use App\Models\User;
+use App\Services\FacilityLifecycle;
 use App\Services\ReportService;
 use Database\Seeders\ReportSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
 
 uses(RefreshDatabase::class);
@@ -81,6 +83,58 @@ it('rejects closing a report without a resolution note', function () {
     expect($processing->fresh()->status)->toBe('diproses');
 });
 
+it('restores its facility when a repair report is rejected', function () {
+    [$report, $officer] = makeReportActors();
+    $service = app(ReportService::class);
+    $processing = $service->transition($report, $officer, 'diproses', 'Petugas mulai memeriksa proyektor yang mati.');
+
+    $service->markFacilityForRepair($processing, $officer);
+
+    $rejected = $service->transition($processing, $officer, 'ditolak', 'Laporan ternyata untuk fasilitas yang berbeda.');
+    $facility = $rejected->fresh()->facility;
+
+    expect($rejected->status)->toBe('ditolak')
+        ->and($facility->status)->toBe('aktif')
+        ->and($facility->repair_report_id)->toBeNull();
+});
+
+it('does not restore a facility before its repair report is rejected', function () {
+    [$report, $officer] = makeReportActors();
+    $service = app(ReportService::class);
+    $processing = $service->transition($report, $officer, 'diproses', 'Petugas mulai memeriksa proyektor yang mati.');
+
+    $service->markFacilityForRepair($processing, $officer);
+
+    expect(fn () => app(FacilityLifecycle::class)->restoreAfterRejection($processing))
+        ->toThrow(ValidationException::class);
+
+    expect($processing->fresh()->facility->status)->toBe('perbaikan')
+        ->and((int) $processing->facility->repair_report_id)->toBe($processing->id);
+});
+
+it('does not restore a facility linked to a different repair report', function () {
+    [$report, $officer] = makeReportActors();
+    $service = app(ReportService::class);
+    $processing = $service->transition($report, $officer, 'diproses', 'Petugas memeriksa kerusakan pada fasilitas.');
+    $otherRepairReport = Report::factory()->create([
+        'user_id' => $report->user_id,
+        'facility_id' => $report->facility_id,
+        'status' => 'diproses',
+    ]);
+
+    $report->facility->update([
+        'status' => 'perbaikan',
+        'repair_report_id' => $otherRepairReport->id,
+    ]);
+
+    $rejected = $service->transition($processing, $officer, 'ditolak', 'Laporan ini bukan penyebab perbaikan.');
+    $facility = $rejected->fresh()->facility;
+
+    expect($rejected->status)->toBe('ditolak')
+        ->and($facility->status)->toBe('perbaikan')
+        ->and($facility->repair_report_id)->toBe($otherRepairReport->id);
+});
+
 it('rejects facility actions outside their allowed states', function () {
     [$report, $officer] = makeReportActors();
     $service = app(ReportService::class);
@@ -94,7 +148,8 @@ it('rejects facility actions outside their allowed states', function () {
         ->toThrow(ValidationException::class);
 });
 
-it('seeds the diproses report with an audit row', function () {
+it('seeds the diproses report with an audit row and demo photo (§15)', function () {
+    Storage::fake('local');
     User::factory()->create(['email' => 'budi@student.kampus.test', 'role' => 'pengguna', 'account_status' => 'aktif']);
     User::factory()->create(['email' => 'petugas@kampus.test', 'role' => 'petugas', 'account_status' => 'aktif']);
     Facility::factory()->create(['name' => 'Lab Komputer 1']);
@@ -107,4 +162,6 @@ it('seeds the diproses report with an audit row', function () {
 
     expect($trail)->toHaveCount(1);
     expect([$trail->first()->old_status, $trail->first()->new_status])->toBe(['baru', 'diproses']);
+    expect($processing->photo)->not->toBeNull();
+    Storage::disk('local')->assertExists($processing->photo);
 });

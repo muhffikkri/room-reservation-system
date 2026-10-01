@@ -5,12 +5,14 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\FacilityRequest;
 use App\Models\Facility;
+use App\Services\FacilityLifecycle;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Image;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
+use Throwable;
 
 /**
  * CRUD master fasilitas oleh admin (§7.3).
@@ -21,6 +23,8 @@ use Illuminate\View\View;
  */
 class FacilityController extends Controller
 {
+    public function __construct(private readonly FacilityLifecycle $lifecycle) {}
+
     public function index(Request $request): View
     {
         $keyword = $request->string('q')->trim()->toString();
@@ -29,7 +33,9 @@ class FacilityController extends Controller
             ->withCount(['reservations', 'reports'])
             ->when($keyword !== '', fn ($query) => $query->where('name', 'like', "%{$keyword}%"))
             ->orderBy('name')
-            ->get();
+            ->orderBy('id')
+            ->paginate(15)
+            ->withQueryString();
 
         return view('admin.fasilitas.index', [
             'facilities' => $facilities,
@@ -69,20 +75,29 @@ class FacilityController extends Controller
     public function update(FacilityRequest $request, Facility $facility): RedirectResponse
     {
         $validated = $request->validated();
+        $previousPhoto = $facility->photo;
+        $replacementPhoto = $this->storePhoto($request);
 
-        // Foto baru menggantikan yang lama agar file tak terpakai tidak menumpuk.
-        if ($request->hasFile('photo')) {
-            $this->deletePhoto($facility);
+        try {
+            DB::transaction(function () use ($facility, $validated, $replacementPhoto, $previousPhoto): void {
+                $facility->update([
+                    'name' => $validated['name'],
+                    'type' => $validated['type'],
+                    'location' => $validated['location'],
+                    'capacity' => $validated['capacity'],
+                    'description' => $validated['description'] ?? null,
+                    'photo' => $replacementPhoto ?? $previousPhoto,
+                ]);
+            });
+        } catch (Throwable $exception) {
+            $this->deletePhoto($replacementPhoto);
+
+            throw $exception;
         }
 
-        $facility->update([
-            'name' => $validated['name'],
-            'type' => $validated['type'],
-            'location' => $validated['location'],
-            'capacity' => $validated['capacity'],
-            'description' => $validated['description'] ?? null,
-            'photo' => $this->storePhoto($request) ?? $facility->photo,
-        ]);
+        if ($replacementPhoto !== null) {
+            $this->deletePhoto($previousPhoto);
+        }
 
         return redirect()
             ->route('admin.fasilitas.index')
@@ -98,19 +113,13 @@ class FacilityController extends Controller
      */
     public function deactivate(Facility $facility): RedirectResponse
     {
-        $result = DB::transaction(function () use ($facility): array {
-            $locked = Facility::whereKey($facility->id)->lockForUpdate()->firstOrFail();
+        try {
+            $facility = $this->lifecycle->deactivate($facility);
+        } catch (ValidationException $exception) {
+            return back()->with('error', $exception->errors()['status'][0]);
+        }
 
-            if ($locked->status === 'perbaikan') {
-                return ['error', "Fasilitas {$locked->name} sedang dalam perbaikan dan tidak dapat dinonaktifkan sampai penanganannya selesai."];
-            }
-
-            $locked->update(['status' => 'nonaktif']);
-
-            return ['success', "Fasilitas {$locked->name} dinonaktifkan."];
-        });
-
-        return back()->with($result[0], $result[1]);
+        return back()->with('success', "Fasilitas {$facility->name} dinonaktifkan.");
     }
 
     /**
@@ -121,24 +130,17 @@ class FacilityController extends Controller
      */
     public function activate(Facility $facility): RedirectResponse
     {
-        $result = DB::transaction(function () use ($facility): array {
-            $locked = Facility::whereKey($facility->id)->lockForUpdate()->firstOrFail();
+        try {
+            $facility = $this->lifecycle->activate($facility);
+        } catch (ValidationException $exception) {
+            return back()->with('error', $exception->errors()['status'][0]);
+        }
 
-            if ($locked->status === 'perbaikan') {
-                return ['error', "Fasilitas {$locked->name} sedang dalam perbaikan; pengembaliannya ke aktif dilakukan petugas melalui alur laporan."];
-            }
-
-            $locked->update(['status' => 'aktif']);
-
-            return ['success', "Fasilitas {$locked->name} diaktifkan kembali."];
-        });
-
-        return back()->with($result[0], $result[1]);
+        return back()->with('success', "Fasilitas {$facility->name} diaktifkan kembali.");
     }
 
     /**
-     * Simpan foto fasilitas sebagai WebP (kualitas 80, lebar maks 1920px)
-     * agar ukuran file di storage/public/facilities tetap ringan.
+     * Simpan foto fasilitas ke storage/public/facilities.
      */
     private function storePhoto(FacilityRequest $request): ?string
     {
@@ -146,12 +148,7 @@ class FacilityController extends Controller
             return null;
         }
 
-        $path = Image::fromUpload($request->file('photo'))
-            ->orient()
-            ->scale(width: 1920)
-            ->toWebp()
-            ->quality(80)
-            ->storePublicly('facilities', 'public');
+        $path = $request->file('photo')->storePublicly('facilities', 'public');
 
         if ($path === false) {
             throw new \RuntimeException('Foto fasilitas gagal disimpan.');
@@ -160,10 +157,10 @@ class FacilityController extends Controller
         return $path;
     }
 
-    private function deletePhoto(Facility $facility): void
+    private function deletePhoto(?string $photo): void
     {
-        if ($facility->photo !== null) {
-            Storage::disk('public')->delete($facility->photo);
+        if ($photo !== null) {
+            Storage::disk('public')->delete($photo);
         }
     }
 }

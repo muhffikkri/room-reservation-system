@@ -8,7 +8,6 @@ use App\Models\ReportUpdate;
 use App\Models\User;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Image;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
@@ -25,6 +24,8 @@ use Throwable;
 class ReportService
 {
     public const DAILY_REPORT_QUOTA = 20;
+
+    public function __construct(private readonly FacilityLifecycle $facilityLifecycle) {}
 
     /**
      * Buat laporan kerusakan baru oleh pengguna + simpan foto jika ada.
@@ -55,14 +56,7 @@ class ReportService
                 }
 
                 if (isset($data['photo']) && $data['photo'] instanceof UploadedFile) {
-                    // Konversi ke WebP (kualitas 80, lebar maks 1920px) agar foto
-                    // bukti kerusakan hemat penyimpanan namun tetap jelas.
-                    $photoPath = Image::fromUpload($data['photo'])
-                        ->orient()
-                        ->scale(width: 1920)
-                        ->toWebp()
-                        ->quality(80)
-                        ->store('reports', 'local');
+                    $photoPath = $data['photo']->store('reports', 'local');
 
                     if ($photoPath === false) {
                         throw new \RuntimeException('Foto laporan gagal disimpan.');
@@ -73,7 +67,7 @@ class ReportService
                     'user_id' => $lockedUser->id,
                     'facility_id' => $data['facility_id'],
                     'category' => $data['category'],
-                    'description' => $data['description'],
+                    'description' => strip_tags($data['description']),
                     'photo' => $photoPath,
                     'status' => 'baru',
                 ]);
@@ -148,6 +142,10 @@ class ReportService
                 'handled_at' => now(),
             ]);
 
+            if ($newStatus === 'ditolak') {
+                $this->facilityLifecycle->restoreAfterRejection($locked);
+            }
+
             // Tulis tepat satu baris jejak audit untuk transisi ini; riwayat hanya boleh bertambah.
             ReportUpdate::create([
                 'report_id' => $locked->id,
@@ -168,30 +166,7 @@ class ReportService
     {
         $this->ensureActivePetugas($officer);
 
-        return DB::transaction(function () use ($report): Facility {
-            $lockedReport = Report::whereKey($report->id)->lockForUpdate()->firstOrFail();
-
-            if ($lockedReport->status !== 'diproses') {
-                throw ValidationException::withMessages([
-                    'status' => 'Fasilitas hanya dapat ditandai perbaikan saat laporan sedang diproses.',
-                ]);
-            }
-
-            $facility = Facility::whereKey($lockedReport->facility_id)->lockForUpdate()->firstOrFail();
-
-            if ($facility->status !== 'aktif') {
-                throw ValidationException::withMessages([
-                    'status' => 'Fasilitas harus berstatus aktif sebelum ditandai perbaikan.',
-                ]);
-            }
-
-            $facility->update([
-                'status' => 'perbaikan',
-                'repair_report_id' => $lockedReport->id,
-            ]);
-
-            return $facility->refresh();
-        });
+        return $this->facilityLifecycle->markForRepair($report);
     }
 
     /**
@@ -201,30 +176,7 @@ class ReportService
     {
         $this->ensureActivePetugas($officer);
 
-        return DB::transaction(function () use ($report): Facility {
-            $lockedReport = Report::whereKey($report->id)->lockForUpdate()->firstOrFail();
-
-            if ($lockedReport->status !== 'selesai') {
-                throw ValidationException::withMessages([
-                    'status' => 'Fasilitas hanya dapat dikembalikan aktif setelah laporannya selesai.',
-                ]);
-            }
-
-            $facility = Facility::whereKey($lockedReport->facility_id)->lockForUpdate()->firstOrFail();
-
-            if ($facility->status !== 'perbaikan' || (int) $facility->repair_report_id !== $lockedReport->id) {
-                throw ValidationException::withMessages([
-                    'status' => 'Fasilitas tidak sedang dalam perbaikan oleh laporan ini.',
-                ]);
-            }
-
-            $facility->update([
-                'status' => 'aktif',
-                'repair_report_id' => null,
-            ]);
-
-            return $facility->refresh();
-        });
+        return $this->facilityLifecycle->restoreAfterCompletion($report);
     }
 
     private function ensureActivePengguna(User $user): void

@@ -3,6 +3,7 @@
 use App\Models\Facility;
 use App\Models\Reservation;
 use App\Models\User;
+use App\Services\ReservationAvailability;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
 
@@ -106,4 +107,50 @@ it('rejects reservation when overlapping with an approved reservation (BR-6)', f
 
     $response->assertSessionHasErrors();
     expect(Reservation::where('user_id', $user2->id)->count())->toBe(0);
+});
+
+it('rejects a reservation posted beyond the 365 day booking window (BR-3)', function () {
+    $user = User::factory()->create(['role' => 'pengguna', 'account_status' => 'aktif']);
+    $facility = Facility::factory()->create(['status' => 'aktif']);
+
+    $response = $this->actingAs($user)->post(route('reservasi.store'), [
+        'facility_id' => $facility->id,
+        'date' => Carbon::today()->addDays(366)->format('Y-m-d'),
+        'start_time' => '08:00',
+        'end_time' => '09:00',
+        'purpose' => 'Rapat koordinasi kegiatan kampus',
+    ]);
+
+    $response->assertSessionHasErrors('date');
+    expect(Reservation::count())->toBe(0);
+});
+
+it('accepts a reservation on the last day of the 365 day booking window', function () {
+    $user = User::factory()->create(['role' => 'pengguna', 'account_status' => 'aktif']);
+    $facility = Facility::factory()->create(['status' => 'aktif']);
+
+    $response = $this->actingAs($user)->post(route('reservasi.store'), [
+        'facility_id' => $facility->id,
+        'date' => Carbon::today()->addDays(365)->format('Y-m-d'),
+        'start_time' => '08:00',
+        'end_time' => '09:00',
+        'purpose' => 'Rapat koordinasi kegiatan kampus',
+    ]);
+
+    $response->assertSessionHasNoErrors();
+    expect(Reservation::count())->toBe(1);
+});
+
+it('renders the date input with min today and max booking date', function () {
+    $user = User::factory()->create(['role' => 'pengguna', 'account_status' => 'aktif']);
+    Facility::factory()->create(['status' => 'aktif']);
+
+    $response = $this->actingAs($user)->get(route('reservasi.create'));
+
+    $minDate = Carbon::now(config('app.timezone'))->toDateString();
+    $maxBookingDate = app(ReservationAvailability::class)->maxBookingDate()->toDateString();
+
+    $response->assertStatus(200)
+        ->assertSee('min="'.$minDate.'"', false)
+        ->assertSee('max="'.$maxBookingDate.'"', false);
 });

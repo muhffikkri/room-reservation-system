@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Officer;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\UpdateReportStatusRequest;
 use App\Models\Report;
+use App\Models\Reservation;
 use App\Services\ReportService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -19,29 +20,52 @@ class ReportController extends Controller
     ) {}
 
     /**
-     * Menampilkan daftar antrian laporan kerusakan untuk petugas/admin.
+     * Menampilkan daftar antrean laporan kerusakan untuk petugas/admin.
+     *
+     * Antrean dibuka pada status "baru". Filter status menimpa tab, dan tab
+     * "menunggu"/"selesai" tetap tersedia sebagai pengelompokan URL lama.
      */
     public function index(Request $request): View
     {
         $status = $request->query('status');
+        $tab = $request->query('tab');
+        $validStatuses = ['baru', 'diproses', 'selesai', 'ditolak'];
+        $tabs = [
+            'menunggu' => ['baru', 'diproses'],
+            'selesai' => ['selesai', 'ditolak'],
+        ];
 
-        $query = Report::with(['facility', 'user'])->latest();
+        $query = Report::with(['facility', 'user']);
 
-        if ($status && in_array($status, ['baru', 'diproses', 'selesai', 'ditolak'], true)) {
+        if (! in_array($status, $validStatuses, true)) {
+            $status = null;
+
+            if (isset($tabs[$tab])) {
+                $query->whereIn('status', $tabs[$tab]);
+            } else {
+                $tab = null;
+                $status = 'baru';
+            }
+        }
+
+        if ($status !== null) {
             $query->where('status', $status);
         }
 
-        $reports = $query->paginate(10)->withQueryString();
+        $reports = $query
+            ->orderByRaw('CASE status WHEN "baru" THEN 0 WHEN "diproses" THEN 1 WHEN "selesai" THEN 2 WHEN "ditolak" THEN 3 ELSE 4 END')
+            ->latest()
+            ->paginate(10)
+            ->withQueryString();
 
-        $counts = [
-            'total' => Report::count(),
-            'baru' => Report::where('status', 'baru')->count(),
-            'diproses' => Report::where('status', 'diproses')->count(),
-            'selesai' => Report::where('status', 'selesai')->count(),
-            'ditolak' => Report::where('status', 'ditolak')->count(),
-        ];
-
-        return view('petugas.laporan.index', compact('reports', 'status', 'counts'));
+        // Kartu ringkasan dihapus saat antrean redesigned, jadi tidak ada lagi
+        // angka yang perlu dihitung di sini.
+        return view('petugas.laporan.index', [
+            'reports' => $reports,
+            'status' => $status,
+            'tab' => $tab,
+            'statusFilters' => $validStatuses,
+        ]);
     }
 
     /**
@@ -55,7 +79,19 @@ class ReportController extends Controller
 
         $allowedTransitions = ReportService::allowedTransitions($report->status);
 
-        return view('petugas.laporan.show', compact('report', 'allowedTransitions'));
+        $affectedReservations = collect();
+        if ($report->facility->status === 'perbaikan' && (int) $report->facility->repair_report_id === (int) $report->id) {
+            $affectedReservations = Reservation::where('facility_id', $report->facility_id)
+                ->where('status', 'approved')
+                ->where('end_time', '>', now())
+                ->with('user:id,name')
+                ->orderBy('start_time')
+                ->orderBy('id')
+                ->limit(10)
+                ->get();
+        }
+
+        return view('petugas.laporan.show', compact('report', 'allowedTransitions', 'affectedReservations'));
     }
 
     /**
@@ -77,7 +113,7 @@ class ReportController extends Controller
     }
 
     /**
-     * Menandai atau mengembalikan status fasilitas perbaikan (BR-11).
+     * Menandai atau mengembalikan status fasilitas perbaikan (BR-11, BR-16).
      */
     public function toggleFacilityStatus(Request $request, Report $report): RedirectResponse
     {
@@ -86,7 +122,7 @@ class ReportController extends Controller
         try {
             if ($action === 'perbaikan') {
                 $this->reportService->markFacilityForRepair($report, $request->user());
-                $message = 'Fasilitas berhasil ditandai sedang dalam perbaikan.';
+                $message = 'Fasilitas berhasil ditandai sedang dalam perbaikan. Tinjau reservasi yang masih disetujui pada fasilitas ini.';
             } elseif ($action === 'aktif') {
                 $this->reportService->restoreFacilityToActive($report, $request->user());
                 $message = 'Fasilitas berhasil dikembalikan ke status aktif.';

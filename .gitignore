@@ -3,7 +3,6 @@
 
 .phpactor.json
 .phpunit.result.cache
-/.codex
 /.cursor/
 /.idea
 /.nova

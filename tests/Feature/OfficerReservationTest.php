@@ -3,6 +3,7 @@
 use App\Models\Facility;
 use App\Models\Reservation;
 use App\Models\User;
+use Database\Seeders\ReservationSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
 
@@ -101,12 +102,15 @@ it('flashes an error when approving a conflicting pending reservation (BR-7)', f
 
     $this->actingAs($officer)->post(route('petugas.reservasi.approve', $first))->assertRedirect();
 
+    // Persetujuan pertama otomatis menolak reservasi overlap lainnya.
+    expect($second->fresh()->status)->toBe('rejected_by_system');
+
     $this->actingAs($officer)
         ->post(route('petugas.reservasi.approve', $second))
         ->assertRedirect()
         ->assertSessionHas('error');
 
-    expect($second->fresh()->status)->toBe('pending');
+    expect($second->fresh()->status)->toBe('rejected_by_system');
 });
 
 it('requires a reason of at least 10 characters to reject (BR-9)', function () {
@@ -160,6 +164,31 @@ it('cancels a pending reservation by officer with a persisted reason (BR-9)', fu
         ->and($fresh->decided_by)->toBe($officer->id);
 });
 
+it('rejects an officer cancel reason made only of markup', function () {
+    [, $reservation, $officer] = makeOfficerReservationActors();
+
+    // 28 karakter, semuanya tag: lolos min:10 apa adanya, lalu kosong
+    // setelah strip_tags — sehingga batal tanpa alasan tersimpan.
+    $this->actingAs($officer)
+        ->post(route('petugas.reservasi.cancel', $reservation), ['cancel_reason' => '<b></b><i></i><u></u><s></s>'])
+        ->assertSessionHasErrors('cancel_reason');
+
+    expect($reservation->fresh()->status)->toBe('pending')
+        ->and($reservation->fresh()->cancel_reason)->toBeNull();
+});
+
+it('stores an officer cancel reason that carries text alongside markup', function () {
+    [, $reservation, $officer] = makeOfficerReservationActors();
+
+    $this->actingAs($officer)
+        ->post(route('petugas.reservasi.cancel', $reservation), [
+            'cancel_reason' => '<b>Jadwal</b> bertabrakan dengan <i>renovasi</i> fasilitas.',
+        ])
+        ->assertSessionHasNoErrors();
+
+    expect($reservation->fresh()->cancel_reason)->toBe('Jadwal bertabrakan dengan renovasi fasilitas.');
+});
+
 it('cancels an approved reservation when the facility enters repair (BR-16)', function () {
     [$facility, $reservation] = makeOfficerReservationActors();
     $reservation->update(['status' => 'approved']);
@@ -182,4 +211,274 @@ it('does not allow cancelling an already rejected reservation', function () {
         ->assertSessionHas('error');
 
     expect($reservation->fresh()->status)->toBe('rejected');
+});
+
+it('refuses to let an officer cancel a pending reservation past the approval deadline', function () {
+    [, $reservation, $officer] = makeOfficerReservationActors();
+    $reservation->update([
+        'status' => 'pending',
+        'start_time' => now()->addMinutes(30),
+        'end_time' => now()->addMinutes(90),
+    ]);
+
+    $this->actingAs($officer)
+        ->post(route('petugas.reservasi.cancel', $reservation), ['cancel_reason' => 'Mencoba membatalkan antrean yang sudah kedaluwarsa.'])
+        ->assertRedirect()
+        ->assertSessionHas('error');
+
+    // Officer tidak boleh menuliskan alasan atas keputusan yang sebenarnya
+    // milik sistem; barisnya harus tetap pending agar sapuan berikutnya yang
+    // menandainya cancelled_by_system.
+    $fresh = $reservation->fresh();
+
+    expect($fresh->status)->toBe('pending')
+        ->and($fresh->cancel_reason)->toBeNull()
+        ->and($fresh->decided_by)->toBeNull();
+});
+
+it('sorts the queue by created_at desc, then start time asc, then status priority', function () {
+    [$facility, , $officer] = makeOfficerReservationActors();
+
+    $approvedNewest = User::factory()->create(['name' => 'Urutan Baru Approved', 'role' => 'pengguna', 'account_status' => 'aktif']);
+    $pendingMorning = User::factory()->create(['name' => 'Urutan Start Pagi', 'role' => 'pengguna', 'account_status' => 'aktif']);
+    $pendingNoon = User::factory()->create(['name' => 'Urutan Start Siang', 'role' => 'pengguna', 'account_status' => 'aktif']);
+    $pendingMiddle = User::factory()->create(['name' => 'Urutan Pending Dulu', 'role' => 'pengguna', 'account_status' => 'aktif']);
+    $rejectedMiddle = User::factory()->create(['name' => 'Urutan Rejected Sesudah', 'role' => 'pengguna', 'account_status' => 'aktif']);
+    $pendingOldest = User::factory()->create(['name' => 'Urutan Paling Lama', 'role' => 'pengguna', 'account_status' => 'aktif']);
+
+    // created_at paling baru ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â start_time menentukan urutan, bukan status.
+    Reservation::factory()->create([
+        'user_id' => $approvedNewest->id,
+        'facility_id' => $facility->id,
+        'status' => 'approved',
+        'created_at' => officerReservationCarbon('2030-03-03', '10:00'),
+        'start_time' => officerReservationCarbon('2030-03-10', '08:00'),
+        'end_time' => officerReservationCarbon('2030-03-10', '09:00'),
+    ]);
+    Reservation::factory()->create([
+        'user_id' => $pendingMorning->id,
+        'facility_id' => $facility->id,
+        'status' => 'pending',
+        'created_at' => officerReservationCarbon('2030-03-03', '10:00'),
+        'start_time' => officerReservationCarbon('2030-03-10', '09:00'),
+        'end_time' => officerReservationCarbon('2030-03-10', '10:00'),
+    ]);
+    Reservation::factory()->create([
+        'user_id' => $pendingNoon->id,
+        'facility_id' => $facility->id,
+        'status' => 'pending',
+        'created_at' => officerReservationCarbon('2030-03-03', '10:00'),
+        'start_time' => officerReservationCarbon('2030-03-10', '10:00'),
+        'end_time' => officerReservationCarbon('2030-03-10', '11:00'),
+    ]);
+
+    // created_at sama dan start_time sama ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â status menentukan urutan.
+    Reservation::factory()->create([
+        'user_id' => $rejectedMiddle->id,
+        'facility_id' => $facility->id,
+        'status' => 'rejected',
+        'created_at' => officerReservationCarbon('2030-03-02', '10:00'),
+        'start_time' => officerReservationCarbon('2030-03-11', '08:00'),
+        'end_time' => officerReservationCarbon('2030-03-11', '09:00'),
+    ]);
+    Reservation::factory()->create([
+        'user_id' => $pendingMiddle->id,
+        'facility_id' => $facility->id,
+        'status' => 'pending',
+        'created_at' => officerReservationCarbon('2030-03-02', '10:00'),
+        'start_time' => officerReservationCarbon('2030-03-11', '08:00'),
+        'end_time' => officerReservationCarbon('2030-03-11', '09:00'),
+    ]);
+
+    // created_at paling lama tetap di bawah walau statusnya pending.
+    Reservation::factory()->create([
+        'user_id' => $pendingOldest->id,
+        'facility_id' => $facility->id,
+        'status' => 'pending',
+        'created_at' => officerReservationCarbon('2030-03-01', '10:00'),
+        'start_time' => officerReservationCarbon('2030-03-12', '08:00'),
+        'end_time' => officerReservationCarbon('2030-03-12', '09:00'),
+    ]);
+
+    $this->actingAs($officer)
+        ->get(route('petugas.reservasi.index', ['tab' => 'menunggu']))
+        ->assertOk()
+        ->assertSeeInOrder([
+            'Urutan Start Pagi',
+            'Urutan Start Siang',
+            'Urutan Pending Dulu',
+            'Urutan Paling Lama',
+        ])
+        ->assertDontSee('Urutan Baru Approved')
+        ->assertDontSee('Urutan Rejected Sesudah');
+
+    $this->actingAs($officer)
+        ->get(route('petugas.reservasi.index', ['tab' => 'selesai']))
+        ->assertOk()
+        ->assertSeeInOrder([
+            'Urutan Baru Approved',
+            'Urutan Rejected Sesudah',
+        ]);
+});
+
+it('filters the queue by the menunggu approval tab', function () {
+    [$facility, $reservation, $officer] = makeOfficerReservationActors();
+
+    $doneUser = User::factory()->create(['name' => 'Pemohon Selesai Tab', 'role' => 'pengguna', 'account_status' => 'aktif']);
+    Reservation::factory()->create([
+        'user_id' => $doneUser->id,
+        'facility_id' => $facility->id,
+        'status' => 'approved',
+        'start_time' => officerReservationCarbon('2030-02-03', '10:00'),
+        'end_time' => officerReservationCarbon('2030-02-03', '11:00'),
+    ]);
+
+    $this->actingAs($officer)
+        ->get(route('petugas.reservasi.index', ['tab' => 'menunggu']))
+        ->assertOk()
+        ->assertSee($reservation->user->name)
+        ->assertDontSee('Pemohon Selesai Tab');
+});
+
+it('filters the queue by the selesai tab', function () {
+    [$facility, $reservation, $officer] = makeOfficerReservationActors();
+
+    $doneUser = User::factory()->create(['name' => 'Pemohon Selesai Tab', 'role' => 'pengguna', 'account_status' => 'aktif']);
+    Reservation::factory()->create([
+        'user_id' => $doneUser->id,
+        'facility_id' => $facility->id,
+        'status' => 'rejected',
+        'start_time' => officerReservationCarbon('2030-02-03', '10:00'),
+        'end_time' => officerReservationCarbon('2030-02-03', '11:00'),
+    ]);
+
+    $this->actingAs($officer)
+        ->get(route('petugas.reservasi.index', ['tab' => 'selesai']))
+        ->assertOk()
+        ->assertSee('Pemohon Selesai Tab')
+        ->assertDontSee($reservation->user->name);
+});
+
+it('lets the status filter override the tab', function () {
+    [$facility, $reservation, $officer] = makeOfficerReservationActors();
+
+    $doneUser = User::factory()->create(['name' => 'Pemohon Selesai Tab', 'role' => 'pengguna', 'account_status' => 'aktif']);
+    Reservation::factory()->create([
+        'user_id' => $doneUser->id,
+        'facility_id' => $facility->id,
+        'status' => 'approved',
+        'start_time' => officerReservationCarbon('2030-02-03', '10:00'),
+        'end_time' => officerReservationCarbon('2030-02-03', '11:00'),
+    ]);
+
+    $this->actingAs($officer)
+        ->get(route('petugas.reservasi.index', ['tab' => 'menunggu', 'status' => 'approved']))
+        ->assertOk()
+        ->assertSee('Pemohon Selesai Tab')
+        ->assertDontSee($reservation->user->name);
+});
+
+it('shows the submitted at column and an approve confirmation dialog', function () {
+    [$facility, , $officer] = makeOfficerReservationActors();
+
+    $this->actingAs($officer)
+        ->get(route('petugas.reservasi.index'))
+        ->assertOk()
+        ->assertSee('Waktu Diajukan')
+        ->assertSee('Setujui reservasi?', false)
+        ->assertSee('data-open-dialog="approve-', false);
+});
+
+it('orders the queue by the status vocabulary', function () {
+    $this->travelTo(officerReservationCarbon('2030-02-01', '07:00'));
+
+    [, , $officer] = makeOfficerReservationActors();
+    $facility = Facility::first();
+
+    // Satu slot, satu created_at, satu waktu: satu-satunya pembeda adalah
+    // status, sehingga urutan antrean benar-benar berasal dari kosakata.
+    foreach (array_reverse(Reservation::ORDERED_STATUSES) as $status) {
+        Reservation::factory()->create([
+            'user_id' => User::factory()->create(['role' => 'pengguna', 'account_status' => 'aktif'])->id,
+            'facility_id' => $facility->id,
+            'status' => $status,
+            'start_time' => officerReservationCarbon('2030-02-04', '08:00'),
+            'end_time' => officerReservationCarbon('2030-02-04', '09:00'),
+        ]);
+    }
+
+    $menunggu = $this->actingAs($officer)->get(route('petugas.reservasi.ajax', [
+        'date' => '2030-02-04',
+        'tab' => 'menunggu',
+    ]));
+    $menunggu->assertOk();
+
+    $selesai = $this->actingAs($officer)->get(route('petugas.reservasi.ajax', [
+        'date' => '2030-02-04',
+        'tab' => 'selesai',
+    ]));
+    $selesai->assertOk();
+
+    $statuses = collect($menunggu->json('reservations'))
+        ->concat($selesai->json('reservations'))
+        ->pluck('status')
+        ->all();
+
+    expect($statuses)->toBe(Reservation::ORDERED_STATUSES);
+});
+
+it('rejects a status filter outside the vocabulary', function () {
+    [, , $officer] = makeOfficerReservationActors();
+
+    $this->actingAs($officer)
+        ->get(route('petugas.reservasi.index', ['status' => 'made_up_status']))
+        ->assertSessionHasErrors('status');
+
+    $this->actingAs($officer)
+        ->get(route('petugas.reservasi.index', ['tab' => 'made_up_tab']))
+        ->assertSessionHasErrors('tab');
+});
+
+it('seeds reservations with officer attribution and tomorrow dates (§15)', function () {
+    $budi = User::factory()->create(['email' => 'budi@student.kampus.test', 'role' => 'pengguna', 'account_status' => 'aktif']);
+    $sari = User::factory()->create(['email' => 'sari@dosen.kampus.test', 'role' => 'pengguna', 'account_status' => 'aktif']);
+    $petugas = User::factory()->create(['email' => 'petugas@kampus.test', 'role' => 'petugas', 'account_status' => 'aktif']);
+
+    Facility::factory()->create(['name' => 'Aula Terpadu']);
+    Facility::factory()->create(['name' => 'Lapangan Futsal']);
+
+    (new ReservationSeeder)->run();
+
+    $approved = Reservation::where('user_id', $sari->id)->where('status', 'approved')->firstOrFail();
+    $rejected = Reservation::where('user_id', $budi->id)->where('status', 'rejected')->firstOrFail();
+
+    expect($approved->decided_by)->toBe($petugas->id)
+        ->and($rejected->decided_by)->toBe($petugas->id)
+        ->and($rejected->start_time->isTomorrow())->toBeTrue();
+});
+
+it('filters the queue by facility_id', function () {
+    [, , $officer] = makeOfficerReservationActors();
+
+    $facilityA = Facility::factory()->create(['name' => 'Fasilitas Alpha', 'status' => 'aktif']);
+    $facilityB = Facility::factory()->create(['name' => 'Fasilitas Beta', 'status' => 'aktif']);
+    $user = User::factory()->create(['role' => 'pengguna', 'account_status' => 'aktif']);
+
+    Reservation::factory()->create([
+        'user_id' => $user->id,
+        'facility_id' => $facilityA->id,
+        'status' => 'approved',
+    ]);
+    Reservation::factory()->create([
+        'user_id' => $user->id,
+        'facility_id' => $facilityB->id,
+        'status' => 'approved',
+    ]);
+
+    $response = $this->actingAs($officer)
+        ->get(route('petugas.reservasi.index', ['facility_id' => $facilityA->id, 'status' => 'approved']));
+
+    $response->assertOk()
+        ->assertSee('Fasilitas Alpha')
+        ->assertDontSee('Fasilitas Beta');
 });

@@ -14,23 +14,11 @@ use Illuminate\View\View;
  */
 class FacilityController extends Controller
 {
-    private const MAX_PUBLIC_FACILITIES = 50;
-
-    private const MAX_SCHEDULE_LOOKBACK_DAYS = 365;
-
-    private const MAX_SCHEDULE_LOOKAHEAD_DAYS = 365;
-
-    /**
-     * Tipe fasilitas valid beserta label yang ramah pengguna.
-     *
-     * @var array<string, string>
-     */
-    public const FACILITY_TYPES = [
-        'ruang_kelas' => 'Ruang Kelas',
-        'aula' => 'Aula',
-        'laboratorium' => 'Laboratorium',
-        'alat' => 'Alat',
-        'lapangan' => 'Lapangan',
+    /** @var array<string, array{int, int}> */
+    private const CAPACITY_RANGES = [
+        'lt_40' => [1, 39],
+        '40_100' => [40, 100],
+        'gt_100' => [101, PHP_INT_MAX],
     ];
 
     public function __construct(
@@ -53,9 +41,11 @@ class FacilityController extends Controller
 
         $validated = $request->validate([
             'q' => ['nullable', 'string', 'max:100'],
-            'tipe' => ['nullable', 'string', Rule::in(array_keys(self::FACILITY_TYPES))],
+            'tipe' => ['nullable', 'string', Rule::in(array_keys(Facility::TYPE_LABELS))],
             'lokasi' => ['nullable', 'string', 'max:100'],
+            'kapasitas' => ['nullable', 'string', Rule::in(array_keys(self::CAPACITY_RANGES))],
             'kapasitas_min' => ['nullable', 'integer', 'min:1'],
+            'from' => ['nullable', 'string', Rule::in(['home', 'all'])],
         ], [
             'kapasitas_min.integer' => 'Kapasitas minimal harus berupa angka bulat positif.',
             'kapasitas_min.min' => 'Kapasitas minimal tidak boleh kurang dari 1.',
@@ -64,29 +54,31 @@ class FacilityController extends Controller
             'lokasi.max' => 'Lokasi maksimal 100 karakter.',
         ]);
 
+        [$minimumCapacity, $maximumCapacity] = self::CAPACITY_RANGES[$validated['kapasitas'] ?? '']
+            ?? [isset($validated['kapasitas_min']) ? (int) $validated['kapasitas_min'] : null, null];
+
         $facilities = Facility::query()
             ->search(
                 keyword: $validated['q'] ?? null,
                 type: $validated['tipe'] ?? null,
                 location: $validated['lokasi'] ?? null,
-                minCapacity: isset($validated['kapasitas_min']) ? (int) $validated['kapasitas_min'] : null,
+                minCapacity: $minimumCapacity,
             )
+            ->when($maximumCapacity !== null, fn ($query) => $query->where('capacity', '<=', $maximumCapacity))
             ->orderBy('name')
-            ->limit(self::MAX_PUBLIC_FACILITIES)
-            ->get();
+            ->paginate(12)
+            ->withQueryString();
 
         $locations = Facility::query()
-            ->select('location')
-            ->distinct()
-            ->orderBy('location')
-            ->limit(self::MAX_PUBLIC_FACILITIES)
+            ->publicLocationOptions()
             ->pluck('location');
 
         return view('fasilitas.index', [
             'facilities' => $facilities,
-            'types' => self::FACILITY_TYPES,
+            'types' => Facility::TYPE_LABELS,
             'locations' => $locations,
             'filters' => $validated,
+            'from' => $validated['from'] ?? 'home',
         ]);
     }
 
@@ -97,7 +89,7 @@ class FacilityController extends Controller
     {
         return view('fasilitas.show', [
             'facility' => $facility,
-            'types' => self::FACILITY_TYPES,
+            'types' => Facility::TYPE_LABELS,
         ]);
     }
 
@@ -112,9 +104,10 @@ class FacilityController extends Controller
             'date' => [
                 'nullable',
                 'date_format:Y-m-d',
-                'after_or_equal:'.$today->copy()->subDays(self::MAX_SCHEDULE_LOOKBACK_DAYS)->toDateString(),
-                'before_or_equal:'.$today->copy()->addDays(self::MAX_SCHEDULE_LOOKAHEAD_DAYS)->toDateString(),
+                'after_or_equal:'.$today->toDateString(),
+                'before_or_equal:'.$today->copy()->addDays($this->availability->maxLookaheadDays())->toDateString(),
             ],
+            'from' => ['nullable', 'string', Rule::in(['home', 'all'])],
         ]);
 
         $selectedDate = isset($validated['date'])
@@ -135,7 +128,8 @@ class FacilityController extends Controller
             'facility' => $facility,
             'selectedDate' => $selectedDate,
             'slots' => $slots,
-            'types' => self::FACILITY_TYPES,
+            'types' => Facility::TYPE_LABELS,
+            'from' => $validated['from'] ?? 'all',
         ]);
     }
 }

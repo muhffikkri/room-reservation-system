@@ -12,6 +12,25 @@ it('forbids guests from the user account pages', function () {
     $this->post('/admin/pengguna')->assertRedirect(route('login'));
 });
 
+it('rejects an admin-created account whose phone is not a number', function () {
+    $admin = User::factory()->create([
+        'role' => 'admin',
+        'account_status' => 'aktif',
+    ]);
+
+    $response = $this->actingAs($admin)->post('/admin/pengguna', [
+        'name' => 'Mahasiswa Ngawur',
+        'email' => 'ngawur@student.kampus.test',
+        'password' => 'user12345',
+        'password_confirmation' => 'user12345',
+        'identity' => '2110512199',
+        'phone' => 'not-a-phone',
+    ]);
+
+    $response->assertSessionHasErrors('phone');
+    expect(User::where('email', 'ngawur@student.kampus.test')->exists())->toBeFalse();
+});
+
 it('forbids pengguna and petugas from the user account pages', function () {
     foreach (['pengguna', 'petugas'] as $role) {
         $user = User::factory()->create([
@@ -58,6 +77,28 @@ it('creates an active pengguna account by admin', function () {
         ->and($user->account_status)->toBe('aktif')
         ->and($user->phone)->toBe('+6281200002100')
         ->and(Hash::check('user12345', $user->password))->toBeTrue();
+});
+
+it('rejects array-shaped fields on every admin account creation endpoint', function () {
+    $admin = User::factory()->create([
+        'role' => 'admin',
+        'account_status' => 'aktif',
+    ]);
+
+    foreach (['/admin/pengguna', '/admin/petugas', '/admin/admin'] as $endpoint) {
+        $response = $this->actingAs($admin)->post($endpoint, [
+            'name' => 'Malformed Account',
+            'email' => ['malformed@kampus.test'],
+            'password' => 'password123',
+            'password_confirmation' => 'password123',
+            'identity' => ['NIP-199001010001'],
+            'phone' => ['081100001999'],
+        ]);
+
+        $response->assertSessionHasErrors(['email', 'identity', 'phone']);
+    }
+
+    $this->assertDatabaseCount('users', 1);
 });
 
 it('lets the new pengguna log in immediately without verification', function () {

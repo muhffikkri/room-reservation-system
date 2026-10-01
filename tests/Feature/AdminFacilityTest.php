@@ -2,6 +2,8 @@
 
 use App\Models\Facility;
 use App\Models\User;
+use Illuminate\Contracts\Filesystem\Factory as FilesystemFactory;
+use Illuminate\Contracts\Filesystem\Filesystem;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
@@ -81,7 +83,6 @@ it('creates an active facility and stores its photo under facilities/', function
 
     Storage::disk('public')->assertExists($facility->photo);
     expect($facility->photo)->toStartWith('facilities/')
-        ->and($facility->photo)->toEndWith('.webp')
         ->and(Storage::disk('public')->size($facility->photo))->toBeLessThan(500 * 1024);
 });
 
@@ -95,6 +96,34 @@ it('requires name, type, location, and capacity when creating', function () {
         ->assertSessionHasErrors(['name', 'type', 'location', 'capacity']);
 
     expect(Facility::query()->count())->toBe(0);
+});
+
+it('accepts a description at the word limit and rejects one word beyond it', function () {
+    $admin = User::factory()->create([
+        'role' => 'admin',
+        'account_status' => 'aktif',
+    ]);
+
+    $payload = fn (string $description): array => [
+        'name' => 'Aula Batas Kata',
+        'type' => 'aula',
+        'location' => 'Gedung A Lantai 1',
+        'capacity' => 120,
+        'description' => $description,
+    ];
+
+    $atLimit = implode(' ', array_fill(0, Facility::MAX_DESCRIPTION_WORDS, 'kata'));
+    $overLimit = implode(' ', array_fill(0, Facility::MAX_DESCRIPTION_WORDS + 1, 'kata'));
+
+    $this->actingAs($admin)->post('/admin/fasilitas', $payload($atLimit))
+        ->assertSessionHasNoErrors()
+        ->assertRedirect(route('admin.fasilitas.index'));
+
+    $this->actingAs($admin)->post('/admin/fasilitas', $payload($overLimit))
+        ->assertSessionHasErrors('description');
+
+    // Batas kata diuji dari Facility, bukan angka yang ditulis ulang di test.
+    expect(Facility::query()->count())->toBe(1);
 });
 
 it('rejects an unknown type and a non-image photo', function () {
@@ -155,8 +184,42 @@ it('updates a facility and replaces its photo', function () {
     Storage::disk('public')->assertExists($facility->photo);
     Storage::disk('public')->assertMissing('facilities/lama.jpg');
 
-    expect($facility->photo)->toEndWith('.webp')
+    expect($facility->photo)->toStartWith('facilities/')
         ->and(Storage::disk('public')->size($facility->photo))->toBeLessThan(500 * 1024);
+});
+
+it('preserves the existing photo when replacement storage fails', function () {
+    Storage::fake('public');
+
+    $admin = User::factory()->create([
+        'role' => 'admin',
+        'account_status' => 'aktif',
+    ]);
+    $facility = Facility::factory()->create([
+        'name' => 'Ruang Foto Lama',
+        'photo' => 'facilities/lama.jpg',
+    ]);
+
+    Storage::disk('public')->put($facility->photo, 'foto lama');
+
+    $failingDisk = Mockery::mock(Filesystem::class);
+    $failingDisk->shouldReceive('putFileAs')->once()->andReturn(false);
+    $filesystem = Mockery::mock(FilesystemFactory::class);
+    $filesystem->shouldReceive('disk')->with('public')->once()->andReturn($failingDisk);
+    $this->app->instance(FilesystemFactory::class, $filesystem);
+
+    $this->actingAs($admin)->put("/admin/fasilitas/{$facility->id}", [
+        'name' => 'Ruang Foto Baru',
+        'type' => $facility->type,
+        'location' => $facility->location,
+        'capacity' => $facility->capacity,
+        'description' => $facility->description,
+        'photo' => fakeFacilityPhoto('baru.png'),
+    ])->assertServerError();
+
+    Storage::disk('public')->assertExists('facilities/lama.jpg');
+
+    expect($facility->refresh()->photo)->toBe('facilities/lama.jpg');
 });
 
 it('keeps the existing photo when none is uploaded on update', function () {

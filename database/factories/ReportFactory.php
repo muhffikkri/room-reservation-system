@@ -18,7 +18,7 @@ class ReportFactory extends Factory
     public function definition(): array
     {
         return [
-            'category' => fake()->randomElement(['kerusakan_alat', 'listrik', 'kebersihan', 'sarana_prasarana', 'lainnya']),
+            'category' => fake()->randomElement(array_keys(Report::CATEGORIES)),
             'description' => fake()->paragraph(),
             'status' => 'baru',
         ];

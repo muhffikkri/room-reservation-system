@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\RecapDateRangeRequest;
 use App\Services\RecapService;
 use Barryvdh\DomPDF\Facade\Pdf;
+use Illuminate\Http\Response;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Log;
 use Illuminate\View\View;
@@ -30,7 +31,7 @@ class RecapController extends Controller
         Log::info('RecapController: Occupancy page loaded', [
             'user_id' => auth()->id(),
             'date_range' => $recap['date_range'],
-            'facilities_count' => count($recap['data']),
+            'facilities_count' => $this->facilitiesCount($recap),
             'duration_ms' => round((microtime(true) - $start) * 1000, 2),
         ]);
 
@@ -55,7 +56,7 @@ class RecapController extends Controller
         Log::info('RecapController: Damage page loaded', [
             'user_id' => auth()->id(),
             'date_range' => $recap['date_range'],
-            'facilities_count' => count($recap['data']),
+            'facilities_count' => $this->facilitiesCount($recap),
             'duration_ms' => round((microtime(true) - $start) * 1000, 2),
         ]);
 
@@ -77,12 +78,12 @@ class RecapController extends Controller
         $recap = $this->recapService->getOccupancyRecap($startDate, $endDate);
         $csv = $this->recapService->exportOccupancyCsv($recap);
 
-        $filename = 'rekap-okupansi-'.Carbon::now()->format('Y-m-d').'.csv';
+        $filename = $this->exportFilename('okupansi', $recap, 'csv');
 
         Log::info('RecapController: Occupancy CSV downloaded', [
             'user_id' => auth()->id(),
             'date_range' => $recap['date_range'],
-            'facilities_count' => count($recap['data']),
+            'facilities_count' => $this->facilitiesCount($recap),
             'duration_ms' => round((microtime(true) - $start) * 1000, 2),
             'bytes' => strlen($csv),
         ]);
@@ -105,12 +106,12 @@ class RecapController extends Controller
         $recap = $this->recapService->getDamageRecap($startDate, $endDate);
         $csv = $this->recapService->exportDamageCsv($recap);
 
-        $filename = 'rekap-kerusakan-'.Carbon::now()->format('Y-m-d').'.csv';
+        $filename = $this->exportFilename('kerusakan', $recap, 'csv');
 
         Log::info('RecapController: Damage CSV downloaded', [
             'user_id' => auth()->id(),
             'date_range' => $recap['date_range'],
-            'facilities_count' => count($recap['data']),
+            'facilities_count' => $this->facilitiesCount($recap),
             'duration_ms' => round((microtime(true) - $start) * 1000, 2),
             'bytes' => strlen($csv),
         ]);
@@ -125,7 +126,7 @@ class RecapController extends Controller
     /**
      * Ekspor rekap okupansi ke PDF (using dompdf).
      */
-    public function exportOccupancyPdf(RecapDateRangeRequest $request): BinaryFileResponse|StreamedResponse
+    public function exportOccupancyPdf(RecapDateRangeRequest $request): Response|BinaryFileResponse|StreamedResponse
     {
         $start = microtime(true);
         [$startDate, $endDate] = $request->getValidatedDates();
@@ -133,18 +134,21 @@ class RecapController extends Controller
         $recap = $this->recapService->getOccupancyRecap($startDate, $endDate);
         $html = $this->recapService->exportOccupancyHtml($recap);
 
-        $filename = 'rekap-okupansi-'.Carbon::now()->format('Y-m-d').'.pdf';
+        $filename = $this->exportFilename('okupansi', $recap, 'pdf');
 
         try {
+            // isRemoteEnabled sengaja dibiarkan mengikuti config/dompdf.php
+            // (false). Fassilitas berasal dari database, jadi HTML yang
+            // dirakit di sini bisa memuat URL pilihan pihak lain; mengaktifkan
+            // akses remote membuat server pendukung mengunduhnya.
             $pdf = Pdf::loadHTML($html)
                 ->setPaper('A4', 'landscape')
-                ->setOption('isHtml5ParserEnabled', true)
-                ->setOption('isRemoteEnabled', true);
+                ->setOption('isHtml5ParserEnabled', true);
 
             Log::info('RecapController: Occupancy PDF generated', [
                 'user_id' => auth()->id(),
                 'date_range' => $recap['date_range'],
-                'facilities_count' => count($recap['data']),
+                'facilities_count' => $this->facilitiesCount($recap),
                 'duration_ms' => round((microtime(true) - $start) * 1000, 2),
             ]);
 
@@ -157,7 +161,7 @@ class RecapController extends Controller
             ]);
 
             // Fallback to HTML download
-            $htmlFilename = 'rekap-okupansi-'.Carbon::now()->format('Y-m-d').'.html';
+            $htmlFilename = $this->exportFilename('okupansi', $recap, 'html');
 
             return response()->streamDownload(
                 fn () => print ($html),
@@ -170,7 +174,7 @@ class RecapController extends Controller
     /**
      * Ekspor rekap kerusakan ke PDF (using dompdf).
      */
-    public function exportDamagePdf(RecapDateRangeRequest $request): BinaryFileResponse|StreamedResponse
+    public function exportDamagePdf(RecapDateRangeRequest $request): Response|BinaryFileResponse|StreamedResponse
     {
         $start = microtime(true);
         [$startDate, $endDate] = $request->getValidatedDates();
@@ -178,18 +182,18 @@ class RecapController extends Controller
         $recap = $this->recapService->getDamageRecap($startDate, $endDate);
         $html = $this->recapService->exportDamageHtml($recap);
 
-        $filename = 'rekap-kerusakan-'.Carbon::now()->format('Y-m-d').'.pdf';
+        $filename = $this->exportFilename('kerusakan', $recap, 'pdf');
 
         try {
+            // Lihat exportOccupancyPdf(): akses remote mengikuti config.
             $pdf = Pdf::loadHTML($html)
                 ->setPaper('A4', 'landscape')
-                ->setOption('isHtml5ParserEnabled', true)
-                ->setOption('isRemoteEnabled', true);
+                ->setOption('isHtml5ParserEnabled', true);
 
             Log::info('RecapController: Damage PDF generated', [
                 'user_id' => auth()->id(),
                 'date_range' => $recap['date_range'],
-                'facilities_count' => count($recap['data']),
+                'facilities_count' => $this->facilitiesCount($recap),
                 'duration_ms' => round((microtime(true) - $start) * 1000, 2),
             ]);
 
@@ -202,7 +206,7 @@ class RecapController extends Controller
             ]);
 
             // Fallback to HTML download
-            $htmlFilename = 'rekap-kerusakan-'.Carbon::now()->format('Y-m-d').'.html';
+            $htmlFilename = $this->exportFilename('kerusakan', $recap, 'html');
 
             return response()->streamDownload(
                 fn () => print ($html),
@@ -210,5 +214,34 @@ class RecapController extends Controller
                 ['Content-Type' => 'text/html; charset=UTF-8']
             );
         }
+    }
+
+    /**
+     * Nama berkas ekspor mengikuti format spesifikasi:
+     * rekap-{jenis}-{start_date}-sd-{end_date}.{ekstensi}.
+     *
+     * Segmen jenis ada karena spesifikasi aslinya hanya menyebut
+     * rekap-{start}-sd-{end}: tanpa itu, ekspor okupansi dan kerusakan untuk
+     * rentang yang sama menghasilkan nama berkas yang identik dan unduhan
+     * kedua menimpa yang pertama. Spesifikasi telah diperbarui untuk
+     * mencatat penyimpangan ini.
+     *
+     * @param  array<string, mixed>  $recap
+     */
+    private function exportFilename(string $type, array $recap, string $extension): string
+    {
+        $start = $recap['date_range']['start'] ?? Carbon::now()->toDateString();
+        $end = $recap['date_range']['end'] ?? $start;
+
+        return 'rekap-'.$type.'-'.$start.'-sd-'.$end.'.'.$extension;
+    }
+
+    /**
+     * Jumlah baris rekap untuk log — aman walau cache pernah korup,
+     * karena count() hanya menerima array atau Countable.
+     */
+    private function facilitiesCount(array $recap): int
+    {
+        return is_countable($recap['data'] ?? null) ? count($recap['data']) : 0;
     }
 }

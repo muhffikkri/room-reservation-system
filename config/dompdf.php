@@ -243,9 +243,14 @@ return [
          * NOTE: This is PDF-based JavaScript to be executed by the PDF viewer,
          * not browser-based JavaScript executed by Dompdf.
          *
+         * Tidak ada kebutuhan dokumen yang terbukti memerlukan ini, dan
+         * rekap tidak pernah menyertakan <script>. PDF hasil ekspor dibuat
+         * dari nilai database, jadi menyalakan ini hanya menambah permukaan
+         * eksekusi di pembaca PDF.
+         *
          * @var bool
          */
-        'enable_javascript' => true,
+        'enable_javascript' => false,
 
         /**
          * Enable remote file access

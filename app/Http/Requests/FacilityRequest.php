@@ -2,6 +2,9 @@
 
 namespace App\Http\Requests;
 
+use App\Models\Facility;
+use App\Rules\MaxWords;
+use App\Services\AccountStatusGate;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -19,8 +22,7 @@ class FacilityRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return $this->user()?->isAdmin() === true
-            && $this->user()?->isActive() === true;
+        return AccountStatusGate::mayActAs($this->user(), 'admin');
     }
 
     /**
@@ -35,7 +37,7 @@ class FacilityRequest extends FormRequest
             'type' => ['required', Rule::in(['ruang_kelas', 'aula', 'laboratorium', 'alat', 'lapangan'])],
             'location' => ['required', 'string', 'max:120'],
             'capacity' => ['required', 'integer', 'min:1', 'max:100000'],
-            'description' => ['nullable', 'string', 'max:2000'],
+            'description' => ['nullable', 'string', new MaxWords(Facility::MAX_DESCRIPTION_WORDS)],
             'photo' => [
                 'nullable',
                 'image',

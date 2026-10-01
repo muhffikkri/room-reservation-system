@@ -4,15 +4,19 @@ namespace App\Policies;
 
 use App\Models\Reservation;
 use App\Models\User;
+use App\Services\AccountStatusGate;
+use App\Services\ReservationService;
 
 class ReservationPolicy
 {
+    public function __construct(private readonly ReservationService $reservations) {}
+
     /**
      * Tentukan apakah pengguna dapat melihat daftar reservasi.
      */
     public function viewAny(User $user): bool
     {
-        return $user->isActive() && ($user->isPengguna() || $user->isPetugas());
+        return AccountStatusGate::mayActAs($user, 'pengguna', 'petugas');
     }
 
     /**
@@ -23,9 +27,10 @@ class ReservationPolicy
      */
     public function view(User $user, Reservation $reservation): bool
     {
-        return $user->isActive()
-            && (($user->isPengguna() && $user->id === $reservation->user_id)
-                || $user->isPetugas());
+        // Petugas boleh membuka reservasi siapa pun; pengguna hanya
+        // miliknya sendiri. Syarat "aktif" sudah ditangani mayActAs().
+        return AccountStatusGate::mayActAs($user, 'pengguna', 'petugas')
+            && ($user->isPetugas() || $user->id === $reservation->user_id);
     }
 
     /**
@@ -33,7 +38,7 @@ class ReservationPolicy
      */
     public function create(User $user): bool
     {
-        return $user->isActive() && $user->isPengguna();
+        return AccountStatusGate::mayActAs($user, 'pengguna');
     }
 
     /**
@@ -43,15 +48,7 @@ class ReservationPolicy
      */
     public function cancel(User $user, Reservation $reservation): bool
     {
-        if (! $user->isActive() || ! $user->isPengguna() || $user->id !== $reservation->user_id) {
-            return false;
-        }
-
-        if (! in_array($reservation->status, ['pending', 'approved'], true)) {
-            return false;
-        }
-
-        return $reservation->start_time->isAfter(now()->addHour());
+        return $this->reservations->canCancelByUser($reservation, $user);
     }
 
     /**
