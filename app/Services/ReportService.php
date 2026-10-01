@@ -5,10 +5,8 @@ namespace App\Services;
 use App\Models\Facility;
 use App\Models\Report;
 use App\Models\ReportUpdate;
-use App\Models\Reservation;
 use App\Models\User;
 use Illuminate\Http\UploadedFile;
-use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
@@ -162,11 +160,9 @@ class ReportService
     }
 
     /**
-     * Tandai fasilitas laporan sebagai perbaikan (BR-11, BR-16).
-     *
-     * @return array{facility: Facility, affectedReservations: Collection<int, Reservation>}
+     * Tandai fasilitas laporan sebagai perbaikan (BR-11).
      */
-    public function markFacilityForRepair(Report $report, User $officer): array
+    public function markFacilityForRepair(Report $report, User $officer): Facility
     {
         $this->ensureActivePetugas($officer);
 

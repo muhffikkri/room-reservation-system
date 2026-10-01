@@ -255,7 +255,7 @@
                             Reservasi yang Perlu Ditinjau
                         </h2>
                         <p class="mt-1 text-[11px] leading-relaxed text-slate-500">
-                            Reservasi berikut masih berstatus disetujui pada fasilitas yang sedang perbaikan. Batalkan jika jadwalnya bertabrakan (BR-16).
+                            Menampilkan maksimal 10 reservasi terdekat yang masih disetujui pada fasilitas yang sedang perbaikan. Batalkan jika jadwalnya bertabrakan dengan perbaikan.
                         </p>
 
                         <ul class="mt-4 space-y-2">

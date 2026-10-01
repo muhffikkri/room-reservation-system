@@ -4,8 +4,6 @@ namespace App\Services;
 
 use App\Models\Facility;
 use App\Models\Report;
-use App\Models\Reservation;
-use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
@@ -49,13 +47,11 @@ class FacilityLifecycle
     }
 
     /**
-     * Tandai fasilitas sebagai perbaikan dan kembalikan reservasi approved yang terdampak (BR-11, BR-16).
-     *
-     * @return array{facility: Facility, affectedReservations: Collection<int, Reservation>}
+     * Tandai fasilitas sebagai perbaikan (BR-11).
      */
-    public function markForRepair(Report $report): array
+    public function markForRepair(Report $report): Facility
     {
-        return DB::transaction(function () use ($report): array {
+        return DB::transaction(function () use ($report): Facility {
             $lockedReport = Report::whereKey($report->id)->lockForUpdate()->firstOrFail();
 
             if ($lockedReport->status !== 'diproses') {
@@ -77,17 +73,7 @@ class FacilityLifecycle
                 'repair_report_id' => $lockedReport->id,
             ]);
 
-            $affectedReservations = Reservation::where('facility_id', $facility->id)
-                ->where('status', 'approved')
-                ->where('end_time', '>', now())
-                ->with('user:id,name,email')
-                ->orderBy('start_time')
-                ->get();
-
-            return [
-                'facility' => $facility->refresh(),
-                'affectedReservations' => $affectedReservations,
-            ];
+            return $facility->refresh();
         });
     }
 

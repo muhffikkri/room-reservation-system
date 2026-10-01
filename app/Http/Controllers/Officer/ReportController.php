@@ -71,7 +71,7 @@ class ReportController extends Controller
     /**
      * Menampilkan detail laporan kerusakan dan form tindakan petugas.
      */
-    public function show(Request $request, Report $report): View
+    public function show(Report $report): View
     {
         Gate::authorize('view', $report);
 
@@ -80,19 +80,14 @@ class ReportController extends Controller
         $allowedTransitions = ReportService::allowedTransitions($report->status);
 
         $affectedReservations = collect();
-        if ($request->session()->has('affectedReservationIds')) {
-            $affectedReservations = Reservation::whereIn('id', (array) $request->session()->get('affectedReservationIds'))
-                ->where('status', 'approved')
-                ->where('end_time', '>', now())
-                ->with('user:id,name,email')
-                ->orderBy('start_time')
-                ->get();
-        } elseif ($report->facility->status === 'perbaikan' && (int) $report->facility->repair_report_id === (int) $report->id) {
+        if ($report->facility->status === 'perbaikan' && (int) $report->facility->repair_report_id === (int) $report->id) {
             $affectedReservations = Reservation::where('facility_id', $report->facility_id)
                 ->where('status', 'approved')
                 ->where('end_time', '>', now())
-                ->with('user:id,name,email')
+                ->with('user:id,name')
                 ->orderBy('start_time')
+                ->orderBy('id')
+                ->limit(10)
                 ->get();
         }
 
@@ -126,17 +121,8 @@ class ReportController extends Controller
 
         try {
             if ($action === 'perbaikan') {
-                $result = $this->reportService->markFacilityForRepair($report, $request->user());
-                $affected = $result['affectedReservations'];
-                $count = $affected->count();
-                $message = $count > 0
-                    ? "Fasilitas berhasil ditandai perbaikan. {$count} reservasi disetujui perlu ditinjau."
-                    : 'Fasilitas berhasil ditandai sedang dalam perbaikan.';
-
-                return redirect()
-                    ->route('petugas.laporan.show', $report)
-                    ->with('success', $message)
-                    ->with('affectedReservationIds', $affected->pluck('id')->all());
+                $this->reportService->markFacilityForRepair($report, $request->user());
+                $message = 'Fasilitas berhasil ditandai sedang dalam perbaikan. Tinjau reservasi yang masih disetujui pada fasilitas ini.';
             } elseif ($action === 'aktif') {
                 $this->reportService->restoreFacilityToActive($report, $request->user());
                 $message = 'Fasilitas berhasil dikembalikan ke status aktif.';
