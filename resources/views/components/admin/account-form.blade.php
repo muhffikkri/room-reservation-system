@@ -55,7 +55,7 @@
             <div>
                 <label for="phone" class="block text-sm font-semibold text-slate-700">No. HP</label>
                 <input id="phone" name="phone" type="tel" required maxlength="20"
-                    pattern="[\+0-9][\s\-().0-9]{7,19}"
+                    pattern="{{ \App\Support\AccountAttributes::PHONE_INPUT_PATTERN }}"
                     title="Format: 08xx, 62xx, atau +62xx"
                     value="{{ old('phone') }}"
                     placeholder="Contoh: 081234567890"

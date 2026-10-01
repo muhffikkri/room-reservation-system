@@ -52,7 +52,7 @@
                     <div>
                         <label for="phone" class="mb-1.5 block text-sm font-semibold text-slate-700">No. HP</label>
                         <input id="phone" name="phone" type="tel" maxlength="20" required autocomplete="tel"
-                            pattern="[\+0-9][\s\-().0-9]{7,19}"
+                            pattern="{{ \App\Support\AccountAttributes::PHONE_INPUT_PATTERN }}"
                             title="Format: 08xx, 62xx, atau +62xx (contoh: 081234567890)"
                             value="{{ old('phone') }}" placeholder="Contoh: 081234567890"
                             class="landing-input h-11 w-full rounded-2xl px-4 text-sm text-slate-800 outline-none transition focus:ring-4 focus:ring-blue-500/15">

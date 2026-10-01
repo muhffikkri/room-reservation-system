@@ -52,7 +52,7 @@ it('renders the pattern and hint on the admin account creation forms', function 
             ->assertStatus(200)
             ->assertSee('name="phone"', false)
             ->assertSee('type="tel"', false)
-            ->assertSee('pattern="[\+0-9][\s\-().0-9]{7,19}"', false)
+            ->assertSee('pattern="[\+0-9][\s\-\(\).0-9]{7,19}"', false)
             ->assertSee('08xx')
             ->assertSee('+62xx');
     }

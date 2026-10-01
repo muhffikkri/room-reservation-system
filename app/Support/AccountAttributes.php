@@ -11,6 +11,8 @@ namespace App\Support;
  */
 final class AccountAttributes
 {
+    public const string PHONE_INPUT_PATTERN = '[\+0-9][\s\-\(\).0-9]{7,19}';
+
     /**
      * Trim lalu lowercase agar User@Kampus.test dan user@kampus.test
      * dianggap email yang sama oleh unique:users,email.
