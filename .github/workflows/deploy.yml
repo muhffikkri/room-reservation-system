@@ -57,13 +57,47 @@ jobs:
             "$SERVER_USER@$SERVER_HOST" \
             "whoami && docker --version && docker compose version"
 
+      - name: Resolve deploy path
+        shell: bash
+        run: |
+          resolved=$(ssh \
+            -i ~/.ssh/server_deploy \
+            -o StrictHostKeyChecking=yes \
+            "$SERVER_USER@$SERVER_HOST" bash -s -- "$DEPLOY_PATH" <<'REMOTE'
+          set -euo pipefail
+
+          raw="$1"
+          normalized=$(printf '%s' "$raw" | sed -E 's#\\#/#g')
+
+          candidates=(
+            "$raw"
+            "$normalized"
+            "$(printf '%s' "$normalized" | sed -E 's#^([A-Za-z]):/(.*)$#/cygdrive/\L\1\E/\2#')"
+            "$(printf '%s' "$normalized" | sed -E 's#^([A-Za-z]):/(.*)$#/mnt/\L\1\E/\2#')"
+            "$(printf '%s' "$normalized" | sed -E 's#^([A-Za-z]):/(.*)$#/\L\1\E/\2#')"
+          )
+
+          for candidate in "${candidates[@]}"; do
+            if [ -d "$candidate" ]; then
+              printf '%s\n' "$candidate"
+              exit 0
+            fi
+          done
+
+          echo "::error::deploy path not found on the server, tried: ${candidates[*]}" >&2
+          exit 1
+          REMOTE
+          )
+          echo "Deploy path resolved to: $resolved"
+          echo "DEPLOY_PATH_RESOLVED=$resolved" >> "$GITHUB_ENV"
+
       - name: Check server configuration
         shell: bash
         run: |
           ssh \
             -i ~/.ssh/server_deploy \
             -o StrictHostKeyChecking=yes \
-            "$SERVER_USER@$SERVER_HOST" bash -s -- "$DEPLOY_PATH" <<'REMOTE'
+            "$SERVER_USER@$SERVER_HOST" bash -s -- "$DEPLOY_PATH_RESOLVED" <<'REMOTE'
           set -euo pipefail
           cd "$1"
           missing=0
@@ -82,7 +116,7 @@ jobs:
           ssh \
             -i ~/.ssh/server_deploy \
             -o StrictHostKeyChecking=yes \
-            "$SERVER_USER@$SERVER_HOST" bash -s -- "$DEPLOY_PATH" <<'REMOTE'
+            "$SERVER_USER@$SERVER_HOST" bash -s -- "$DEPLOY_PATH_RESOLVED" <<'REMOTE'
           set -euo pipefail
           cd "$1"
 
@@ -110,7 +144,7 @@ jobs:
           ssh \
             -i ~/.ssh/server_deploy \
             -o StrictHostKeyChecking=yes \
-            "$SERVER_USER@$SERVER_HOST" bash -s -- "$DEPLOY_PATH" <<'REMOTE'
+            "$SERVER_USER@$SERVER_HOST" bash -s -- "$DEPLOY_PATH_RESOLVED" <<'REMOTE'
           set -euo pipefail
           cd "$1"
           docker compose ps
