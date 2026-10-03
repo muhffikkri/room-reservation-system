@@ -1,72 +1,118 @@
-# name: Deploy Simfasilitas
+name: Deploy
 
-# on:
-#   push:
-#     branches:
-#       - dev
+on:
+  push:
+    branches:
+      - main
 
-#   workflow_dispatch:
+  workflow_dispatch:
 
-# permissions:
-#   contents: read
+permissions:
+  contents: read
 
-# jobs:
-#   deploy:
-#     runs-on: ubuntu-latest
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
 
-#     steps:
-#       - name: Connect to Tailscale
-#         uses: tailscale/github-action@v4
-#         with:
-#           oauth-client-id: ${{ secrets.TS_OAUTH_CLIENT_ID }}
-#           oauth-secret: ${{ secrets.TS_OAUTH_SECRET }}
-#           tags: tag:ci
-#           ping: ${{ vars.SERVER_HOST }}
+env:
+  DEPLOY_PATH: ${{ vars.DEPLOY_PATH }}
+  SERVER_HOST: ${{ vars.SERVER_HOST }}
+  SERVER_USER: ${{ vars.SERVER_USER }}
 
-#       - name: Check Tailscale connectivity
-#         shell: bash
-#         run: |
-#           tailscale status
-#           tailscale ping ${{ vars.SERVER_HOST }}
+jobs:
+  deploy:
+    name: Deploy main to production server
+    runs-on: ubuntu-latest
 
-#       - name: Setup SSH
-#         shell: bash
-#         run: |
-#           mkdir -p ~/.ssh
-#           printf '%s\n' '${{ secrets.SERVER_SSH_KEY }}' > ~/.ssh/simfasilitas
-#           chmod 600 ~/.ssh/simfasilitas
-#           ssh-keyscan -H "${{ vars.SERVER_HOST }}" >> ~/.ssh/known_hosts
+    steps:
+      - name: Connect to Tailscale
+        uses: tailscale/github-action@v4
+        with:
+          oauth-client-id: ${{ secrets.TS_OAUTH_CLIENT_ID }}
+          oauth-secret: ${{ secrets.TS_OAUTH_SECRET }}
+          tags: tag:ci
+          ping: ${{ vars.SERVER_HOST }}
 
-#       - name: Test SSH
-#         shell: bash
-#         run: |
-#           ssh \
-#             -i ~/.ssh/simfasilitas \
-#             -o StrictHostKeyChecking=yes \
-#             -o ConnectTimeout=15 \
-#             "${{ vars.SERVER_USER }}@${{ vars.SERVER_HOST }}" \
-#             "whoami"
+      - name: Check Tailscale connectivity
+        shell: bash
+        run: |
+          tailscale status
+          tailscale ping "$SERVER_HOST"
 
-#       - name: Check server environment
-#         shell: bash
-#         run: |
-#           ssh \
-#             -i ~/.ssh/simfasilitas \
-#             "${{ vars.SERVER_USER }}@${{ vars.SERVER_HOST }}" \
-#             "cd ${{ vars.DEPLOY_PATH }} && git --version && docker --version && docker compose version"
+      - name: Setup SSH
+        shell: bash
+        run: |
+          mkdir -p ~/.ssh
+          printf '%s\n' '${{ secrets.SERVER_SSH_KEY }}' > ~/.ssh/server_deploy
+          chmod 600 ~/.ssh/server_deploy
+          ssh-keyscan -H "$SERVER_HOST" >> ~/.ssh/known_hosts
 
-#       - name: Deploy
-#         shell: bash
-#         run: |
-#           ssh \
-#             -i ~/.ssh/simfasilitas \
-#             "${{ vars.SERVER_USER }}@${{ vars.SERVER_HOST }}" \
-#             "cd ${{ vars.DEPLOY_PATH }} && git fetch origin dev && git reset --hard origin/dev && docker compose run --pull never --rm frontend && docker compose up -d --build && docker compose exec -T app php artisan migrate --force && docker compose exec -T app php artisan optimize"
+      - name: Test SSH
+        shell: bash
+        run: |
+          ssh \
+            -i ~/.ssh/server_deploy \
+            -o StrictHostKeyChecking=yes \
+            -o ConnectTimeout=15 \
+            "$SERVER_USER@$SERVER_HOST" \
+            "whoami && docker --version && docker compose version"
 
-#       - name: Verify application
-#         shell: bash
-#         run: |
-#           ssh \
-#             -i ~/.ssh/simfasilitas \
-#             "${{ vars.SERVER_USER }}@${{ vars.SERVER_HOST }}" \
-#             "cd ${{ vars.DEPLOY_PATH }} && docker compose ps"
+      - name: Check server configuration
+        shell: bash
+        run: |
+          ssh \
+            -i ~/.ssh/server_deploy \
+            -o StrictHostKeyChecking=yes \
+            "$SERVER_USER@$SERVER_HOST" bash -s -- "$DEPLOY_PATH" <<'REMOTE'
+          set -euo pipefail
+          cd "$1"
+          missing=0
+          for key in APP_KEY DB_CONNECTION DB_DATABASE DB_USERNAME DB_PASSWORD DB_ROOT_PASSWORD CLOUDFLARE_TUNNEL_TOKEN; do
+            if ! grep -qE "^${key}=.+" .env; then
+              echo "::error::${key} is not set in $1/.env"
+              missing=1
+            fi
+          done
+          exit "$missing"
+          REMOTE
+
+      - name: Deploy
+        shell: bash
+        run: |
+          ssh \
+            -i ~/.ssh/server_deploy \
+            -o StrictHostKeyChecking=yes \
+            "$SERVER_USER@$SERVER_HOST" bash -s -- "$DEPLOY_PATH" <<'REMOTE'
+          set -euo pipefail
+          cd "$1"
+
+          git fetch origin main
+          git reset --hard origin/main
+
+          docker compose run --pull never --rm frontend
+          docker compose up -d --build
+
+          docker compose exec -T app composer install \
+            --no-dev \
+            --optimize-autoloader \
+            --no-interaction
+
+          [ -e public/storage ] || docker compose exec -T app \
+            php artisan storage:link --no-interaction
+
+          docker compose exec -T app php artisan migrate --force --no-interaction
+          docker compose exec -T app php artisan optimize --no-interaction
+          REMOTE
+
+      - name: Verify application
+        shell: bash
+        run: |
+          ssh \
+            -i ~/.ssh/server_deploy \
+            -o StrictHostKeyChecking=yes \
+            "$SERVER_USER@$SERVER_HOST" bash -s -- "$DEPLOY_PATH" <<'REMOTE'
+          set -euo pipefail
+          cd "$1"
+          docker compose ps
+          docker compose exec -T nginx wget -q -O /dev/null http://127.0.0.1/
+          REMOTE
