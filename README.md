@@ -1,5 +1,9 @@
 # Sistem Reservasi & Pelaporan Fasilitas Kampus
 
+<p align="center">
+  <img src="screenshots/room-reservation-system.png" alt="Tampilan Sistem Reservasi & Pelaporan Fasilitas Kampus" width="800">
+</p>
+
 Aplikasi Laravel untuk reservasi fasilitas kampus dan pelaporan kerusakan. Pengguna mengajukan reservasi dan laporan, petugas menangani alur operasional, dan admin mengelola akun, fasilitas, serta rekap.
 
 ## Overview
