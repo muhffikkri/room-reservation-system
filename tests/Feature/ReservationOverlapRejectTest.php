@@ -233,7 +233,9 @@ it('leaves adjacent and other-facility pendings untouched without notifications'
         ->and($adjacentPending->fresh()->status)->toBe('pending')
         ->and($otherFacilityPending->fresh()->status)->toBe('pending');
 
-    $this->assertDatabaseCount('notifications', 0);
+    // create() hanya memberi tahu petugas; yang diuji di sini adalah tidak
+    // adanya notifikasi penolakan otomatis untuk pemilik reservasi tetangga.
+    expect($rival->notifications()->count())->toBe(0);
 });
 
 it('marks a notification as read and redirects to its reservation', function () {
