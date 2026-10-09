@@ -207,6 +207,8 @@ Indeks: `INDEX(target_user_id, acted_at)` dan `INDEX(actor_id, acted_at)`. Riway
 
 Indeks: `INDEX(notifiable_type, notifiable_id)`.
 
+Kanal: `database` (in-app) saja. `type` menyimpan FQCN kelas notifikasi; `data` memuat minimal `message` dan `url` (tautan ke detail reservasi), dengan nilai `type` payload antara lain `reservation_submitted` (BR-21), `reservation_status_changed` (BR-22/BR-23), dan `reservation_overlap_rejected` (BR-19).
+
 ### 4.8 ERD
 
 ```mermaid
@@ -371,6 +373,10 @@ Controller menerjemahkan request dan response. Policy memutuskan otorisasi objek
 | BR-18 | Jika reservasi `pending` mencapai batas persetujuan (`start_time < now + 60 menit`), sistem mengubahnya menjadi `cancelled_by_system`, mengisi `cancel_reason` dan `decided_at`, serta tidak mengisi `decided_by`. Pembersihan berjalan saat alur reservasi/dashboard terkait digunakan (bukan job terjadwal); halaman pengguna membersihkan milik pengguna itu, sedangkan operasi petugas membersihkan semua yang kedaluwarsa. Reservasi yang sudah melewati batas tidak dapat disetujui. |
 | BR-19 | Saat satu reservasi disetujui, semua reservasi `pending` pada fasilitas yang sama dan benar-benar overlap dengannya otomatis menjadi `rejected_by_system`; sistem mengisi alasan penolakan dan `decided_at`, lalu membuat notifikasi in-app untuk setiap pemilik dengan tautan ke detail reservasi. Persetujuan, penolakan otomatis, dan notifikasi dilakukan dalam satu transaksi. Batas waktu yang hanya bersinggungan (mis. 09.00 tepat setelah reservasi yang berakhir 09.00) bukan overlap menurut definisi slot setengah terbuka di bawah. |
 | BR-20 | Setiap pengguna aktif dapat membuat maksimal 20 laporan per tanggal kalender. Pemeriksaan kuota dan penyimpanan laporan dilakukan dalam transaksi dengan penguncian akun; permintaan setelah kuota tercapai ditolak dengan HTTP 429. |
+| BR-21 | Setiap pengajuan reservasi baru (`pending`) oleh pengguna aktif membuat notifikasi in-app untuk **seluruh akun petugas berstatus aktif**. Notifikasi memuat identitas pemohon dan tautan ke detail reservasi di antrean petugas. Admin tidak menerima notifikasi ini. Pembuatan reservasi dan notifikasi berada dalam transaksi yang sama. |
+| BR-22 | Setiap keputusan petugas atas reservasi (`approved`, `rejected`, `cancelled_by_officer`) membuat notifikasi in-app untuk **pemilik reservasi**, memuat status baru dan tautan ke detail reservasi. Perubahan status dan notifikasi berada dalam transaksi yang sama. |
+| BR-23 | Ketika sistem membatalkan reservasi pending karena melewati batas persetujuan (BR-18, `cancelled_by_system`), pemilik menerima notifikasi in-app dengan tautan ke detail reservasi. Notifikasi hanya dibuat sekali per reservasi karena statusnya tidak lagi `pending` pada sapuan berikutnya. |
+| BR-24 | Notifikasi in-app ditandai sudah dibaca ketika panel dropdown header dibuka (hanya baris yang terlihat, maksimal 5 notifikasi terbaru) atau saat satu notifikasi diklik; halaman notifikasi menyediakan paginasi dan aksi "tandai semua dibaca". Dropdown menampilkan maksimal 5 notifikasi terbaru dengan tautan "Lihat semua" ke halaman notifikasi. Seluruh endpoint notifikasi hanya dapat diakses akun berstatus `aktif`. |
 
 Definisi slot: slot `[h, h+30m)` dianggap **terisi** bila ada reservasi `approved` dengan `start_time < h+30m AND end_time > h`. Grid jadwal menampilkan slot 07.00 s.d. 19.30.
 
@@ -452,6 +458,7 @@ Role `admin` dan `petugas` tidak saling mencakup. Ringkasan operasional admin be
 | Kelola akun | `admin/admin/*`, `admin/petugas/*`, `admin/pengguna/*` | admin | form buat akun; tabel verifikasi |
 | Master fasilitas | `admin/fasilitas/*` | admin | tabel + form tambah/edit/nonaktifkan |
 | Rekap okupansi/kerusakan | `admin/rekap/occupancy`, `admin/rekap/damage` | admin | halaman terpisah + ekspor CSV/PDF; XLSX belum tersedia |
+| Notifikasi | `notifications/index` | semua role aktif | daftar lengkap notifikasi + paginasi + tandai dibaca; dropdown header menampilkan 5 terbaru |
 
 Menu operasional hanya ditampilkan untuk `petugas`; menu administrasi hanya ditampilkan untuk `admin`. Admin tidak melihat menu antrian/aksi petugas.
 
@@ -536,6 +543,7 @@ Test memanggil interface `ReservationAvailability` (`isValidSlot`, `hasBlockingO
 9. Rekap admin: angka okupansi & frekuensi kerusakan sesuai data uji; rata-rata okupansi hanya memakai fasilitas aktif dan status reservasi otomatis masuk kelompok ditolak/dibatalkan yang benar. CSV memakai delimiter titik koma dan ekspor memakai rentang tanggal terpilih. CSV/PDF berhasil diunduh; XLSX opsional dan hanya diuji bila diimplementasikan.
 10. Isolasi role: setelah login, `pengguna` masuk ke alur pengguna, `petugas` ke dashboard petugas, dan `admin` ke dashboard admin; akses admin ke `/petugas/*` dan akses petugas ke `/admin/*` menghasilkan 403. Dashboard admin tetap hanya menampilkan ringkasan read-only.
 11. Edge cases: laporan `ditolak` yang sama dengan `repair_report_id` mengaktifkan kembali fasilitas dan membersihkan tautan; menolak laporan berbeda tidak mengubahnya. Reservasi pending yang melewati cutoff menjadi `cancelled_by_system`; persetujuan satu reservasi otomatis menolak pending lain yang overlap dan membuat notifikasi; laporan ke-21 pada hari yang sama ditolak; aksi verifikasi, penolakan, dan pemulihan akun masing-masing meninggalkan baris audit.
+12. **Notifikasi in-app**: pengajuan baru memberi notifikasi ke semua petugas aktif (admin tidak menerima); `approved`/`rejected`/`cancelled_by_officer` oleh petugas dan `cancelled_by_system` memberi notifikasi ke pemilik reservasi. Header menampilkan 5 notifikasi terbaru dan menandainya dibaca saat dropdown dibuka, dengan tautan "Lihat semua" ke halaman notifikasi yang menampilkan seluruh notifikasi secara terpaginasi. Akun `pending` ditolak dari endpoint notifikasi (BR-21..BR-24).
 
 ### 14.3 Feature — Pencarian & Ketangguhan Input
 

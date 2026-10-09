@@ -6,8 +6,11 @@ use App\Models\Facility;
 use App\Models\Reservation;
 use App\Models\User;
 use App\Notifications\ReservationOverlapRejected;
+use App\Notifications\ReservationStatusChanged;
+use App\Notifications\ReservationSubmitted;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\ValidationException;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
@@ -49,21 +52,28 @@ class ReservationService
     {
         $stale = Reservation::pending()
             ->where('start_time', '<', $this->availability->leadTimeCutoff())
-            ->when($viewer !== null, fn ($query) => $query->where('user_id', $viewer->id));
+            ->when($viewer !== null, fn ($query) => $query->where('user_id', $viewer->id))
+            ->with('facility')
+            ->get();
 
-        $expired = (clone $stale)->count();
-
-        if ($expired === 0) {
+        if ($stale->isEmpty()) {
             return 0;
         }
 
-        $stale->update([
-            'status' => 'cancelled_by_system',
-            'cancel_reason' => 'Otomatis dibatalkan sistem: melewati batas persetujuan (60 menit sebelum waktu mulai).',
-            'decided_at' => now(),
-        ]);
+        // Dimuat per baris (bukan satu UPDATE massal) karena setiap pemilik
+        // harus menerima notifikasi in-app bahwa reservasinya dibatalkan
+        // sistem. Sapuan berikutnya tidak mengulang: statusnya bukan pending lagi.
+        foreach ($stale as $reservation) {
+            $reservation->update([
+                'status' => 'cancelled_by_system',
+                'cancel_reason' => 'Otomatis dibatalkan sistem: melewati batas persetujuan (60 menit sebelum waktu mulai).',
+                'decided_at' => now(),
+            ]);
 
-        return $expired;
+            $reservation->user?->notify(new ReservationStatusChanged($reservation, 'cancelled_by_system'));
+        }
+
+        return $stale->count();
     }
 
     /**
@@ -110,7 +120,7 @@ class ReservationService
                 throw new ConflictHttpException('Maaf, fasilitas ini sudah dipesan pada jam yang sama (atau overlap). Permohonan Anda ditolak.');
             }
 
-            return Reservation::create([
+            $reservation = Reservation::create([
                 'user_id' => $lockedUser->id,
                 'facility_id' => $lockedFacility->id,
                 'purpose' => $purpose,
@@ -118,6 +128,14 @@ class ReservationService
                 'end_time' => $end,
                 'status' => 'pending',
             ]);
+
+            // Setiap petugas aktif diberi tahu agar antrean segera ditangani.
+            Notification::send(
+                User::role('petugas')->where('account_status', 'aktif')->get(),
+                new ReservationSubmitted($reservation),
+            );
+
+            return $reservation;
         });
     }
 
@@ -177,6 +195,8 @@ class ReservationService
                 'decided_by' => $officer->id,
                 'decided_at' => now(),
             ]);
+
+            $locked->user?->notify(new ReservationStatusChanged($locked, 'approved'));
 
             return $this->rejectOverlappingPendings($locked);
         });
@@ -246,6 +266,8 @@ class ReservationService
                 'decided_at' => now(),
             ]);
 
+            $locked->user?->notify(new ReservationStatusChanged($locked, 'rejected'));
+
             return $locked->refresh();
         });
     }
@@ -281,6 +303,8 @@ class ReservationService
                 'decided_by' => $officer->id,
                 'decided_at' => now(),
             ]);
+
+            $locked->user?->notify(new ReservationStatusChanged($locked, 'cancelled_by_officer'));
 
             return $locked->refresh();
         });
