@@ -167,6 +167,10 @@ Route::middleware('auth')->group(function (): void {
     // Notifikasi tetap butuh `active`, sama seperti seluruh grup terotentikasi
     // lain, supaya grup ini sendiri yang menegakkan invarian (BR-14).
     Route::middleware('active')->group(function (): void {
+        Route::get('/notifications', [NotificationController::class, 'index'])
+            ->name('notifications.index');
+        Route::post('/notifications/read-opened', [NotificationController::class, 'markOpened'])
+            ->name('notifications.read-opened');
         Route::post('/notifications/{notification}/read', [NotificationController::class, 'markRead'])
             ->name('notifications.read');
         Route::post('/notifications/read-all', [NotificationController::class, 'markAllRead'])

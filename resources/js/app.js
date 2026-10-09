@@ -352,6 +352,53 @@ document.querySelectorAll('[data-notification-toggle]').forEach((toggle) => {
         return;
     }
 
+    const markVisibleRead = () => {
+        const url = toggle.dataset.readUrl;
+
+        if (url === undefined) {
+            return;
+        }
+
+        fetch(url, {
+            method: 'POST',
+            headers: {
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                Accept: 'application/json',
+            },
+        })
+            .then((response) => (response.ok ? response.json() : null))
+            .then((payload) => {
+                if (payload === null) {
+                    return;
+                }
+
+                const badge = toggle.querySelector('[data-notification-badge]');
+
+                if (badge !== null) {
+                    if (payload.unread > 0) {
+                        badge.textContent = payload.unread > 99 ? '99+' : String(payload.unread);
+                    } else {
+                        badge.remove();
+                    }
+                }
+
+                panel.querySelectorAll('[data-notification-unread]').forEach((item) => {
+                    item.removeAttribute('data-notification-unread');
+                    item.classList.remove('bg-[#F2F3FF]');
+
+                    const message = item.querySelector('[data-notification-message]');
+
+                    if (message !== null) {
+                        message.classList.remove('font-semibold', 'text-[#00236f]');
+                        message.classList.add('text-slate-600');
+                    }
+                });
+
+                panel.querySelector('[data-notification-mark-all]')?.remove();
+            })
+            .catch(() => {});
+    };
+
     toggle.addEventListener('click', (event) => {
         event.stopPropagation();
 
@@ -359,6 +406,12 @@ document.querySelectorAll('[data-notification-toggle]').forEach((toggle) => {
 
         toggle.setAttribute('aria-expanded', String(! isOpen));
         panel.classList.toggle('hidden', isOpen);
+
+        if (isOpen) {
+            return;
+        }
+
+        markVisibleRead();
     });
 
     document.addEventListener('click', (event) => {
