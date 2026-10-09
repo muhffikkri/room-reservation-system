@@ -50,6 +50,9 @@
             "Composer\\Config::disableProcessTimeout",
             "@php artisan dev"
         ],
+        "seed": [
+            "@php artisan db:seed"
+        ],
         "lint": [
             "@php vendor/bin/pint --test"
         ],
