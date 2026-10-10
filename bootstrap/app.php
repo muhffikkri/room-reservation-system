@@ -3,10 +3,12 @@
 use App\Http\Middleware\AddSecurityHeaders;
 use App\Http\Middleware\EnsureAccountActive;
 use App\Http\Middleware\EnsureRole;
+use Illuminate\Auth\AuthenticationException;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\Request;
+use Illuminate\Validation\ValidationException;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Exception\HttpExceptionInterface;
 
@@ -52,9 +54,13 @@ return Application::configure(basePath: dirname(__DIR__))
 
         // Selama APP_DEBUG=false, error tak terduga (500) tampil sebagai
         // halaman ramah tanpa membocorkan stack trace. HttpException
-        // (404/403/419/dst.) tetap memakai alur penanganan bawaan Laravel.
+        // (404/403/419/dst.), ValidationException (redirect back/422), dan
+        // AuthenticationException (redirect ke login) tetap memakai alur
+        // penanganan bawaan Laravel — kalau ikut ditelan, kegagalan
+        // validasi form dan tamu di route privat tampil sebagai page 500
+        // tanpa log.
         $exceptions->render(function (Throwable $e, Request $request): ?Response {
-            if (config('app.debug') || $e instanceof HttpExceptionInterface || $request->is('api/*') || $request->expectsJson()) {
+            if (config('app.debug') || $e instanceof HttpExceptionInterface || $e instanceof ValidationException || $e instanceof AuthenticationException || $request->is('api/*') || $request->expectsJson()) {
                 return null;
             }
 
