@@ -8,6 +8,7 @@ use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\Paginator;
 use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Support\Facades\URL;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -25,6 +26,15 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        // Di belakang tunnel TLS (production/staging), aplikasi hanya
+        // melihat http polos sehingga URL yang digenerate ber-skema http.
+        // Paksa https agar form/redirect tetap di zona cookie Secure;
+        // kalau tidak, browser terperangkap di http tanpa sesi dan semua
+        // POST berujung 419 berulang. Lokal/testing tidak disentuh.
+        if ($this->app->environment(['production', 'staging'])) {
+            URL::forceScheme('https');
+        }
+
         User::observe(UserObserver::class);
         Paginator::defaultView('pagination.clay');
 
