@@ -2,6 +2,25 @@
 
 All notable release changes are recorded here. Commit and pull request details are available in the GitHub history.
 
+## v1.4.0 — 2026-10-11
+
+### Added
+
+- Add in-app notifications across the reservation lifecycle: active officers are notified of new submissions, and owners are notified when a reservation is approved, rejected, cancelled, or expired by the system.
+- Add a paginated notifications page and a header dropdown that shows the five latest notifications, offers "mark all read", and links to the full list.
+
+### Changed
+
+- Document the notification business rules (BR-21..BR-24) and the notifications page in the specification.
+- Add a `db:seed` composer script, refresh the README, and update the deployment workflow and SSH path resolution for the main branch.
+
+### Fixed
+
+- Prevent duplicate system-cancel notifications when concurrent sweeps expire the same pending reservation.
+- Mark only the notifications actually rendered in the dropdown as read, scoped to the signed-in owner, so a newly arrived (unseen) notification is not consumed while a visible one stays unread.
+- Let validation and authentication exceptions return their standard responses instead of the custom 500 page.
+- Force the HTTPS scheme behind the TLS tunnel in production.
+
 ## v1.3.0 — 2026-10-01
 
 ### Added
