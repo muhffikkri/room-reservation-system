@@ -359,12 +359,18 @@ document.querySelectorAll('[data-notification-toggle]').forEach((toggle) => {
             return;
         }
 
+        const ids = (toggle.dataset.readIds ?? '')
+            .split(',')
+            .filter((id) => id !== '');
+
         fetch(url, {
             method: 'POST',
             headers: {
                 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                'Content-Type': 'application/json',
                 Accept: 'application/json',
             },
+            body: JSON.stringify({ ids }),
         })
             .then((response) => (response.ok ? response.json() : null))
             .then((payload) => {

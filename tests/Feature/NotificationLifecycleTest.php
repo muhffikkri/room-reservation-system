@@ -8,6 +8,7 @@ use App\Notifications\ReservationSubmitted;
 use App\Services\ReservationService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
 
 uses(RefreshDatabase::class);
 
@@ -133,4 +134,45 @@ it('notifies the owner when the system cancels a stale reservation', function ()
         ->and($reservation->fresh()->status)->toBe('cancelled_by_system')
         ->and($notification->data['status'])->toBe('cancelled_by_system')
         ->and($notification->data['message'])->not->toContain('Dibatalkan oleh Sistem');
+});
+
+it('does not notify twice when a parallel sweep already cancelled the reservation', function () {
+    [$facility, $owner] = notificationLifecycleActors();
+
+    $reservation = Reservation::factory()->create([
+        'user_id' => $owner->id,
+        'facility_id' => $facility->id,
+        'status' => 'pending',
+        'start_time' => now()->addMinutes(30),
+        'end_time' => now()->addMinutes(90),
+        'purpose' => 'Kegiatan yang menunggu dan berpotensi dibatalkan dua kali.',
+    ]);
+
+    // Simulasi request paralel: tepat setelah sapuan membaca kandidat pending,
+    // request lain lebih dulu membatalkan baris yang sama dan mengirim
+    // notifikasi. Sapuan ini tidak boleh membatalkan/memberi tahu untuk kedua
+    // kalinya (BR-23: notifikasi hanya sekali per reservasi).
+    $simulated = false;
+
+    DB::listen(function ($query) use (&$simulated, $reservation): void {
+        if ($simulated || ! str_contains($query->sql, 'from `reservations`')) {
+            return;
+        }
+
+        $simulated = true;
+
+        DB::table('reservations')->where('id', $reservation->id)->update([
+            'status' => 'cancelled_by_system',
+            'cancel_reason' => 'Dibatalkan lebih dulu oleh request paralel.',
+            'decided_at' => now(),
+        ]);
+
+        $reservation->user->notify(new ReservationStatusChanged($reservation->fresh(), 'cancelled_by_system'));
+    });
+
+    $expired = app(ReservationService::class)->expireStale();
+
+    expect($simulated)->toBeTrue()
+        ->and($owner->notifications()->count())->toBe(1)
+        ->and($expired)->toBe(0);
 });

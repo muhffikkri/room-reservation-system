@@ -50,30 +50,47 @@ class ReservationService
      */
     public function expireStale(?User $viewer = null): int
     {
-        $stale = Reservation::pending()
-            ->where('start_time', '<', $this->availability->leadTimeCutoff())
-            ->when($viewer !== null, fn ($query) => $query->where('user_id', $viewer->id))
-            ->with('facility')
-            ->get();
+        $cutoff = $this->availability->leadTimeCutoff();
 
-        if ($stale->isEmpty()) {
-            return 0;
-        }
+        return DB::transaction(function () use ($viewer, $cutoff): int {
+            // Kandidat dibaca dengan baris terkunci. Dua sapuan paralel (mis.
+            // dashboard petugas dan pengajuan reservasi baru) tidak boleh
+            // sama-sama membatalkan satu reservasi: sapuan kedua menunggu lock,
+            // lalu melihat statusnya bukan pending lagi (BR-23).
+            $candidates = Reservation::pending()
+                ->where('start_time', '<', $cutoff)
+                ->when($viewer !== null, fn ($query) => $query->where('user_id', $viewer->id))
+                ->lockForUpdate()
+                ->pluck('id');
 
-        // Dimuat per baris (bukan satu UPDATE massal) karena setiap pemilik
-        // harus menerima notifikasi in-app bahwa reservasinya dibatalkan
-        // sistem. Sapuan berikutnya tidak mengulang: statusnya bukan pending lagi.
-        foreach ($stale as $reservation) {
-            $reservation->update([
-                'status' => 'cancelled_by_system',
-                'cancel_reason' => 'Otomatis dibatalkan sistem: melewati batas persetujuan (60 menit sebelum waktu mulai).',
-                'decided_at' => now(),
-            ]);
+            $processed = 0;
 
-            $reservation->user?->notify(new ReservationStatusChanged($reservation, 'cancelled_by_system'));
-        }
+            foreach ($candidates as $id) {
+                // Periksa ulang status di dalam WHERE, bukan hanya di memori:
+                // sapuan paralel yang lebih dulu menang sudah mengubah baris ini,
+                // sehingga update tidak menyentuh apa pun dan tidak ada
+                // notifikasi kedua.
+                $updated = Reservation::whereKey($id)
+                    ->where('status', 'pending')
+                    ->update([
+                        'status' => 'cancelled_by_system',
+                        'cancel_reason' => 'Otomatis dibatalkan sistem: melewati batas persetujuan (60 menit sebelum waktu mulai).',
+                        'decided_at' => now(),
+                    ]);
 
-        return $stale->count();
+                if ($updated === 0) {
+                    continue;
+                }
+
+                $reservation = Reservation::with('facility')->whereKey($id)->firstOrFail();
+
+                $reservation->user?->notify(new ReservationStatusChanged($reservation, 'cancelled_by_system'));
+
+                $processed++;
+            }
+
+            return $processed;
+        });
     }
 
     /**
