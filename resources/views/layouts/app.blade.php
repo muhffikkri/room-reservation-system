@@ -50,8 +50,9 @@
                     <div class="flex shrink-0 items-center gap-3 sm:gap-4">
                         @php($unreadNotifications = auth()->user()->unreadNotifications()->count())
                         @php($dropdownLimit = \App\Http\Controllers\NotificationController::DROPDOWN_LIMIT)
+                        @php($dropdownNotifications = auth()->user()->notifications()->latest()->limit($dropdownLimit)->get())
                         <div class="relative">
-                        <button type="button" data-notification-toggle data-read-url="{{ route('notifications.read-opened') }}" aria-expanded="false" aria-controls="notification-panel"
+                        <button type="button" data-notification-toggle data-read-url="{{ route('notifications.read-opened') }}" data-read-ids="{{ $dropdownNotifications->pluck('id')->implode(',') }}" aria-expanded="false" aria-controls="notification-panel"
                                 class="clay-button-white relative inline-flex h-10 w-10 items-center justify-center rounded-full text-[#00236f] focus:outline-none focus:ring-2 focus:ring-[#0051d5] focus:ring-offset-2"
                                 aria-label="Notifikasi{{ $unreadNotifications > 0 ? " ({$unreadNotifications} belum dibaca)" : '' }}">
                                 <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
@@ -72,7 +73,7 @@
                                     @endif
                                 </div>
                                 <ul class="mt-2 max-h-80 space-y-1 overflow-y-auto">
-                                    @forelse (auth()->user()->notifications()->latest()->limit($dropdownLimit)->get() as $notification)
+                                    @forelse ($dropdownNotifications as $notification)
                                         <li>
                                             <form method="POST" action="{{ route('notifications.read', $notification->id) }}">
                                                 @csrf

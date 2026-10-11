@@ -51,22 +51,23 @@ class NotificationController extends Controller
      * dropdown dibuka, lalu kembalikan sisa unread agar badge dapat
      * diperbarui tanpa reload.
      *
-     * Hanya baris yang terlihat ($limit teratas) yang disentuh; notifikasi
-     * lama di halaman lengkap tetap bisa dibaca satu per satu.
+     * Halaman mengirim ID yang benar-benar dirender, bukan endpoint yang
+     * menebak "lima terbaru" saat klik: notifikasi yang tiba setelah render
+     * bisa menggeser jendela dan membuat baris yang terlihat tetap unread.
+     * Pembaruan selalu di-scope ke notifikasi milik pengguna yang login
+     * (BR-24).
      */
     public function markOpened(Request $request): JsonResponse
     {
-        $visible = $request->user()->notifications()
-            ->latest()
-            ->limit(self::DROPDOWN_LIMIT)
-            ->pluck('id');
+        $validated = $request->validate([
+            'ids' => ['present', 'array'],
+            'ids.*' => ['string'],
+        ]);
 
-        if ($visible->isNotEmpty()) {
-            $request->user()->notifications()
-                ->whereIn('id', $visible)
-                ->whereNull('read_at')
-                ->update(['read_at' => now()]);
-        }
+        $request->user()->notifications()
+            ->whereIn('id', $validated['ids'])
+            ->whereNull('read_at')
+            ->update(['read_at' => now()]);
 
         return response()->json([
             'unread' => $request->user()->unreadNotifications()->count(),
