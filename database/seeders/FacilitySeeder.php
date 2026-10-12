@@ -8,8 +8,10 @@ use Illuminate\Database\Seeder;
 /**
  * Lima fasilitas contoh untuk demo (§15).
  *
- * Empat berstatus aktif dan satu (Proyektor P-01) berstatus perbaikan
- * sebagai contoh fasilitas yang tidak dapat user pesan (BR-12).
+ * Semuanya berstatus aktif agar dapat dipesan dan dilaporkan kerusakannya
+ * seperti alur normal; aturan BR-12 (fasilitas non-aktif/perbaikan tidak
+ * dapat dipesan) dibuktikan oleh test suite dengan data factory, bukan
+ * oleh data seed.
  */
 class FacilitySeeder extends Seeder
 {
@@ -20,7 +22,7 @@ class FacilitySeeder extends Seeder
             ['name' => 'Lab Komputer 1', 'type' => 'laboratorium', 'location' => 'Gedung C', 'capacity' => 40, 'status' => 'aktif', 'description' => 'Laboratorium komputer dengan 40 unit PC.'],
             ['name' => 'Ruang Kelas B-201', 'type' => 'ruang_kelas', 'location' => 'Gedung B', 'capacity' => 50, 'status' => 'aktif', 'description' => 'Ruang kelas ber-AC dengan proyektor.'],
             ['name' => 'Lapangan Futsal', 'type' => 'lapangan', 'location' => 'Area Timur', 'capacity' => 20, 'status' => 'aktif', 'description' => 'Lapangan futsal outdoor.'],
-            ['name' => 'Proyektor Portable P-01', 'type' => 'alat', 'location' => 'Unit AV', 'capacity' => 1, 'status' => 'perbaikan', 'description' => 'Proyektor portable untuk peminjaman.'],
+            ['name' => 'Proyektor Portable P-01', 'type' => 'alat', 'location' => 'Unit AV', 'capacity' => 1, 'status' => 'aktif', 'description' => 'Proyektor portable untuk peminjaman.'],
         ];
 
         foreach ($facilities as $facility) {
