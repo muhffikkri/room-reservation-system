@@ -168,3 +168,90 @@ it('still stops a report once the calendar day quota is used up', function () {
     $response->assertStatus(429);
     expect(Report::where('user_id', $user->id)->count())->toBe(20);
 });
+
+function paddedReportPhoto(string $name, int $bytes): UploadedFile
+{
+    $png = base64_decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==', true);
+
+    return UploadedFile::fake()->createWithContent($name, $png.str_repeat("\0", $bytes - strlen($png)));
+}
+
+it('stores a report with a large photo under the size limit', function (): void {
+    Storage::fake('local');
+
+    $user = User::factory()->create(['role' => 'pengguna', 'account_status' => 'aktif']);
+    $facility = Facility::factory()->create(['status' => 'aktif']);
+
+    $response = $this->actingAs($user)->post(route('laporan.store'), [
+        'facility_id' => $facility->id,
+        'category' => 'kerusakan_alat',
+        'description' => 'Proyektor mati total dan kabel VGA putus.',
+        'photo' => paddedReportPhoto('bukti.png', 1024 * 1024),
+    ]);
+
+    $report = Report::first();
+
+    $response->assertRedirect(route('laporan.show', $report));
+    expect($report)->not->toBeNull();
+    Storage::disk('local')->assertExists($report->photo);
+});
+
+it('rejects an oversized photo with a validation error instead of a server error', function (): void {
+    Storage::fake('local');
+
+    $user = User::factory()->create(['role' => 'pengguna', 'account_status' => 'aktif']);
+    $facility = Facility::factory()->create(['status' => 'aktif']);
+
+    $response = $this->actingAs($user)->post(route('laporan.store'), [
+        'facility_id' => $facility->id,
+        'category' => 'kerusakan_alat',
+        'description' => 'Proyektor mati total dan kabel VGA putus.',
+        'photo' => paddedReportPhoto('bukti.png', 3 * 1024 * 1024),
+    ]);
+
+    $response->assertRedirect();
+    $response->assertSessionHasErrors('photo');
+    expect(Report::count())->toBe(0);
+});
+
+it('asks for a retry instead of a server error when the file exceeds the PHP upload limit', function (): void {
+    Storage::fake('local');
+
+    $user = User::factory()->create(['role' => 'pengguna', 'account_status' => 'aktif']);
+    $facility = Facility::factory()->create(['status' => 'aktif']);
+
+    $photo = new UploadedFile('/nonexistent/tmpXYZ', 'bukti.png', 'image/png', UPLOAD_ERR_INI_SIZE, true);
+
+    $response = $this->actingAs($user)->post(route('laporan.store'), [
+        'facility_id' => $facility->id,
+        'category' => 'kerusakan_alat',
+        'description' => 'Proyektor mati total dan kabel VGA putus.',
+        'photo' => $photo,
+    ]);
+
+    $response->assertRedirect();
+    $response->assertSessionHasErrors('photo');
+    expect(Report::count())->toBe(0);
+});
+
+it('asks for a retry instead of a server error when the upload itself is corrupt', function (): void {
+    Storage::fake('local');
+
+    $user = User::factory()->create(['role' => 'pengguna', 'account_status' => 'aktif']);
+    $facility = Facility::factory()->create(['status' => 'aktif']);
+
+    $tmp = tempnam(sys_get_temp_dir(), 'upl');
+    file_put_contents($tmp, base64_decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==', true));
+    $photo = new UploadedFile($tmp, 'bukti.png', 'image/png', UPLOAD_ERR_PARTIAL, true);
+
+    $response = $this->actingAs($user)->post(route('laporan.store'), [
+        'facility_id' => $facility->id,
+        'category' => 'kerusakan_alat',
+        'description' => 'Proyektor mati total dan kabel VGA putus.',
+        'photo' => $photo,
+    ]);
+
+    $response->assertRedirect();
+    $response->assertSessionHasErrors('photo');
+    expect(Report::count())->toBe(0);
+});
